@@ -110,3 +110,5 @@ Implemented filter types:
 
 * [audio-filter](https://github.com/audiojs/audio-filter) − digital filters for audio infrastructure
 * [colors-of-noise](https://github.com/scijs/colors-of-noise) − collection of noise generators
+
+<p align=center><a href="https://github.com/krishnized/license/">ॐ</a></p>

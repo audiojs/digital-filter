@@ -4,8 +4,6 @@
 
 'use strict'
 
-const avg = require('average')
-
 module.exports = function movingAverage (data, param) {
 	let ptr = param.ptr
 	let mem = param.memory
@@ -28,8 +26,12 @@ module.exports = function movingAverage (data, param) {
 		mem[ptr] = x
 		ptr = (ptr + 1) % m
 
-		data[i] = avg(mem)
+		let sum = 0
+		for (let j = 0; j < m; j++) sum += mem[j]
+		data[i] = sum / m
 	}
+
+	param.ptr = ptr
 
 	return data
 }
