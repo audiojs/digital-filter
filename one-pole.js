@@ -4,11 +4,10 @@
  *
  * @module  digital-filter/one-pole
  */
-'use strict'
 
 let {exp, PI} = Math
 
-module.exports = function onePole (data, params) {
+export default function onePole (data, params) {
 	let y1 = params.y1 != null ? params.y1 : 0
 	let a = params.a
 	if (a == null) a = exp(-2 * PI * params.fc / (params.fs || 44100))

@@ -2,11 +2,9 @@
  * @module  digital-filter/moving-average
  */
 
-'use strict'
-
-module.exports = function movingAverage (data, param) {
-	let ptr = param.ptr
-	let mem = param.memory
+export default function movingAverage (data, params) {
+	let ptr = params.ptr
+	let mem = params.memory
 
 	//init memory, if ptr is not defined
 	if (ptr == null) {
@@ -15,8 +13,8 @@ module.exports = function movingAverage (data, param) {
 		for (let i = 0; i < mem.length; i++) {
 			mem[i] = 0
 		}
-		ptr = param.ptr = 0;
-		param.memory = mem
+		ptr = params.ptr = 0;
+		params.memory = mem
 	}
 
 	let m = mem.length
@@ -31,7 +29,7 @@ module.exports = function movingAverage (data, param) {
 		data[i] = sum / m
 	}
 
-	param.ptr = ptr
+	params.ptr = ptr
 
 	return data
 }

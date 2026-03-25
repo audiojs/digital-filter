@@ -1,5 +1,3 @@
-'use strict'
-
 let {tan, PI} = Math
 
 let types = {
@@ -11,7 +9,7 @@ let types = {
 	allpass:  (v0, v1, v2, k) => v0 - 2 * k * v1
 }
 
-module.exports = function svf (data, params) {
+export default function svf (data, params) {
 	if (!params.type) params.type = 'lowpass'
 	if (!params.Q) params.Q = .707
 	if (!params.fs) params.fs = 44100

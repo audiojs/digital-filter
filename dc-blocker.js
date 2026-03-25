@@ -4,9 +4,8 @@
  *
  * @module  digital-filter/dc-blocker
  */
-'use strict'
 
-module.exports = function dcBlocker (data, params) {
+export default function dcBlocker (data, params) {
 	let x1 = params.x1 != null ? params.x1 : 0
 	let y1 = params.y1 != null ? params.y1 : 0
 	let R = params.R

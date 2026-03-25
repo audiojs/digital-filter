@@ -3,9 +3,8 @@
  *
  * @module  digital-filter/filter
  */
-'use strict'
 
-module.exports = function filter(data, params) {
+export default function filter(data, params) {
 	let coefs = params.coefs
 	if (!Array.isArray(coefs)) coefs = [coefs]
 

@@ -1,8 +1,6 @@
-'use strict'
-
 let {PI, tan, cos, sin, sqrt} = Math
 
-module.exports = function riaa(fs) {
+export default function riaa(fs) {
 	if (!fs) fs = 44100
 
 	// RIAA playback (de-emphasis) equalization

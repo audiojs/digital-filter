@@ -1,36 +1,39 @@
-/**
- * @module  digital-filter
- */
-'use strict'
-
 // Core
-exports.biquad = require('./biquad')
-exports.filter = require('./filter')
-exports.freqz = require('./freqz')
-exports.transform = require('./transform')
+export * as biquad from './biquad.js'
+export { default as filter } from './filter.js'
+export { default as freqz, mag2db } from './freqz.js'
+export * as transform from './transform.js'
 
 // Simple filters
-exports.leakyIntegrator = require('./leaky-integrator')
-exports.movingAverage = require('./moving-average')
-exports.dcBlocker = require('./dc-blocker')
-exports.onePole = require('./one-pole')
-exports.comb = require('./comb')
-exports.allpass = require('./allpass')
+export { default as leakyIntegrator } from './leaky-integrator.js'
+export { default as movingAverage } from './moving-average.js'
+export { default as dcBlocker } from './dc-blocker.js'
+export { default as onePole } from './one-pole.js'
+export { default as comb } from './comb.js'
+export * as allpass from './allpass.js'
+export { emphasis, deemphasis } from './pre-emphasis.js'
+export { default as resonator } from './resonator.js'
+export { default as envelope } from './envelope.js'
+export { default as slewLimiter } from './slew-limiter.js'
 
 // Classic analog-prototype designs (return SOS)
-exports.butterworth = require('./butterworth')
-exports.chebyshev = require('./chebyshev')
-exports.bessel = require('./bessel')
-exports.elliptic = require('./elliptic')
+export { default as butterworth } from './butterworth.js'
+export { default as chebyshev } from './chebyshev.js'
+export { default as bessel } from './bessel.js'
+export { default as elliptic } from './elliptic.js'
 
 // Specialized
-exports.svf = require('./svf')
-exports.linkwitzRiley = require('./linkwitz-riley')
-exports.savitzkyGolay = require('./savitzky-golay')
+export { default as svf } from './svf.js'
+export { default as linkwitzRiley } from './linkwitz-riley.js'
+export { default as savitzkyGolay } from './savitzky-golay.js'
+export { default as filtfilt } from './filtfilt.js'
+
+// Analysis
+export { default as groupDelay } from './group-delay.js'
 
 // Weighting filters (return SOS)
-exports.aWeighting = require('./a-weighting')
-exports.cWeighting = require('./c-weighting')
-exports.kWeighting = require('./k-weighting')
-exports.itu468 = require('./itu468')
-exports.riaa = require('./riaa')
+export { default as aWeighting } from './a-weighting.js'
+export { default as cWeighting } from './c-weighting.js'
+export { default as kWeighting } from './k-weighting.js'
+export { default as itu468 } from './itu468.js'
+export { default as riaa } from './riaa.js'

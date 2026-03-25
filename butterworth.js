@@ -4,16 +4,15 @@
  *
  * @module  digital-filter/butterworth
  */
-'use strict'
 
 let {sin, floor, PI} = Math
-let transform = require('./transform')
+import { polesSos } from './transform.js'
 
-module.exports = function butterworth (order, fc, fs, type) {
+export default function butterworth (order, fc, fs, type) {
 	if (!type) type = 'lowpass'
 	if (!fs) fs = 44100
 
-	return transform.polesSos(butterworthPoles(order), fc, fs, type)
+	return polesSos(butterworthPoles(order), fc, fs, type)
 }
 
 // Butterworth prototype poles (normalized LP at 1 rad/s, unit circle)
@@ -27,4 +26,4 @@ function butterworthPoles (N) {
 	return poles
 }
 
-module.exports.poles = butterworthPoles
+export { butterworthPoles as poles }

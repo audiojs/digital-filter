@@ -5,7 +5,6 @@
  *
  * @module  digital-filter/transform
  */
-'use strict'
 
 let {tan, cos, sin, sqrt, PI, atan2, abs} = Math
 
@@ -19,7 +18,7 @@ let {tan, cos, sin, sqrt, PI, atan2, abs} = Math
  * @param {string} type - 'lowpass','highpass','bandpass','bandstop'
  * @returns {Array} [{b0,b1,b2,a1,a2}, ...]
  */
-exports.polesSos = function polesSos (poles, fc, fs, type) {
+export function polesSos (poles, fc, fs, type) {
 	if (!type) type = 'lowpass'
 	if (!fs) fs = 44100
 
@@ -45,7 +44,7 @@ exports.polesSos = function polesSos (poles, fc, fs, type) {
  * Convert prototype poles + zeros to digital SOS.
  * For filters with finite zeros (Chebyshev Type II, Elliptic).
  */
-exports.poleZerosSos = function poleZerosSos (poles, zeros, fc, fs, type) {
+export function poleZerosSos (poles, zeros, fc, fs, type) {
 	if (!type) type = 'lowpass'
 	if (!fs) fs = 44100
 
@@ -67,8 +66,7 @@ exports.poleZerosSos = function poleZerosSos (poles, zeros, fc, fs, type) {
 	throw Error('Unknown type: ' + type)
 }
 
-// Expose for weighting filters
-exports.prewarp = prewarp
+export { prewarp }
 
 // ────── LP / HP (proven formulas, matches existing code exactly) ──────
 

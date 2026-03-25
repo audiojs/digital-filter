@@ -1,6 +1,4 @@
-'use strict'
-
-module.exports = function savitzkyGolay(data, params) {
+export default function savitzkyGolay(data, params) {
 	let m = params.windowSize || 5
 	let p = params.degree || 2
 	let d = params.derivative || 0

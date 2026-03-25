@@ -1,8 +1,6 @@
-'use strict'
-
 let {PI, tan, cos, sin, sqrt} = Math
 
-module.exports = function cWeighting(fs) {
+export default function cWeighting(fs) {
 	if (!fs) fs = 44100
 
 	// IEC 61672 C-weighting analog prototype

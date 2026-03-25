@@ -4,9 +4,8 @@
  *
  * @module  digital-filter/bessel
  */
-'use strict'
 
-let transform = require('./transform')
+import { polesSos } from './transform.js'
 
 // Normalized Bessel poles for -3dB cutoff at w=1 rad/s
 // Each entry: [sigma, omega] where pole = sigma ± j*omega
@@ -23,12 +22,12 @@ let POLES = {
 	10: [[-0.86555260092, 2.29129220984], [-1.36069227838, 1.73350574267], [-1.66181024140, 1.22110217983], [-1.84219624443, 0.72726806897], [-1.92761969309, 0.24127112354]]
 }
 
-module.exports = function bessel (order, fc, fs, type) {
+export default function bessel (order, fc, fs, type) {
 	if (!type) type = 'lowpass'
 	if (!fs) fs = 44100
 
 	let poles = POLES[order]
 	if (!poles) throw Error('Bessel filter order must be 1-10')
 
-	return transform.polesSos(poles, fc, fs, type)
+	return polesSos(poles, fc, fs, type)
 }

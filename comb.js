@@ -3,9 +3,8 @@
  *
  * @module  digital-filter/comb
  */
-'use strict'
 
-module.exports = function comb (data, params) {
+export default function comb (data, params) {
 	let M = params.delay
 	let gain = params.gain == null ? .5 : params.gain
 	let type = params.type || 'feedforward'

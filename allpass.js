@@ -3,17 +3,16 @@
  *
  * @module  digital-filter/allpass
  */
-'use strict'
 
-let biquad = require('./biquad')
-let flt = require('./filter')
+import { allpass as biquadAllpass } from './biquad.js'
+import filter from './filter.js'
 
 let {sin, cos, PI} = Math
 
 /**
  * First-order allpass: H(z) = (a + z^-1) / (1 + a*z^-1)
  */
-exports.first = function first (data, params) {
+export function first (data, params) {
 	let a = params.a
 	let x1 = params.x1 != null ? params.x1 : 0
 	let y1 = params.y1 != null ? params.y1 : 0
@@ -35,14 +34,14 @@ exports.first = function first (data, params) {
 /**
  * Second-order allpass via biquad (RBJ)
  */
-exports.second = function second (data, params) {
+export function second (data, params) {
 	let fc = params.fc, Q = params.Q == null ? .707 : params.Q, fs = params.fs || 44100
 	if (!params.coefs || params._fc !== fc || params._Q !== Q) {
-		params.coefs = [biquad.allpass(fc, Q, fs)]
+		params.coefs = [biquadAllpass(fc, Q, fs)]
 		params.state = null
 		params._fc = fc
 		params._Q = Q
 	}
 
-	return flt(data, params)
+	return filter(data, params)
 }

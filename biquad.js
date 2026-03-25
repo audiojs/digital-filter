@@ -1,5 +1,3 @@
-'use strict'
-
 let {sin, cos, sqrt, pow, PI} = Math
 
 function norm (b0, b1, b2, a0, a1, a2) {
@@ -13,7 +11,7 @@ function intermediates (fc, Q, fs) {
 	return { sinw, cosw, alpha }
 }
 
-exports.lowpass = function (fc, Q, fs) {
+export function lowpass (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		(1 - cosw) / 2, 1 - cosw, (1 - cosw) / 2,
@@ -21,7 +19,7 @@ exports.lowpass = function (fc, Q, fs) {
 	)
 }
 
-exports.highpass = function (fc, Q, fs) {
+export function highpass (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		(1 + cosw) / 2, -(1 + cosw), (1 + cosw) / 2,
@@ -29,7 +27,7 @@ exports.highpass = function (fc, Q, fs) {
 	)
 }
 
-exports.bandpass = function (fc, Q, fs) {
+export function bandpass (fc, Q, fs) {
 	let { sinw, cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		sinw / 2, 0, -sinw / 2,
@@ -37,7 +35,7 @@ exports.bandpass = function (fc, Q, fs) {
 	)
 }
 
-exports.bandpass2 = function (fc, Q, fs) {
+export function bandpass2 (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		alpha, 0, -alpha,
@@ -45,7 +43,7 @@ exports.bandpass2 = function (fc, Q, fs) {
 	)
 }
 
-exports.notch = function (fc, Q, fs) {
+export function notch (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		1, -2 * cosw, 1,
@@ -53,7 +51,7 @@ exports.notch = function (fc, Q, fs) {
 	)
 }
 
-exports.allpass = function (fc, Q, fs) {
+export function allpass (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		1 - alpha, -2 * cosw, 1 + alpha,
@@ -61,7 +59,7 @@ exports.allpass = function (fc, Q, fs) {
 	)
 }
 
-exports.peaking = function (fc, Q, fs, dBgain) {
+export function peaking (fc, Q, fs, dBgain) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)
 	return norm(
@@ -70,7 +68,7 @@ exports.peaking = function (fc, Q, fs, dBgain) {
 	)
 }
 
-exports.lowshelf = function (fc, Q, fs, dBgain) {
+export function lowshelf (fc, Q, fs, dBgain) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)
 	let s = 2 * sqrt(A) * alpha
@@ -84,7 +82,7 @@ exports.lowshelf = function (fc, Q, fs, dBgain) {
 	)
 }
 
-exports.highshelf = function (fc, Q, fs, dBgain) {
+export function highshelf (fc, Q, fs, dBgain) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)
 	let s = 2 * sqrt(A) * alpha

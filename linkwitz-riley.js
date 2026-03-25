@@ -4,11 +4,9 @@
  *
  * @module  digital-filter/linkwitz-riley
  */
-'use strict'
+import butterworth from './butterworth.js'
 
-let butterworth = require('./butterworth')
-
-module.exports = function linkwitzRiley(order, fc, fs) {
+export default function linkwitzRiley(order, fc, fs) {
 	if (!fs) fs = 44100
 	if (order % 2) throw Error('Linkwitz-Riley order must be even')
 

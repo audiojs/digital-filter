@@ -1,8 +1,6 @@
-'use strict'
-
 let {PI, tan, cos, sin, sqrt} = Math
 
-module.exports = function aWeighting(fs) {
+export default function aWeighting(fs) {
 	if (!fs) fs = 44100
 
 	// IEC 61672 analog prototype frequencies (Hz)

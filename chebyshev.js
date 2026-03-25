@@ -4,21 +4,17 @@
  *
  * @module  digital-filter/chebyshev
  */
-'use strict'
 
 let {sin, cos, sqrt, pow, floor, sinh, cosh, asinh, PI} = Math
-let transform = require('./transform')
+import { polesSos } from './transform.js'
 
-module.exports = chebyshev
-module.exports.type2 = function () { throw Error('Chebyshev Type II not yet implemented') }
-
-function chebyshev (order, fc, fs, ripple, type) {
+export default function chebyshev (order, fc, fs, ripple, type) {
 	if (!fs) fs = 44100
 	if (!ripple) ripple = 1
 	if (!type) type = 'lowpass'
 
 	let poles = chebyshevPoles(order, ripple)
-	let sections = transform.polesSos(poles, fc, fs, type)
+	let sections = polesSos(poles, fc, fs, type)
 
 	// Even-order gain correction: scale peak to 0dB
 	if (order % 2 === 0) {
@@ -47,4 +43,6 @@ function chebyshevPoles (N, ripple) {
 	return poles
 }
 
-module.exports.poles = chebyshevPoles
+export function type2 () { throw Error('Chebyshev Type II not yet implemented') }
+
+export { chebyshevPoles as poles }

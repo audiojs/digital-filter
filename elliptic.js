@@ -4,19 +4,18 @@
  *
  * @module  digital-filter/elliptic
  */
-'use strict'
 
 let {sqrt, pow, sin, cos, abs, atan, PI, floor, max} = Math
-let transform = require('./transform')
+import { poleZerosSos } from './transform.js'
 
-module.exports = function elliptic (order, fc, fs, ripple, attenuation, type) {
+export default function elliptic (order, fc, fs, ripple, attenuation, type) {
 	if (!fs) fs = 44100
 	if (!ripple) ripple = 1
 	if (!attenuation) attenuation = 40
 	if (!type) type = 'lowpass'
 
 	let proto = ellipticPrototype(order, ripple, attenuation)
-	let sections = transform.poleZerosSos(proto.poles, proto.zeros, fc, fs, type)
+	let sections = poleZerosSos(proto.poles, proto.zeros, fc, fs, type)
 
 	// Normalize gain: compute actual DC and correct to target
 	// Odd order: DC = 0dB (max). Even order: DC = -Rp dB (min).

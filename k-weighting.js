@@ -1,8 +1,6 @@
-'use strict'
+import { highshelf, highpass } from './biquad.js'
 
-let biquad = require('./biquad')
-
-module.exports = function kWeighting(fs) {
+export default function kWeighting(fs) {
 	if (!fs) fs = 48000
 
 	// ITU-R BS.1770 K-weighting: two cascaded biquad stages
@@ -32,7 +30,7 @@ module.exports = function kWeighting(fs) {
 	// Stage 1: high shelf, +4dB above ~1500Hz
 	// Stage 2: 2nd-order highpass at ~38Hz (Q = 1/sqrt(2) for Butterworth)
 	return [
-		biquad.highshelf(1681, 0.7072, fs, 3.9997),
-		biquad.highpass(38, 0.7072, fs)
+		highshelf(1681, 0.7072, fs, 3.9997),
+		highpass(38, 0.7072, fs)
 	]
 }

@@ -1,8 +1,4 @@
-'use strict'
-
-module.exports = freqz
-
-function freqz (coefs, n, fs) {
+export default function freqz (coefs, n, fs) {
 	if (!n) n = 512
 	if (!fs) fs = 44100
 	if (!Array.isArray(coefs)) coefs = [coefs]
@@ -39,7 +35,7 @@ function freqz (coefs, n, fs) {
 	return { frequencies, magnitude, phase }
 }
 
-freqz.mag2db = function (mag) {
+export function mag2db (mag) {
 	if (typeof mag === 'number') return 20 * Math.log10(mag)
 	let db = new Float64Array(mag.length)
 	for (let i = 0; i < mag.length; i++) db[i] = 20 * Math.log10(mag[i])

@@ -1,34 +1,35 @@
 {
   "name": "digital-filter",
-  "version": "1.0.0",
-  "description": "Collection of digital filters",
-  "main": "index.js",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Collection of digital filters for audio & DSP",
+  "exports": "./index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node --test test.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scijs/digital-filter.git"
   },
   "keywords": [
-    "scijs",
     "dsp",
-    "digital filters",
-    "psychoacoustics",
-    "noise",
-    "equal-loudness-curve",
-    "ISO-226",
-    "ITU-R-468"
+    "digital-filter",
+    "biquad",
+    "iir",
+    "fir",
+    "butterworth",
+    "chebyshev",
+    "elliptic",
+    "bessel",
+    "audio",
+    "signal-processing",
+    "equalizer",
+    "filter-design"
   ],
   "author": "Dima Yv <dfcreative@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/scijs/digital-filter/issues"
   },
-  "homepage": "https://github.com/scijs/digital-filter#readme",
-  "devDependencies": {
-    "almost-equal": "^1.1.0",
-    "tape": "^4.6.3"
-  },
-  "dependencies": {}
+  "homepage": "https://github.com/scijs/digital-filter#readme"
 }
