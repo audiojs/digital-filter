@@ -504,6 +504,220 @@ test('filtfilt — zero-phase filtering', () => {
 	assert.ok(almost(data[128], 1, 0.01), 'DC passes through filtfilt')
 })
 
+// --- FIR design ---
+
+test('window.hann — correct shape', () => {
+	let w = dsp.window.hann(5)
+	assert.strictEqual(w.length, 5)
+	assert.ok(almost(w[0], 0, EPSILON), 'starts at 0')
+	assert.ok(almost(w[2], 1, EPSILON), 'peaks at center')
+	assert.ok(almost(w[4], 0, EPSILON), 'ends at 0')
+})
+
+test('window.kaiser — parameterized', () => {
+	let w = dsp.window.kaiser(11, 5)
+	assert.strictEqual(w.length, 11)
+	assert.ok(w[5] > w[0], 'center > edge')
+	assert.ok(almost(w[5], 1, EPSILON), 'center ≈ 1')
+})
+
+test('firwin — lowpass FIR', () => {
+	let h = dsp.firwin(51, 1000, 44100)
+	assert.strictEqual(h.length, 51)
+	// DC gain should be ~1
+	let sum = 0
+	for (let i = 0; i < h.length; i++) sum += h[i]
+	assert.ok(almost(sum, 1, 0.01), 'unity DC gain')
+	// Symmetric (linear phase)
+	assert.ok(almost(h[0], h[50], LOOSE), 'symmetric')
+})
+
+test('firwin — highpass FIR', () => {
+	let h = dsp.firwin(51, 5000, 44100, {type: 'highpass'})
+	// DC should be ~0
+	let sum = 0
+	for (let i = 0; i < h.length; i++) sum += h[i]
+	assert.ok(Math.abs(sum) < 0.05, 'near-zero DC gain for HP')
+})
+
+test('firwin — bandpass FIR', () => {
+	let h = dsp.firwin(101, [500, 2000], 44100, {type: 'bandpass'})
+	assert.strictEqual(h.length, 101)
+})
+
+test('kaiserord — estimates order and beta', () => {
+	let {numtaps, beta} = dsp.kaiserord(0.05, 60)
+	assert.ok(numtaps > 10, 'reasonable order')
+	assert.ok(numtaps % 2 === 1, 'odd taps')
+	assert.ok(beta > 0, 'positive beta')
+})
+
+test('hilbert — antisymmetric FIR', () => {
+	let h = dsp.hilbert(31)
+	assert.strictEqual(h.length, 31)
+	assert.ok(almost(h[15], 0, EPSILON), 'center tap = 0')
+	// Antisymmetric: h[n] = -h[N-1-n]
+	assert.ok(almost(h[14], -h[16], LOOSE), 'antisymmetric')
+})
+
+test('median — removes impulse noise', () => {
+	let data = new Float64Array([1, 1, 1, 100, 1, 1, 1])
+	dsp.median(data, {size: 3})
+	assert.ok(data[3] < 10, 'impulse removed')
+	assert.ok(almost(data[0], 1, EPSILON), 'constant preserved')
+})
+
+// --- Analysis & conversion ---
+
+test('sos2zpk — correct poles and zeros', () => {
+	let sos = [{b0: 1, b1: 0, b2: -1, a1: 0, a2: -0.81}]
+	let {zeros, poles} = dsp.sos2zpk(sos)
+	assert.ok(zeros.length === 2, '2 zeros')
+	assert.ok(poles.length === 2, '2 poles')
+})
+
+test('sos2tf — converts to polynomials', () => {
+	let sos = dsp.butterworth(2, 1000, 44100)
+	let {b, a} = dsp.sos2tf(sos)
+	assert.ok(b.length === 3, 'numerator degree 2')
+	assert.ok(a.length === 3, 'denominator degree 2')
+})
+
+test('isStable — detects stable filters', () => {
+	let sos = dsp.butterworth(4, 1000, 44100)
+	assert.ok(dsp.isStable(sos), 'Butterworth is stable')
+})
+
+test('isLinPhase — detects symmetric FIR', () => {
+	let h = dsp.firwin(31, 1000, 44100)
+	assert.ok(dsp.isLinPhase(h), 'firwin produces linear-phase FIR')
+})
+
+// --- Adaptive ---
+
+test('lms — converges to identify system', () => {
+	// Simple test: identity system (desired = input)
+	let input = new Float64Array(256)
+	for (let i = 0; i < 256; i++) input[i] = Math.sin(2 * Math.PI * 100 * i / 44100)
+	let desired = new Float64Array(input)
+	let params = {order: 4, mu: 0.1}
+	let output = dsp.lms(input, desired, params)
+	// After convergence, error should be small
+	let lastErr = Math.abs(params.error[255])
+	assert.ok(lastErr < 0.1, 'LMS error converges')
+})
+
+test('nlms — converges faster than LMS', () => {
+	let input = new Float64Array(256)
+	for (let i = 0; i < 256; i++) input[i] = Math.sin(2 * Math.PI * 100 * i / 44100)
+	let desired = new Float64Array(input)
+	let params = {order: 4, mu: 0.5}
+	let output = dsp.nlms(input, desired, params)
+	let lastErr = Math.abs(params.error[255])
+	assert.ok(lastErr < 0.1, 'NLMS error converges')
+})
+
+// --- Dynamic / nonlinear ---
+
+test('pinkNoise — produces output', () => {
+	let data = new Float64Array(256)
+	for (let i = 0; i < 256; i++) data[i] = Math.random() * 2 - 1
+	dsp.pinkNoise(data, {})
+	let hasOutput = data.some(x => Math.abs(x) > 0.01)
+	assert.ok(hasOutput, 'pink noise has output')
+})
+
+test('oneEuro — smooths noisy signal', () => {
+	let data = new Float64Array(100)
+	for (let i = 0; i < 100; i++) data[i] = 1 + (Math.random() - 0.5) * 0.1
+	dsp.oneEuro(data, {minCutoff: 1, beta: 0.01, fs: 100})
+	// After filtering, variance should be reduced
+	let mean = 0
+	for (let i = 50; i < 100; i++) mean += data[i]
+	mean /= 50
+	assert.ok(Math.abs(mean - 1) < 0.1, 'one-euro preserves mean')
+})
+
+test('decimate — reduces sample count', () => {
+	let data = new Float64Array(1000)
+	data.fill(1)
+	let result = dsp.decimate(data, 4)
+	assert.ok(result.length === 250, 'length / 4')
+})
+
+// --- Tier 1+2 new modules ---
+
+test('firls — least-squares FIR', () => {
+	let h = dsp.firls(31, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
+	assert.strictEqual(h.length, 31)
+	let sum = 0
+	for (let i = 0; i < h.length; i++) sum += h[i]
+	assert.ok(sum > 0.5, 'positive DC gain for lowpass')
+	assert.ok(almost(h[0], h[30], LOOSE), 'symmetric')
+})
+
+test('remez — equiripple FIR', () => {
+	let h = dsp.remez(31, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
+	assert.strictEqual(h.length, 31)
+	assert.ok(almost(h[0], h[30], LOOSE), 'symmetric')
+})
+
+test('tf2zpk — polynomial to roots', () => {
+	let {zeros, poles, gain} = dsp.tf2zpk([1, 0, -1], [1, 0, -0.81])
+	assert.strictEqual(zeros.length, 2, '2 zeros')
+	assert.strictEqual(poles.length, 2, '2 poles')
+	assert.ok(gain !== 0, 'nonzero gain')
+})
+
+test('zpk2sos — round-trip with sos2zpk', () => {
+	let sos = dsp.butterworth(4, 1000, 44100)
+	let zpk = dsp.sos2zpk(sos)
+	let sos2 = dsp.zpk2sos(zpk)
+	assert.strictEqual(sos2.length, sos.length, 'same section count')
+})
+
+test('impulseResponse — correct length', () => {
+	let sos = dsp.butterworth(2, 1000, 44100)
+	let ir = dsp.impulseResponse(sos, 128)
+	assert.strictEqual(ir.length, 128)
+	assert.ok(ir[0] !== 0, 'first sample non-zero')
+})
+
+test('stepResponse — converges to DC gain', () => {
+	let sos = dsp.butterworth(2, 1000, 44100)
+	let sr = dsp.stepResponse(sos, 512)
+	assert.ok(almost(sr[511], 1, 0.01), 'step response converges to 1')
+})
+
+test('chebyshev2 — flat passband', () => {
+	let sos = dsp.chebyshev2(4, 2000, 44100, 40)
+	let resp = dsp.freqz(sos, 8192, 44100)
+	let db = dsp.mag2db(resp.magnitude)
+	let idx500 = Math.round(500 / (44100/2) * 8192)
+	assert.ok(Math.abs(db[idx500]) < 1, 'flat passband at 500Hz')
+})
+
+test('iirdesign — auto-selects filter', () => {
+	let result = dsp.iirdesign(1000, 2000, 1, 40, 44100)
+	assert.ok(result.sos, 'returns SOS')
+	assert.ok(result.order > 0, 'positive order')
+	assert.ok(result.type, 'identifies type')
+})
+
+test('interpolate — increases sample count', () => {
+	let data = new Float64Array(100)
+	data.fill(1)
+	let result = dsp.interpolate(data, 4)
+	assert.strictEqual(result.length, 400, 'length * 4')
+})
+
+test('phaseDelay — returns frequencies and delay', () => {
+	let c = dsp.biquad.lowpass(1000, 0.707, 44100)
+	let resp = dsp.phaseDelay(c, 64, 44100)
+	assert.strictEqual(resp.frequencies.length, 64)
+	assert.strictEqual(resp.delay.length, 64)
+})
+
 // --- Integration: full chain test ---
 
 test('butterworth + filter + freqz end-to-end', () => {
