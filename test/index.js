@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
-import * as dsp from './index.js'
-import { type2 as chebyshevType2 } from './chebyshev.js'
+import * as dsp from '../index.js'
+import { type2 as chebyshevType2 } from '../chebyshev.js'
 
 let EPSILON = 1e-10
 let LOOSE = 1e-4

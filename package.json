@@ -5,7 +5,7 @@
   "description": "Collection of digital filters for audio & DSP",
   "exports": "./index.js",
   "scripts": {
-    "test": "node --test test.js"
+    "test": "node --test test/index.js"
   },
   "repository": {
     "type": "git",
