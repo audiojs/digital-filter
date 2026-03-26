@@ -4,7 +4,7 @@ Digital filter design and processing for JavaScript — from biquad to Butterwor
 
 > 82 modules · 164 tests · 1 dependency ([window-function](https://github.com/scijs/window-function)) · pure ESM
 >
-> [Concepts](docs/concepts.md) · [Choosing a filter](docs/choosing.md) · [IIR reference](docs/iir.md) · [FIR reference](docs/fir.md) · [Adaptive](docs/adaptive.md) · [Weighting](docs/weighting.md) · [Applications](docs/applications.md) · [Visual gallery](docs/readme.md)
+> **[Guide](docs/guide.md)** — learn, choose, apply · **[Reference](docs/reference.md)** — every filter, one page · **[Plots](docs/readme.md)** — visual gallery
 
 ```js
 import { butterworth, filter, freqz, mag2db } from 'digital-filter'
