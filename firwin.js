@@ -1,4 +1,4 @@
-import { rectangular, hann, hamming, blackman, kaiser, bartlett, blackmanHarris, flattop, tukey, gaussian, nuttall } from './window.js'
+import * as windows from './window.js'
 
 /**
  * Design FIR filter using the window method.
@@ -84,18 +84,6 @@ export default function firwin (numtaps, cutoff, fs, opts) {
 function getWindow (win, N) {
 	if (win instanceof Float64Array || Array.isArray(win)) return win
 	if (typeof win === 'function') return win(N)
-	switch (win) {
-		case 'rectangular': return rectangular(N)
-		case 'hann': return hann(N)
-		case 'hamming': return hamming(N)
-		case 'blackman': return blackman(N)
-		case 'kaiser': return kaiser(N)
-		case 'bartlett': return bartlett(N)
-		case 'blackmanHarris': return blackmanHarris(N)
-		case 'flattop': return flattop(N)
-		case 'tukey': return tukey(N)
-		case 'gaussian': return gaussian(N)
-		case 'nuttall': return nuttall(N)
-		default: return hamming(N)
-	}
+	if (typeof win === 'string' && windows[win]) return windows[win](N)
+	return windows.hamming(N)
 }

@@ -31,5 +31,8 @@
   "bugs": {
     "url": "https://github.com/scijs/digital-filter/issues"
   },
-  "homepage": "https://github.com/scijs/digital-filter#readme"
+  "homepage": "https://github.com/scijs/digital-filter#readme",
+  "dependencies": {
+    "window-function": "^3.0.0"
+  }
 }

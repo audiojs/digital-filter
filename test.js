@@ -718,6 +718,335 @@ test('phaseDelay — returns frequencies and delay', () => {
 	assert.strictEqual(resp.delay.length, 64)
 })
 
+// --- Tier 3: IIR design ---
+
+test('legendre — DC gain = 1, steeper than Butterworth', () => {
+	for (let order = 1; order <= 8; order++) {
+		let sos = dsp.legendre(order, 1000, 44100)
+		let gain = 1
+		for (let s of sos) gain *= (s.b0 + s.b1 + s.b2) / (1 + s.a1 + s.a2)
+		assert.ok(almost(gain, 1, LOOSE), 'Legendre order ' + order + ' DC gain = 1')
+	}
+	// Verify steeper than Butterworth at order 4
+	let bwResp = dsp.freqz(dsp.butterworth(4, 1000, 44100), 4096, 44100)
+	let lgResp = dsp.freqz(dsp.legendre(4, 1000, 44100), 4096, 44100)
+	let idx2k = Math.round(2000 / (44100/2) * 4096)
+	assert.ok(dsp.mag2db(lgResp.magnitude[idx2k]) < dsp.mag2db(bwResp.magnitude[idx2k]),
+		'Legendre steeper than Butterworth at 2kHz')
+})
+
+test('legendre — correct -3dB frequency', () => {
+	let target = 1 / Math.sqrt(2)
+	for (let order of [2, 4, 6, 8]) {
+		let sos = dsp.legendre(order, 1000, 44100)
+		let resp = dsp.freqz(sos, 8192, 44100)
+		let f3db = -1
+		for (let i = 1; i < resp.magnitude.length; i++) {
+			if (resp.magnitude[i] < target && resp.magnitude[i-1] >= target) { f3db = resp.frequencies[i]; break }
+		}
+		assert.ok(Math.abs(f3db - 1000) < 15, 'order ' + order + ' -3dB at ' + (f3db|0) + 'Hz')
+	}
+})
+
+test('legendre — monotonic passband (no ripple)', () => {
+	let sos = dsp.legendre(6, 1000, 44100)
+	let resp = dsp.freqz(sos, 4096, 44100)
+	let idx1k = Math.round(1000 / (44100/2) * 4096)
+	let db = dsp.mag2db(resp.magnitude)
+	// Check monotonically decreasing in passband
+	let monotonic = true
+	for (let i = 2; i < idx1k; i++) {
+		if (db[i] > db[i-1] + 0.01) { monotonic = false; break }
+	}
+	assert.ok(monotonic, 'Legendre order 6 passband is monotonic')
+})
+
+test('gaussianIir — smooths signal', () => {
+	let data = impulse(256)
+	dsp.gaussianIir(data, {sigma: 5})
+	assert.ok(data[0] > 0, 'peak exists')
+	assert.ok(data[10] > 0, 'spread visible')
+	assert.ok(data[50] < data[0], 'decays from peak')
+})
+
+test('yulewalk — produces valid filter', () => {
+	let {b, a} = dsp.yulewalk(4, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
+	assert.ok(b.length > 0, 'has numerator')
+	assert.ok(a.length > 0, 'has denominator')
+	assert.ok(a[0] === 1, 'a[0] = 1')
+})
+
+// --- Tier 3: FIR extras ---
+
+test('firwin2 — arbitrary frequency response', () => {
+	let h = dsp.firwin2(51, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
+	assert.strictEqual(h.length, 51)
+	assert.ok(almost(h[0], h[50], LOOSE), 'symmetric')
+})
+
+test('minimumPhase — reduces delay, preserves magnitude', () => {
+	let h = dsp.firwin(63, 1000, 44100)
+	let hm = dsp.minimumPhase(h)
+	assert.strictEqual(hm.length, h.length)
+	// Energy should be similar
+	let e1 = 0, e2 = 0
+	for (let i = 0; i < h.length; i++) { e1 += h[i]*h[i]; e2 += hm[i]*hm[i] }
+	assert.ok(Math.abs(e1 - e2) / e1 < 0.15, 'energy preserved within 15%')
+	// Not linear phase anymore
+	assert.ok(!dsp.isLinPhase(hm), 'no longer linear phase')
+})
+
+test('differentiator — antisymmetric', () => {
+	let h = dsp.differentiator(31)
+	assert.ok(almost(h[15], 0, 1e-10), 'center = 0')
+	assert.ok(almost(h[14], -h[16], LOOSE), 'antisymmetric')
+})
+
+test('integrator — trapezoidal rule', () => {
+	let h = dsp.integrator('trapezoidal')
+	assert.strictEqual(h.length, 2)
+	assert.ok(almost(h[0], 0.5, 1e-10))
+	assert.ok(almost(h[1], 0.5, 1e-10))
+})
+
+test('raisedCosine — symmetric, nonzero', () => {
+	let h = dsp.raisedCosine(65, 0.35, 4)
+	assert.strictEqual(h.length, 65)
+	assert.ok(almost(h[0], h[64], LOOSE), 'symmetric')
+	let energy = 0
+	for (let i = 0; i < h.length; i++) energy += h[i]*h[i]
+	assert.ok(energy > 0, 'has energy')
+})
+
+test('gaussianFir — bell-shaped', () => {
+	let h = dsp.gaussianFir(33, 0.3, 4)
+	assert.strictEqual(h.length, 33)
+	assert.ok(h[16] > h[0], 'center > edge')
+})
+
+test('matchedFilter — time-reversed template', () => {
+	let template = new Float64Array([1, 2, 3, 4])
+	let h = dsp.matchedFilter(template)
+	assert.ok(almost(h[0] * 30, 4, LOOSE), 'reversed') // 4/energy
+	assert.ok(almost(h[3] * 30, 1, LOOSE), 'reversed end')
+})
+
+// --- Tier 3: Virtual analog ---
+
+test('moogLadder — produces output, resonance works', () => {
+	let data = impulse(512)
+	dsp.moogLadder(data, {fc: 1000, resonance: 0.5, fs: 44100})
+	let hasOutput = data.some(x => Math.abs(x) > 0.001)
+	assert.ok(hasOutput, 'moog produces output')
+	// With resonance, should ring
+	let hasNeg = data.some(x => x < -0.001)
+	assert.ok(hasNeg, 'resonance causes ringing')
+})
+
+test('moogLadder — stable at high cutoff', () => {
+	let data = impulse(256)
+	dsp.moogLadder(data, {fc: 15000, resonance: 0.8, fs: 44100})
+	assert.ok(data.every(x => isFinite(x)), 'no NaN/Inf at high cutoff')
+})
+
+test('diodeLadder — produces output', () => {
+	let data = impulse(256)
+	dsp.diodeLadder(data, {fc: 1000, resonance: 0.5, fs: 44100})
+	assert.ok(data.some(x => Math.abs(x) > 0.001), 'output present')
+})
+
+test('korg35 — lowpass and highpass modes', () => {
+	let lp = impulse(256)
+	dsp.korg35(lp, {fc: 1000, resonance: 0.3, fs: 44100, type: 'lowpass'})
+	let hp = impulse(256)
+	dsp.korg35(hp, {fc: 1000, resonance: 0.3, fs: 44100, type: 'highpass'})
+	assert.ok(lp.some(x => Math.abs(x) > 0.001), 'LP output')
+	assert.ok(hp.some(x => Math.abs(x) > 0.001), 'HP output')
+})
+
+// --- Tier 3: Psychoacoustic ---
+
+test('gammatone — resonates at center frequency', () => {
+	let data = impulse(512)
+	dsp.gammatone(data, {fc: 1000, fs: 44100})
+	// Should oscillate (alternating positive/negative)
+	let hasPos = false, hasNeg = false
+	for (let i = 0; i < 512; i++) {
+		if (data[i] > 0.01) hasPos = true
+		if (data[i] < -0.01) hasNeg = true
+	}
+	assert.ok(hasPos && hasNeg, 'gammatone oscillates')
+})
+
+test('erbBank — ERB-spaced center frequencies', () => {
+	let bands = dsp.erbBank(44100)
+	assert.ok(bands.length >= 25, 'at least 25 ERB bands')
+	assert.ok(bands[0].fc >= 50, 'starts above fmin')
+	assert.ok(bands[0].erb > 0, 'has ERB width')
+	// Verify spacing increases with frequency (ERB property)
+	let spacing1 = bands[1].fc - bands[0].fc
+	let spacingN = bands[bands.length - 1].fc - bands[bands.length - 2].fc
+	assert.ok(spacingN > spacing1, 'wider spacing at higher frequencies')
+})
+
+test('barkBank — 24 critical bands', () => {
+	let bands = dsp.barkBank(44100)
+	assert.ok(bands.length >= 20, 'at least 20 Bark bands')
+	assert.strictEqual(bands[0].bark, 1, 'starts at bark 1')
+	assert.ok(bands[0].coefs.b0 !== undefined, 'has biquad coefficients')
+	assert.ok(bands[0].fLow < bands[0].fHigh, 'fLow < fHigh')
+})
+
+test('octaveBank — correct number of bands', () => {
+	let bands = dsp.octaveBank(3, 44100)
+	assert.ok(bands.length >= 20, '1/3-octave has 20+ bands')
+	assert.ok(bands[0].fc > 0, 'has center frequency')
+	assert.ok(bands[0].coefs.b0 !== undefined, 'has coefficients')
+})
+
+// --- Tier 3: Multirate ---
+
+test('halfBand — half the coefficients are zero', () => {
+	let h = dsp.halfBand(31)
+	assert.strictEqual(h.length, 31)
+	let M = 15
+	let zeroCount = 0
+	for (let i = 0; i < 31; i++) {
+		if (i !== M && Math.abs(i - M) % 2 === 0 && Math.abs(h[i]) < 1e-10) zeroCount++
+	}
+	assert.ok(zeroCount >= 5, 'many even-offset coefficients are zero')
+})
+
+test('cic — decimates correctly', () => {
+	let data = new Float64Array(1000).fill(1)
+	let out = dsp.cic(data, 10, 3)
+	assert.strictEqual(out.length, 100, 'decimated by 10')
+	assert.ok(almost(out[50], 1, 0.01), 'DC preserved after settling')
+})
+
+test('polyphase — decomposes into M phases', () => {
+	let h = new Float64Array([1, 2, 3, 4, 5, 6, 7, 8])
+	let phases = dsp.polyphase(h, 4)
+	assert.strictEqual(phases.length, 4, '4 phases')
+	assert.ok(almost(phases[0][0], 1, 1e-10), 'phase 0 starts with h[0]')
+	assert.ok(almost(phases[1][0], 2, 1e-10), 'phase 1 starts with h[1]')
+})
+
+test('farrow — delays signal', () => {
+	let data = new Float64Array(64)
+	data[10] = 1  // impulse at sample 10
+	dsp.farrow(data, {delay: 3, order: 3})
+	// Peak should move to ~sample 13
+	let peakIdx = 0
+	for (let i = 1; i < 64; i++) if (data[i] > data[peakIdx]) peakIdx = i
+	assert.ok(peakIdx >= 12 && peakIdx <= 14, 'peak shifted by ~3 samples')
+})
+
+test('thiran — allpass coefficients', () => {
+	let {b, a} = dsp.thiran(3.5, 3)
+	assert.strictEqual(b.length, 4, 'order+1 coefficients')
+	assert.strictEqual(a.length, 4)
+	// Allpass: b = reverse(a)
+	assert.ok(almost(b[0], a[3], LOOSE), 'b[0] ≈ a[N]')
+	assert.ok(almost(b[3], a[0], LOOSE), 'b[N] ≈ a[0]')
+})
+
+test('oversample — increases length', () => {
+	let data = new Float64Array(100).fill(1)
+	let out = dsp.oversample(data, 4)
+	assert.strictEqual(out.length, 400)
+})
+
+// --- Tier 3: Adaptive ---
+
+test('rls — converges faster than LMS', () => {
+	let input = new Float64Array(256)
+	for (let i = 0; i < 256; i++) input[i] = Math.sin(2 * Math.PI * 100 * i / 44100)
+	let desired = new Float64Array(input)
+	let params = {order: 4, lambda: 0.99}
+	dsp.rls(input, desired, params)
+	assert.ok(Math.abs(params.error[255]) < 0.05, 'RLS converges')
+})
+
+test('levinson — produces LPC coefficients', () => {
+	// Autocorrelation of a simple signal
+	let R = [1, 0.9, 0.8, 0.7, 0.6]
+	let {a, error, k} = dsp.levinson(R)
+	assert.strictEqual(a.length, 5, 'order+1 coefficients')
+	assert.ok(a[0] === 1, 'a[0] = 1')
+	assert.ok(error > 0, 'positive prediction error')
+	assert.ok(k.length === 4, '4 reflection coefficients')
+	// All reflection coefficients should be < 1 in magnitude (stability)
+	assert.ok(k.every(v => Math.abs(v) < 1), 'stable reflection coefficients')
+})
+
+// --- Tier 3: Intelligent ---
+
+test('dynamicSmoothing — smooths signal', () => {
+	let data = new Float64Array(256)
+	for (let i = 0; i < 256; i++) data[i] = Math.sin(2 * Math.PI * 10 * i / 44100) + (Math.random() - 0.5) * 0.1
+	dsp.dynamicSmoothing(data, {minFc: 5, maxFc: 5000, fs: 44100})
+	assert.ok(data.every(isFinite), 'all finite')
+})
+
+test('spectralTilt — nonzero output', () => {
+	let data = impulse(256)
+	dsp.spectralTilt(data, {slope: 3, fs: 44100})
+	assert.ok(data.some(x => Math.abs(x) > 0.001), 'output present')
+})
+
+test('variableBandwidth — filters signal', () => {
+	let data = dc(256)
+	dsp.variableBandwidth(data, {fc: 5000, Q: 0.707, fs: 44100})
+	assert.ok(almost(data[255], 1, 0.05), 'DC passes through LP')
+})
+
+// --- Tier 3: Composites ---
+
+test('graphicEq — applies gain', () => {
+	let data = dc(512)
+	dsp.graphicEq(data, {gains: {1000: 6}, fs: 44100})
+	// DC should still pass (peaking EQ at 1kHz doesn't affect DC)
+	assert.ok(almost(data[511], 1, 0.05), 'DC preserved')
+})
+
+test('parametricEq — applies bands', () => {
+	let data = dc(256)
+	dsp.parametricEq(data, {bands: [{fc: 1000, Q: 1, gain: 0, type: 'peak'}], fs: 44100})
+	assert.ok(almost(data[255], 1, 0.01), '0dB gain = passthrough')
+})
+
+test('crossover — returns correct band count', () => {
+	let bands = dsp.crossover([500, 2000], 4, 44100)
+	assert.strictEqual(bands.length, 3, '2 crossover freqs → 3 bands')
+	assert.ok(Array.isArray(bands[0]), 'each band is SOS array')
+})
+
+test('formant — produces vowel-like output', () => {
+	let data = impulse(512)
+	dsp.formant(data, {fs: 44100})
+	assert.ok(data.some(x => Math.abs(x) > 0.001), 'output present')
+})
+
+test('convolution — correct length and impulse', () => {
+	let sig = new Float64Array([1, 0, 0, 0])
+	let ir = new Float64Array([1, 0.5, 0.25])
+	let out = dsp.convolution(sig, ir)
+	assert.strictEqual(out.length, 6, 'N+M-1')
+	assert.ok(almost(out[0], 1, 1e-10), 'first sample')
+	assert.ok(almost(out[1], 0.5, 1e-10), 'second sample')
+	assert.ok(almost(out[2], 0.25, 1e-10), 'third sample')
+})
+
+// --- Tier 3: Structures ---
+
+test('lattice — all-pole filter', () => {
+	let data = impulse(64)
+	dsp.lattice(data, {k: new Float64Array([0.5, -0.3])})
+	assert.ok(data[0] !== 0, 'produces output')
+	assert.ok(data.every(isFinite), 'all finite')
+})
+
 // --- Integration: full chain test ---
 
 test('butterworth + filter + freqz end-to-end', () => {

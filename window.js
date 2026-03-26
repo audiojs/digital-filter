@@ -1,123 +1,48 @@
-let {cos, sin, sqrt, exp, PI, pow, abs, log} = Math
+/**
+ * Re-export window functions from window-function package,
+ * adapted to batch API: fn(N, ...params) → Float64Array.
+ *
+ * @module digital-filter/window
+ */
+import * as wf from 'window-function'
 
-// Rectangular (trivial, included for completeness)
-export function rectangular (N) {
-	let w = new Float64Array(N)
-	w.fill(1)
-	return w
-}
+let { generate } = wf
 
-// Hann (raised cosine)
-export function hann (N) {
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) w[i] = 0.5 * (1 - cos(2 * PI * i / (N - 1)))
-	return w
-}
+// Wrap per-sample fn(i, N, ...params) into batch fn(N, ...params) → Float64Array
+function batch (fn) { return (N, ...params) => generate(fn, N, ...params) }
 
-// Hamming
-export function hamming (N) {
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) w[i] = 0.54 - 0.46 * cos(2 * PI * i / (N - 1))
-	return w
-}
-
-// Blackman
-export function blackman (N) {
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) {
-		w[i] = 0.42 - 0.5 * cos(2 * PI * i / (N - 1)) + 0.08 * cos(4 * PI * i / (N - 1))
-	}
-	return w
-}
-
-// Kaiser (parameterized by beta)
-// Uses modified Bessel function I0
-export function kaiser (N, beta) {
-	if (beta == null) beta = 8.6
-	let w = new Float64Array(N)
-	let denom = bessel_i0(beta)
-	for (let i = 0; i < N; i++) {
-		let x = 2 * i / (N - 1) - 1  // -1 to 1
-		w[i] = bessel_i0(beta * sqrt(1 - x * x)) / denom
-	}
-	return w
-}
-
-// Blackman-Harris (4-term)
-export function blackmanHarris (N) {
-	let a0 = 0.35875, a1 = 0.48829, a2 = 0.14128, a3 = 0.01168
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) {
-		w[i] = a0 - a1 * cos(2*PI*i/(N-1)) + a2 * cos(4*PI*i/(N-1)) - a3 * cos(6*PI*i/(N-1))
-	}
-	return w
-}
-
-// Flat-top (maximum amplitude accuracy)
-export function flattop (N) {
-	let a0 = 0.21557895, a1 = 0.41663158, a2 = 0.277263158, a3 = 0.083578947, a4 = 0.006947368
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) {
-		w[i] = a0 - a1*cos(2*PI*i/(N-1)) + a2*cos(4*PI*i/(N-1)) - a3*cos(6*PI*i/(N-1)) + a4*cos(8*PI*i/(N-1))
-	}
-	return w
-}
-
-// Tukey (tapered cosine, alpha=0→rectangular, alpha=1→hann)
-export function tukey (N, alpha) {
-	if (alpha == null) alpha = 0.5
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) {
-		if (i < alpha * (N-1) / 2) {
-			w[i] = 0.5 * (1 - cos(2 * PI * i / (alpha * (N-1))))
-		} else if (i > (N-1) * (1 - alpha/2)) {
-			w[i] = 0.5 * (1 - cos(2 * PI * (N-1-i) / (alpha * (N-1))))
-		} else {
-			w[i] = 1
-		}
-	}
-	return w
-}
-
-// Gaussian
-export function gaussian (N, sigma) {
-	if (sigma == null) sigma = 0.4
-	let w = new Float64Array(N)
-	let half = (N - 1) / 2
-	for (let i = 0; i < N; i++) {
-		let x = (i - half) / (sigma * half)
-		w[i] = exp(-0.5 * x * x)
-	}
-	return w
-}
-
-// Bartlett (triangular with zeros at endpoints)
-export function bartlett (N) {
-	let w = new Float64Array(N)
-	let half = (N - 1) / 2
-	for (let i = 0; i < N; i++) {
-		w[i] = 1 - abs((i - half) / half)
-	}
-	return w
-}
-
-// Nuttall (4-term, continuous first derivative)
-export function nuttall (N) {
-	let a0 = 0.355768, a1 = 0.487396, a2 = 0.144232, a3 = 0.012604
-	let w = new Float64Array(N)
-	for (let i = 0; i < N; i++) {
-		w[i] = a0 - a1*cos(2*PI*i/(N-1)) + a2*cos(4*PI*i/(N-1)) - a3*cos(6*PI*i/(N-1))
-	}
-	return w
-}
-
-// Modified Bessel function I0 (for Kaiser window)
-function bessel_i0 (x) {
-	let sum = 1, term = 1
-	for (let k = 1; k <= 25; k++) {
-		term *= (x / (2 * k)) * (x / (2 * k))
-		sum += term
-		if (term < 1e-15 * sum) break
-	}
-	return sum
-}
+export let rectangular = batch(wf.rectangular)
+export let triangular = batch(wf.triangular)
+export let bartlett = batch(wf.bartlett)
+export let welch = batch(wf.welch)
+export let connes = batch(wf.connes)
+export let hann = batch(wf.hann)
+export let hamming = batch(wf.hamming)
+export let cosine = batch(wf.cosine)
+export let blackman = batch(wf.blackman)
+export let exactBlackman = batch(wf.exactBlackman)
+export let nuttall = batch(wf.nuttall)
+export let blackmanNuttall = batch(wf.blackmanNuttall)
+export let blackmanHarris = batch(wf.blackmanHarris)
+export let flatTop = batch(wf.flatTop)
+export let flattop = flatTop
+export let bartlettHann = batch(wf.bartlettHann)
+export let lanczos = batch(wf.lanczos)
+export let parzen = batch(wf.parzen)
+export let bohman = batch(wf.bohman)
+export let powerOfSine = batch(wf.powerOfSine)
+export let kaiser = batch(wf.kaiser)
+export let gaussian = batch(wf.gaussian)
+export let generalizedNormal = batch(wf.generalizedNormal)
+export let tukey = batch(wf.tukey)
+export let planckTaper = batch(wf.planckTaper)
+export let exponential = batch(wf.exponential)
+export let hannPoisson = batch(wf.hannPoisson)
+export let cauchy = batch(wf.cauchy)
+export let rifeVincent = batch(wf.rifeVincent)
+export let confinedGaussian = batch(wf.confinedGaussian)
+export let kaiserBesselDerived = batch(wf.kaiserBesselDerived)
+export let dolphChebyshev = batch(wf.dolphChebyshev)
+export let taylor = batch(wf.taylor)
+export let dpss = batch(wf.dpss)
+export let ultraspherical = batch(wf.ultraspherical)
