@@ -2,12 +2,11 @@ import * as windows from './window.js'
 
 /**
  * Design FIR filter using the window method.
+ *
  * @param {number} numtaps - Filter length (must be odd for type I)
- * @param {number|Array} cutoff - Cutoff frequency(ies) in Hz. Scalar for LP/HP, [low,high] for BP/BS.
- * @param {number} fs - Sample rate (default 44100)
- * @param {object} opts - Options:
- *   opts.type: 'lowpass'(default), 'highpass', 'bandpass', 'bandstop'
- *   opts.window: window function or name string (default 'hamming'). Can be Float64Array or function(N)->Float64Array.
+ * @param {number|Array<number>} cutoff - Cutoff frequency(ies) in Hz. Scalar for LP/HP, [low,high] for BP/BS.
+ * @param {number} [fs=44100] - Sample rate in Hz
+ * @param {{type?: 'lowpass'|'highpass'|'bandpass'|'bandstop', window?: string|Float64Array|function(number):Float64Array}} [opts] - Options
  * @returns {Float64Array} FIR filter coefficients
  */
 export default function firwin (numtaps, cutoff, fs, opts) {

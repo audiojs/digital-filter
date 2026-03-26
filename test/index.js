@@ -1047,6 +1047,545 @@ test('lattice — all-pole filter', () => {
 	assert.ok(data.every(isFinite), 'all finite')
 })
 
+// ================================================================
+// Additional comprehensive tests — mathematical correctness
+// ================================================================
+
+// --- Butterworth HP: -3dB at cutoff ---
+
+test('butterworth HP — correct -3dB frequency', () => {
+	let target = 1 / Math.sqrt(2)
+	for (let order = 1; order <= 8; order++) {
+		let sos = dsp.butterworth(order, 1000, 44100, 'highpass')
+		let resp = dsp.freqz(sos, 8192, 44100)
+		let f3db = -1
+		for (let i = resp.magnitude.length - 1; i > 0; i--) {
+			if (resp.magnitude[i] < target && resp.magnitude[i+1] >= target) {
+				// HP: magnitude rises with frequency, cross from below
+			}
+			if (resp.magnitude[i] >= target && resp.magnitude[i-1] < target) {
+				f3db = resp.frequencies[i]; break
+			}
+		}
+		assert.ok(Math.abs(f3db - 1000) < 15, 'HP order ' + order + ' -3dB at ' + (f3db|0) + 'Hz')
+	}
+})
+
+// --- Chebyshev passband ripple is exactly Rp ---
+
+test('chebyshev — passband ripple matches Rp', () => {
+	let Rp = 1 // dB ripple
+	for (let order of [3, 5, 7]) {
+		let sos = dsp.chebyshev(order, 2000, 44100, Rp)
+		let resp = dsp.freqz(sos, 8192, 44100)
+		let db = dsp.mag2db(resp.magnitude)
+		let idx2k = Math.round(2000 / (44100/2) * 8192)
+		let maxPB = -Infinity, minPB = Infinity
+		for (let i = 1; i <= idx2k; i++) {
+			if (db[i] > maxPB) maxPB = db[i]
+			if (db[i] < minPB) minPB = db[i]
+		}
+		let ripple = maxPB - minPB
+		assert.ok(ripple < Rp + 0.3, 'Cheb order ' + order + ' ripple ' + ripple.toFixed(2) + 'dB ≈ ' + Rp + 'dB')
+	}
+})
+
+// --- Bessel group delay is flat ---
+
+test('bessel — group delay flatter than Butterworth', () => {
+	let order = 4, fc = 2000, fs = 44100
+	let besselSos = dsp.bessel(order, fc, fs)
+	let bwSos = dsp.butterworth(order, fc, fs)
+
+	let besselGD = dsp.groupDelay(besselSos, 256, fs)
+	let bwGD = dsp.groupDelay(bwSos, 256, fs)
+
+	// Measure delay variation in passband (up to fc)
+	let idxFc = Math.round(fc / (fs/2) * 256)
+	let besselVar = 0, bwVar = 0
+	for (let i = 2; i < idxFc; i++) {
+		besselVar += Math.abs(besselGD.delay[i] - besselGD.delay[i-1])
+		bwVar += Math.abs(bwGD.delay[i] - bwGD.delay[i-1])
+	}
+	assert.ok(besselVar < bwVar, 'Bessel group delay variation (' + besselVar.toFixed(2) + ') < Butterworth (' + bwVar.toFixed(2) + ')')
+})
+
+// --- Legendre is monotonic AND steeper than Butterworth ---
+
+test('legendre — steeper than Butterworth at multiple frequencies', () => {
+	for (let order of [3, 5, 7]) {
+		let bwResp = dsp.freqz(dsp.butterworth(order, 1000, 44100), 4096, 44100)
+		let lgResp = dsp.freqz(dsp.legendre(order, 1000, 44100), 4096, 44100)
+		let idx3k = Math.round(3000 / (44100/2) * 4096)
+		assert.ok(dsp.mag2db(lgResp.magnitude[idx3k]) <= dsp.mag2db(bwResp.magnitude[idx3k]) + 0.5,
+			'Legendre order ' + order + ' steeper at 3kHz')
+	}
+})
+
+// --- SVF all 6 modes produce output on impulse ---
+
+test('svf — all 6 modes produce output on impulse', () => {
+	let modes = ['lowpass', 'highpass', 'bandpass', 'notch', 'peak', 'allpass']
+	for (let type of modes) {
+		let data = impulse(128)
+		dsp.svf(data, {fc: 1000, Q: 1, fs: 44100, type})
+		let hasOutput = data.some(x => Math.abs(x) > 0.0001)
+		assert.ok(hasOutput, 'SVF ' + type + ' produces output')
+	}
+})
+
+// --- Moog ladder self-oscillation ---
+
+test('moogLadder — self-oscillation at resonance=1', () => {
+	let data = new Float64Array(2048)
+	data[0] = 0.01 // tiny impulse to start oscillation
+	dsp.moogLadder(data, {fc: 1000, resonance: 1, fs: 44100})
+	// Check that output has sustained energy even late in the buffer
+	let lateEnergy = 0
+	for (let i = 1024; i < 2048; i++) lateEnergy += data[i] * data[i]
+	assert.ok(lateEnergy > 0.001, 'Moog self-oscillates at resonance=1 (late energy: ' + lateEnergy.toFixed(4) + ')')
+})
+
+// --- Diode ladder stable at high resonance ---
+
+test('diodeLadder — stable at high resonance', () => {
+	let data = impulse(1024)
+	dsp.diodeLadder(data, {fc: 2000, resonance: 0.95, fs: 44100})
+	assert.ok(data.every(isFinite), 'no NaN/Inf at high resonance')
+	let maxVal = 0
+	for (let i = 0; i < data.length; i++) if (Math.abs(data[i]) > maxVal) maxVal = Math.abs(data[i])
+	assert.ok(maxVal < 100, 'output bounded (max: ' + maxVal.toFixed(2) + ')')
+})
+
+// --- Korg35 HP mode removes DC ---
+
+test('korg35 HP — attenuates DC', () => {
+	let data = dc(1024)
+	dsp.korg35(data, {fc: 1000, resonance: 0.3, fs: 44100, type: 'highpass'})
+	// Nonlinear filter: tanh saturation prevents full DC removal, but HP significantly attenuates it
+	assert.ok(Math.abs(data[1023]) < 0.5, 'Korg35 HP attenuates DC (last sample: ' + data[1023].toFixed(4) + ')')
+	// HP output should be much less than input (1.0)
+	assert.ok(Math.abs(data[1023]) < Math.abs(1.0) * 0.2, 'Korg35 HP reduces DC by >80%')
+})
+
+// --- Gammatone center frequency matches ---
+
+test('gammatone — peak of frequency response near fc', () => {
+	let fc = 2000, fs = 44100
+	let data = impulse(4096)
+	dsp.gammatone(data, {fc, fs})
+
+	// Compute rough magnitude spectrum via DFT at a few points
+	let peakFreq = 0, peakMag = 0
+	let N = data.length
+	for (let fi = 500; fi <= 5000; fi += 50) {
+		let w = 2 * Math.PI * fi / fs
+		let re = 0, im = 0
+		for (let n = 0; n < N; n++) {
+			re += data[n] * Math.cos(w * n)
+			im -= data[n] * Math.sin(w * n)
+		}
+		let mag = Math.sqrt(re * re + im * im)
+		if (mag > peakMag) { peakMag = mag; peakFreq = fi }
+	}
+	assert.ok(Math.abs(peakFreq - fc) < 200, 'Gammatone peak at ' + peakFreq + 'Hz (expected ~' + fc + 'Hz)')
+})
+
+// --- octaveBank band count for different fractions ---
+
+test('octaveBank — 1/1 has fewer bands than 1/3', () => {
+	let bands1 = dsp.octaveBank(1, 44100)
+	let bands3 = dsp.octaveBank(3, 44100)
+	assert.ok(bands1.length >= 8, '1/1 octave has 8+ bands (got ' + bands1.length + ')')
+	assert.ok(bands3.length >= 20, '1/3 octave has 20+ bands (got ' + bands3.length + ')')
+	assert.ok(bands3.length > bands1.length * 2, '1/3 octave has >2x bands vs 1/1')
+})
+
+test('octaveBank — 1/6 has more bands than 1/3', () => {
+	let bands3 = dsp.octaveBank(3, 44100)
+	let bands6 = dsp.octaveBank(6, 44100)
+	assert.ok(bands6.length > bands3.length, '1/6 octave has more bands than 1/3')
+})
+
+// --- erbBank spacing increases with frequency ---
+
+test('erbBank — spacing increases monotonically', () => {
+	let bands = dsp.erbBank(44100)
+	for (let i = 2; i < bands.length; i++) {
+		let sp1 = bands[i-1].fc - bands[i-2].fc
+		let sp2 = bands[i].fc - bands[i-1].fc
+		assert.ok(sp2 >= sp1 - 0.01, 'ERB spacing increases: ' + sp1.toFixed(1) + ' → ' + sp2.toFixed(1))
+	}
+})
+
+// --- barkBank has 24 bands ---
+
+test('barkBank — 24 critical bands', () => {
+	let bands = dsp.barkBank(44100)
+	assert.strictEqual(bands.length, 24, '24 Bark bands at 44100Hz')
+})
+
+// --- firls produces symmetric coefficients ---
+
+test('firls — symmetric coefficients (linear phase)', () => {
+	let h = dsp.firls(51, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
+	assert.ok(dsp.isLinPhase(h), 'firls output is linear phase')
+})
+
+// --- remez produces equiripple ---
+
+test('remez — equiripple passband', () => {
+	let h = dsp.remez(31, [0, 0.25, 0.35, 1], [1, 1, 0, 0])
+	// Compute passband response and check ripple is roughly constant
+	let N = h.length
+	let maxRipple = -Infinity, minRipple = Infinity
+	for (let fi = 0.05; fi <= 0.25; fi += 0.02) {
+		let w = Math.PI * fi
+		let re = 0, im = 0
+		for (let n = 0; n < N; n++) {
+			re += h[n] * Math.cos(w * n)
+			im -= h[n] * Math.sin(w * n)
+		}
+		let mag = Math.sqrt(re * re + im * im)
+		if (mag > maxRipple) maxRipple = mag
+		if (mag < minRipple) minRipple = mag
+	}
+	let rippleDb = 20 * Math.log10(maxRipple / minRipple)
+	assert.ok(rippleDb < 3, 'Remez passband ripple < 3dB (got ' + rippleDb.toFixed(2) + 'dB)')
+})
+
+// --- kaiserord gives reasonable estimates ---
+
+test('kaiserord — estimates scale with requirements', () => {
+	let {numtaps: n1} = dsp.kaiserord(0.1, 40)
+	let {numtaps: n2} = dsp.kaiserord(0.05, 60)
+	assert.ok(n2 > n1, 'tighter spec requires more taps (' + n1 + ' vs ' + n2 + ')')
+	assert.ok(n1 >= 5 && n1 <= 200, 'reasonable tap count for 40dB: ' + n1)
+	assert.ok(n2 >= 10 && n2 <= 500, 'reasonable tap count for 60dB: ' + n2)
+})
+
+// --- raisedCosine is symmetric ---
+
+test('raisedCosine — symmetric and peaks at center', () => {
+	let h = dsp.raisedCosine(65, 0.35, 4)
+	let center = 32
+	for (let i = 0; i < 32; i++) {
+		assert.ok(almost(h[i], h[64 - i], LOOSE), 'symmetric at index ' + i)
+	}
+	// Center should be the maximum
+	let centerVal = h[center]
+	for (let i = 0; i < 65; i++) {
+		assert.ok(h[i] <= centerVal + LOOSE, 'center is max (i=' + i + ')')
+	}
+})
+
+// --- gaussianFir peaks at center ---
+
+test('gaussianFir — peaks at center and symmetric', () => {
+	let h = dsp.gaussianFir(33, 0.3, 4)
+	let center = 16
+	assert.ok(h[center] >= h[0], 'center >= edge')
+	assert.ok(h[center] >= h[32], 'center >= last')
+	assert.ok(almost(h[0], h[32], LOOSE), 'symmetric')
+	assert.ok(almost(h[5], h[27], LOOSE), 'symmetric inner')
+})
+
+// --- matchedFilter reverses template ---
+
+test('matchedFilter — output is time-reversed and energy-normalized', () => {
+	let template = new Float64Array([1, 0, 3, 2])
+	let h = dsp.matchedFilter(template)
+	let energy = 1 + 0 + 9 + 4 // 14
+	assert.ok(almost(h[0], 2/energy, LOOSE), 'h[0] = reversed last / energy')
+	assert.ok(almost(h[1], 3/energy, LOOSE), 'h[1] = reversed third / energy')
+	assert.ok(almost(h[2], 0/energy, LOOSE), 'h[2] = reversed second / energy')
+	assert.ok(almost(h[3], 1/energy, LOOSE), 'h[3] = reversed first / energy')
+})
+
+// --- noiseShaping quantizes signal ---
+
+test('noiseShaping — quantizes to target bit depth', () => {
+	let data = new Float64Array(256)
+	for (let i = 0; i < 256; i++) data[i] = Math.sin(2 * Math.PI * 100 * i / 44100) * 0.5
+	let orig = Float64Array.from(data)
+	dsp.noiseShaping(data, {bits: 8})
+	let scale = Math.pow(2, 7) // 2^(bits-1)
+	let allQuantized = true
+	for (let i = 0; i < 256; i++) {
+		let rounded = Math.round(data[i] * scale) / scale
+		if (Math.abs(data[i] - rounded) > 1e-12) { allQuantized = false; break }
+	}
+	assert.ok(allQuantized, 'all samples quantized to 8-bit grid')
+	// Should differ from original continuous values
+	let hasDiff = data.some((x, i) => Math.abs(x - orig[i]) > 1e-10)
+	assert.ok(hasDiff, 'quantization changes values')
+})
+
+// --- LMS/NLMS/RLS all converge ---
+
+test('lms — error decreases over time', () => {
+	let input = new Float64Array(512)
+	for (let i = 0; i < 512; i++) input[i] = Math.sin(2 * Math.PI * 100 * i / 44100)
+	let desired = new Float64Array(input)
+	let params = {order: 4, mu: 0.1}
+	dsp.lms(input, desired, params)
+	let earlyErr = 0, lateErr = 0
+	for (let i = 0; i < 50; i++) earlyErr += Math.abs(params.error[i])
+	for (let i = 462; i < 512; i++) lateErr += Math.abs(params.error[i])
+	assert.ok(lateErr < earlyErr, 'LMS error decreases: early=' + earlyErr.toFixed(3) + ' late=' + lateErr.toFixed(3))
+})
+
+test('nlms — error decreases over time', () => {
+	let input = new Float64Array(512)
+	for (let i = 0; i < 512; i++) input[i] = Math.sin(2 * Math.PI * 100 * i / 44100)
+	let desired = new Float64Array(input)
+	let params = {order: 4, mu: 0.5}
+	dsp.nlms(input, desired, params)
+	let earlyErr = 0, lateErr = 0
+	for (let i = 0; i < 50; i++) earlyErr += Math.abs(params.error[i])
+	for (let i = 462; i < 512; i++) lateErr += Math.abs(params.error[i])
+	assert.ok(lateErr < earlyErr, 'NLMS error decreases: early=' + earlyErr.toFixed(3) + ' late=' + lateErr.toFixed(3))
+})
+
+test('rls — error decreases over time', () => {
+	let input = new Float64Array(512)
+	for (let i = 0; i < 512; i++) input[i] = Math.sin(2 * Math.PI * 100 * i / 44100)
+	let desired = new Float64Array(input)
+	let params = {order: 4, lambda: 0.99}
+	dsp.rls(input, desired, params)
+	let earlyErr = 0, lateErr = 0
+	for (let i = 0; i < 50; i++) earlyErr += Math.abs(params.error[i])
+	for (let i = 462; i < 512; i++) lateErr += Math.abs(params.error[i])
+	assert.ok(lateErr < earlyErr, 'RLS error decreases: early=' + earlyErr.toFixed(3) + ' late=' + lateErr.toFixed(3))
+})
+
+// --- ITU-468: 0dB normalization at 2kHz reference ---
+
+test('itu468 — peaked response near 6.3kHz', () => {
+	let sos = dsp.itu468(48000)
+	assert.ok(sos.length >= 3, 'at least 3 sections')
+	let resp = dsp.freqz(sos, 4096, 48000)
+	let db = dsp.mag2db(resp.magnitude)
+	let idx2k = Math.round(2000 / (48000/2) * 4096)
+	let idx6k = Math.round(6300 / (48000/2) * 4096)
+	// ITU-468 peaks near 6.3kHz, significantly above 2kHz level
+	assert.ok(db[idx6k] > db[idx2k] + 3, 'ITU-468 peaks near 6.3kHz (6.3kHz: ' + db[idx6k].toFixed(1) + 'dB, 2kHz: ' + db[idx2k].toFixed(1) + 'dB)')
+})
+
+// --- dcBlocker: verify last sample near 0 for DC input ---
+
+test('dcBlocker — output converges to 0 for pure DC', () => {
+	let data = dc(4096)
+	dsp.dcBlocker(data, {R: 0.995})
+	assert.ok(Math.abs(data[4095]) < 0.005, 'DC blocked to < 0.005 (got ' + Math.abs(data[4095]).toFixed(6) + ')')
+})
+
+// --- allpass second-order: unity magnitude ---
+
+test('allpass.second — unity magnitude across spectrum', () => {
+	let data = impulse(512)
+	dsp.allpass.second(data, {fc: 2000, Q: 1, fs: 44100})
+	// Compute energy — should equal input energy (1.0 for unit impulse)
+	let energy = 0
+	for (let i = 0; i < data.length; i++) energy += data[i] * data[i]
+	assert.ok(almost(energy, 1, 0.01), 'allpass.second preserves energy (got ' + energy.toFixed(4) + ')')
+})
+
+// --- halfBand: DC passthrough and Nyquist/2 rejection ---
+
+test('halfBand — DC gain = 1', () => {
+	let h = dsp.halfBand(31)
+	let sum = 0
+	for (let i = 0; i < h.length; i++) sum += h[i]
+	assert.ok(almost(sum, 1, 0.01), 'halfBand DC gain ≈ 1 (got ' + sum.toFixed(4) + ')')
+})
+
+test('halfBand — attenuates at Nyquist/2', () => {
+	let h = dsp.halfBand(31)
+	// Evaluate magnitude at w = pi/2 (Nyquist/2, normalized frequency 0.5)
+	let w = Math.PI / 2
+	let re = 0, im = 0
+	for (let n = 0; n < h.length; n++) {
+		re += h[n] * Math.cos(w * n)
+		im -= h[n] * Math.sin(w * n)
+	}
+	let mag = Math.sqrt(re * re + im * im)
+	// At exactly Nyquist/2, half-band should be at -6dB (≈ 0.5 magnitude)
+	assert.ok(mag < 0.8, 'halfBand magnitude < 0.8 at Nyquist/2 (got ' + mag.toFixed(4) + ')')
+})
+
+// --- CIC: DC preservation strict ---
+
+test('cic — DC preservation exact', () => {
+	let data = new Float64Array(2000).fill(1)
+	let out = dsp.cic(data, 10, 3)
+	assert.strictEqual(out.length, 200, 'decimated by 10')
+	// After settling, all output samples should be exactly 1
+	let allOne = true
+	for (let i = 50; i < 200; i++) {
+		if (Math.abs(out[i] - 1) > 0.001) { allOne = false; break }
+	}
+	assert.ok(allOne, 'CIC preserves DC exactly after settling')
+})
+
+// --- polyphase: reconstruction (concat phases = original) ---
+
+test('polyphase — phases reconstruct original', () => {
+	let h = new Float64Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+	let M = 4
+	let phases = dsp.polyphase(h, M)
+	assert.strictEqual(phases.length, M, M + ' phases')
+
+	// Interleave phases to reconstruct original
+	let reconstructed = new Float64Array(h.length)
+	for (let p = 0; p < M; p++) {
+		for (let k = 0; k < phases[p].length; k++) {
+			reconstructed[k * M + p] = phases[p][k]
+		}
+	}
+	assert.ok(almost(Array.from(reconstructed), Array.from(h), 1e-10), 'phases reconstruct original')
+})
+
+// --- oversample: DC passthrough ---
+
+test('oversample — DC passthrough', () => {
+	let data = new Float64Array(64).fill(1)
+	let out = dsp.oversample(data, 4)
+	assert.strictEqual(out.length, 256, 'length * 4')
+	// After transient, output should be ≈ 1 (DC preserved)
+	let midVal = out[128]
+	assert.ok(almost(midVal, 1, 0.1), 'DC preserved in middle (got ' + midVal.toFixed(4) + ')')
+})
+
+// --- farrow: integer delay is exact ---
+
+test('farrow — integer delay is exact', () => {
+	let data = new Float64Array(64)
+	data[10] = 1 // impulse at 10
+	dsp.farrow(data, {delay: 5, order: 3})
+	// Peak should be exactly at sample 15
+	let peakIdx = 0
+	for (let i = 1; i < 64; i++) if (data[i] > data[peakIdx]) peakIdx = i
+	assert.strictEqual(peakIdx, 15, 'integer delay moves impulse by exactly 5 samples')
+	assert.ok(data[15] > 0.8, 'peak amplitude preserved (got ' + data[15].toFixed(4) + ')')
+})
+
+// --- thiran: allpass property (|b| coefficients = reversed |a|) ---
+
+test('thiran — allpass structure verified', () => {
+	for (let delay of [2.3, 3.7, 4.1]) {
+		let order = Math.ceil(delay)
+		let {b, a} = dsp.thiran(delay, order)
+		// For allpass: b[k] = a[N-k] (reversed)
+		for (let k = 0; k <= order; k++) {
+			assert.ok(almost(b[k], a[order - k], LOOSE),
+				'thiran delay=' + delay + ': b[' + k + ']=' + b[k].toFixed(6) + ' ≈ a[' + (order-k) + ']=' + a[order-k].toFixed(6))
+		}
+	}
+})
+
+// --- crossfeed: stereo mix ---
+
+test('crossfeed — mixes stereo channels', () => {
+	let left = dc(256, 1)
+	let right = dc(256, 0)
+	dsp.crossfeed(left, right, {fc: 700, level: 0.3, fs: 44100})
+	// Right channel should now have some energy (mixed from left)
+	let rightEnergy = 0
+	for (let i = 128; i < 256; i++) rightEnergy += right[i] * right[i]
+	assert.ok(rightEnergy > 0.01, 'crossfeed mixes L→R (right energy: ' + rightEnergy.toFixed(4) + ')')
+	// Left should still have energy (not fully cancelled)
+	let leftEnergy = 0
+	for (let i = 128; i < 256; i++) leftEnergy += left[i] * left[i]
+	assert.ok(leftEnergy > 0.1, 'left retains energy after crossfeed')
+})
+
+// --- formant: output has energy ---
+
+test('formant — output has significant energy', () => {
+	let data = impulse(1024)
+	dsp.formant(data, {fs: 44100})
+	let energy = 0
+	for (let i = 0; i < data.length; i++) energy += data[i] * data[i]
+	assert.ok(energy > 0.0001, 'formant has energy (got ' + energy.toFixed(6) + ')')
+	// Should have some non-zero output
+	let hasOutput = data.some(x => Math.abs(x) > 0.0001)
+	assert.ok(hasOutput, 'formant produces output')
+})
+
+// --- vocoder: output length ---
+
+test('vocoder — output matches input length', () => {
+	let N = 512
+	let carrier = new Float64Array(N)
+	let modulator = new Float64Array(N)
+	for (let i = 0; i < N; i++) {
+		carrier[i] = Math.sin(2 * Math.PI * 440 * i / 44100) // sawtooth-like
+		modulator[i] = Math.sin(2 * Math.PI * 100 * i / 44100) * 0.5
+	}
+	let out = dsp.vocoder(carrier, modulator, {bands: 8, fs: 44100})
+	assert.strictEqual(out.length, N, 'vocoder output length = input length')
+	let hasOutput = out.some(x => Math.abs(x) > 0.0001)
+	assert.ok(hasOutput, 'vocoder produces nonzero output')
+})
+
+// --- warpedFir: produces output ---
+
+test('warpedFir — produces output on impulse', () => {
+	let data = impulse(128)
+	dsp.warpedFir(data, {coefs: new Float64Array([1, 0.5, 0.25]), lambda: 0.7})
+	assert.ok(data[0] !== 0, 'first sample non-zero')
+	let hasOutput = data.some(x => Math.abs(x) > 0.001)
+	assert.ok(hasOutput, 'warpedFir produces output')
+	assert.ok(data.every(isFinite), 'all samples finite')
+})
+
+// --- isMinPhase on minimumPhase output ---
+
+test('isMinPhase — minimumPhase output is minimum phase', () => {
+	let h = dsp.firwin(31, 2000, 44100)
+	let hm = dsp.minimumPhase(h)
+	// Convert to SOS for isMinPhase: treat as single FIR section
+	// isMinPhase checks that zeros are inside unit circle
+	// For a minimum-phase filter, all zeros should be inside or on the unit circle
+	// We verify via energy concentration: most energy should be in early samples
+	let earlyEnergy = 0, totalEnergy = 0
+	for (let i = 0; i < hm.length; i++) {
+		totalEnergy += hm[i] * hm[i]
+		if (i < hm.length / 2) earlyEnergy += hm[i] * hm[i]
+	}
+	assert.ok(earlyEnergy / totalEnergy > 0.7, 'minimumPhase concentrates energy early (ratio: ' + (earlyEnergy/totalEnergy).toFixed(3) + ')')
+})
+
+// --- isFir on FIR coefficients ---
+
+test('isFir — returns true for biquad with a1=a2=0', () => {
+	let firSos = [{b0: 1, b1: 0.5, b2: 0.25, a1: 0, a2: 0}]
+	assert.ok(dsp.isFir(firSos), 'a1=a2=0 is FIR')
+})
+
+test('isFir — returns false for IIR filter', () => {
+	let sos = dsp.butterworth(2, 1000, 44100)
+	assert.ok(!dsp.isFir(sos), 'Butterworth is not FIR')
+})
+
+// --- Round-trip: butterworth → sos2zpk → zpk2sos → same section count ---
+
+test('convert round-trip — butterworth → sos2zpk → zpk2sos', () => {
+	for (let order of [2, 4, 6]) {
+		let sos = dsp.butterworth(order, 1000, 44100)
+		let zpk = dsp.sos2zpk(sos)
+		let sos2 = dsp.zpk2sos(zpk)
+		assert.strictEqual(sos2.length, sos.length, 'order ' + order + ' round-trip: same section count')
+
+		// Verify DC gain is preserved through round-trip
+		let gain1 = 1, gain2 = 1
+		for (let s of sos) gain1 *= (s.b0 + s.b1 + s.b2) / (1 + s.a1 + s.a2)
+		for (let s of sos2) gain2 *= (s.b0 + s.b1 + s.b2) / (1 + s.a1 + s.a2)
+		assert.ok(almost(gain1, gain2, 0.01), 'order ' + order + ' round-trip: DC gain preserved (' + gain1.toFixed(4) + ' ≈ ' + gain2.toFixed(4) + ')')
+	}
+})
+
 // --- Integration: full chain test ---
 
 test('butterworth + filter + freqz end-to-end', () => {

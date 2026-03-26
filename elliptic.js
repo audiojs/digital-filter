@@ -2,12 +2,28 @@
  * Elliptic (Cauer) filter → cascaded SOS
  * Sharpest transition band for given order. Equiripple in both bands.
  *
+ * Even orders: exact equiripple via numerical v0 solver.
+ * Odd orders: approximate equiripple — peak-normalized passband, correct stopband.
+ *   The numerical solver enforces edge attenuation but interior peaks may deviate
+ *   slightly from ideal. Passband is normalized so no peak exceeds 0dB.
+ *
  * @module  digital-filter/elliptic
  */
 
 let {sqrt, pow, sin, cos, abs, atan, PI, floor, max} = Math
 import { poleZerosSos } from './transform.js'
 
+/**
+ * Design elliptic (Cauer) filter as cascaded second-order sections.
+ *
+ * @param {number} order - Filter order
+ * @param {number} fc - Cutoff frequency in Hz
+ * @param {number} [fs=44100] - Sample rate in Hz
+ * @param {number} [ripple=1] - Passband ripple in dB
+ * @param {number} [attenuation=40] - Stopband attenuation in dB
+ * @param {string} [type='lowpass'] - Filter type: 'lowpass', 'highpass', 'bandpass', 'bandstop'
+ * @returns {Array<{b0:number,b1:number,b2:number,a1:number,a2:number}>} SOS sections
+ */
 export default function elliptic (order, fc, fs, ripple, attenuation, type) {
 	if (!fs) fs = 44100
 	if (!ripple) ripple = 1
@@ -33,7 +49,93 @@ export default function elliptic (order, fc, fs, ripple, attenuation, type) {
 	sections[0].b1 *= scale
 	sections[0].b2 *= scale
 
+	// Odd order: peak-normalize passband so max response = 0dB (1.0).
+	// The solver gives correct edge attenuation but interior peaks may exceed 0dB
+	// due to numerical interaction in the per-sample pole formula.
+	if (order % 2 === 1 && order > 1) {
+		let peakMag = passbandPeak(sections, fc, fs, type)
+		if (peakMag > 1 + 1e-10) {
+			let norm = 1 / peakMag
+			sections[0].b0 *= norm
+			sections[0].b1 *= norm
+			sections[0].b2 *= norm
+		}
+	}
+
 	return sections
+}
+
+// Evaluate combined SOS magnitude at a digital frequency
+function evalMag (sections, w) {
+	let cosw = cos(w), sinw = sin(w)
+	let cos2w = cos(2 * w), sin2w = sin(2 * w)
+	let mag = 1
+	for (let i = 0; i < sections.length; i++) {
+		let c = sections[i]
+		let br = c.b0 + c.b1 * cosw + c.b2 * cos2w
+		let bi = -c.b1 * sinw - c.b2 * sin2w
+		let ar = 1 + c.a1 * cosw + c.a2 * cos2w
+		let ai = -c.a1 * sinw - c.a2 * sin2w
+		mag *= sqrt((br * br + bi * bi) / (ar * ar + ai * ai))
+	}
+	return mag
+}
+
+// Find peak magnitude in passband by dense sweep
+function passbandPeak (sections, fc, fs, type) {
+	let nPts = 2048
+	let peak = 0
+
+	if (type === 'lowpass' || !type) {
+		// Passband: 0 to fc
+		for (let i = 0; i <= nPts; i++) {
+			let f = i * fc / nPts
+			let w = 2 * PI * f / fs
+			let m = evalMag(sections, w)
+			if (m > peak) peak = m
+		}
+	} else if (type === 'highpass') {
+		// Passband: fc to Nyquist
+		let nyq = fs / 2
+		for (let i = 0; i <= nPts; i++) {
+			let f = fc + i * (nyq - fc) / nPts
+			let w = 2 * PI * f / fs
+			let m = evalMag(sections, w)
+			if (m > peak) peak = m
+		}
+	} else if (type === 'bandpass' && Array.isArray(fc)) {
+		// Passband: fc[0] to fc[1]
+		for (let i = 0; i <= nPts; i++) {
+			let f = fc[0] + i * (fc[1] - fc[0]) / nPts
+			let w = 2 * PI * f / fs
+			let m = evalMag(sections, w)
+			if (m > peak) peak = m
+		}
+	} else if (type === 'bandstop' && Array.isArray(fc)) {
+		// Passband: 0 to fc[0] and fc[1] to Nyquist
+		let nyq = fs / 2
+		for (let i = 0; i <= nPts; i++) {
+			let f = i * fc[0] / nPts
+			let w = 2 * PI * f / fs
+			let m = evalMag(sections, w)
+			if (m > peak) peak = m
+		}
+		for (let i = 0; i <= nPts; i++) {
+			let f = fc[1] + i * (nyq - fc[1]) / nPts
+			let w = 2 * PI * f / fs
+			let m = evalMag(sections, w)
+			if (m > peak) peak = m
+		}
+	} else {
+		// Fallback: sweep full band
+		for (let i = 0; i <= nPts; i++) {
+			let w = i * PI / nPts
+			let m = evalMag(sections, w)
+			if (m > peak) peak = m
+		}
+	}
+
+	return peak
 }
 
 function ellipticPrototype (N, Rp, Rs) {

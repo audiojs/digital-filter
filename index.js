@@ -98,14 +98,8 @@ export { default as warpedFir } from './warped-fir.js'
 export { default as convolution } from './convolution.js'
 
 // Analysis & conversion
-export { default as groupDelay } from './group-delay.js'
-export { default as phaseDelay } from './phase-delay.js'
-export { default as sos2zpk } from './sos2zpk.js'
-export { default as sos2tf } from './sos2tf.js'
-export { default as tf2zpk } from './tf2zpk.js'
-export { default as zpk2sos } from './zpk2sos.js'
-export { impulseResponse, stepResponse } from './impulse-response.js'
-export { isStable, isMinPhase, isFir, isLinPhase } from './filter-info.js'
+export { groupDelay, phaseDelay, impulseResponse, stepResponse, isStable, isMinPhase, isFir, isLinPhase } from './analysis.js'
+export { sos2zpk, sos2tf, tf2zpk, zpk2sos } from './convert.js'
 
 // Weighting filters (return SOS)
 export { default as aWeighting } from './a-weighting.js'

@@ -1,3 +1,11 @@
+/**
+ * Compute frequency response of SOS filter sections.
+ *
+ * @param {Array<{b0:number,b1:number,b2:number,a1:number,a2:number}>|{b0:number,b1:number,b2:number,a1:number,a2:number}} coefs - SOS section(s)
+ * @param {number} [n=512] - Number of frequency points
+ * @param {number} [fs=44100] - Sample rate in Hz
+ * @returns {{frequencies: Float64Array, magnitude: Float64Array, phase: Float64Array}}
+ */
 export default function freqz (coefs, n, fs) {
 	if (!n) n = 512
 	if (!fs) fs = 44100
@@ -35,6 +43,12 @@ export default function freqz (coefs, n, fs) {
 	return { frequencies, magnitude, phase }
 }
 
+/**
+ * Convert magnitude to decibels.
+ *
+ * @param {number|Float64Array|Array<number>} mag - Magnitude value(s)
+ * @returns {number|Float64Array} dB value(s)
+ */
 export function mag2db (mag) {
 	if (typeof mag === 'number') return 20 * Math.log10(mag)
 	let db = new Float64Array(mag.length)

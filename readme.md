@@ -1,6 +1,10 @@
 # digital-filter [![npm](https://img.shields.io/npm/v/digital-filter.svg)](https://npmjs.org/package/digital-filter) [![test](https://github.com/scijs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/scijs/digital-filter/actions/workflows/test.yml) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Complete collection of digital filters for signal processing. **88 modules** covering IIR design, FIR design, adaptive filters, multirate processing, spectral analysis, virtual analog synthesis, psychoacoustic models, and more.
+Digital filter design and processing for JavaScript — from biquad to Butterworth to adaptive, with the depth of scipy.signal and the simplicity of a single import.
+
+> 82 modules · 164 tests · 1 dependency ([window-function](https://github.com/scijs/window-function)) · pure ESM
+>
+> [Concepts](docs/concepts.md) · [Choosing a filter](docs/choosing.md) · [IIR reference](docs/iir.md) · [FIR reference](docs/fir.md) · [Adaptive](docs/adaptive.md) · [Weighting](docs/weighting.md) · [Applications](docs/applications.md) · [Visual gallery](docs/readme.md)
 
 ```js
 import { butterworth, filter, freqz, mag2db } from 'digital-filter'
@@ -94,7 +98,7 @@ The 9 building blocks. All other IIR filters are cascades of these:
 | `lowshelf` | Boost/cut below fc | +gain | +gain/2 | 0 dB |
 | `highshelf` | Boost/cut above fc | 0 dB | +gain/2 | +gain |
 
-## All 88 modules
+## All modules
 
 ### Core
 | Module | API | What it does |
@@ -219,23 +223,23 @@ The 9 building blocks. All other IIR filters are cascades of these:
 | `warpedFir` | Frequency-warped FIR (perceptual resolution) |
 | `convolution` | Direct convolution |
 
-### Analysis & conversion
-| Module | What it does |
+### Analysis (`analysis.js`) & conversion (`convert.js`)
+| Export | What it does |
 |---|---|
 | `freqz` | Magnitude + phase response |
 | `mag2db` | Magnitude to decibels |
 | `groupDelay` | Group delay from SOS |
 | `phaseDelay` | Phase delay from SOS |
-| `sos2zpk` | SOS → zeros/poles/gain |
-| `sos2tf` | SOS → transfer function polynomials |
-| `tf2zpk` | Polynomials → zeros/poles/gain |
-| `zpk2sos` | Zeros/poles/gain → SOS |
 | `impulseResponse` | Compute impulse response |
 | `stepResponse` | Compute step response |
 | `isStable` | All poles inside unit circle? |
 | `isMinPhase` | All zeros inside unit circle? |
 | `isFir` | No feedback coefficients? |
 | `isLinPhase` | Symmetric/antisymmetric FIR? |
+| `sos2zpk` | SOS → zeros/poles/gain |
+| `sos2tf` | SOS → transfer function polynomials |
+| `tf2zpk` | Polynomials → zeros/poles/gain |
+| `zpk2sos` | Zeros/poles/gain → SOS |
 
 ### Weighting — return SOS for given sample rate
 | Module | Standard | What it does |

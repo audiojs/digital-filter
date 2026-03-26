@@ -8,6 +8,15 @@
 let {sin, floor, PI} = Math
 import { polesSos } from './transform.js'
 
+/**
+ * Design Nth-order Butterworth filter as cascaded second-order sections.
+ *
+ * @param {number} order - Filter order
+ * @param {number} fc - Cutoff frequency in Hz
+ * @param {number} [fs=44100] - Sample rate in Hz
+ * @param {string} [type='lowpass'] - Filter type: 'lowpass', 'highpass', 'bandpass', 'bandstop'
+ * @returns {Array<{b0:number,b1:number,b2:number,a1:number,a2:number}>} SOS sections
+ */
 export default function butterworth (order, fc, fs, type) {
 	if (!type) type = 'lowpass'
 	if (!fs) fs = 44100

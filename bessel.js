@@ -22,6 +22,15 @@ let POLES = {
 	10: [[-0.86555260092, 2.29129220984], [-1.36069227838, 1.73350574267], [-1.66181024140, 1.22110217983], [-1.84219624443, 0.72726806897], [-1.92761969309, 0.24127112354]]
 }
 
+/**
+ * Design Bessel/Thomson filter as cascaded second-order sections.
+ *
+ * @param {number} order - Filter order (1-10)
+ * @param {number} fc - Cutoff frequency in Hz
+ * @param {number} [fs=44100] - Sample rate in Hz
+ * @param {string} [type='lowpass'] - Filter type: 'lowpass', 'highpass', 'bandpass', 'bandstop'
+ * @returns {Array<{b0:number,b1:number,b2:number,a1:number,a2:number}>} SOS sections
+ */
 export default function bessel (order, fc, fs, type) {
 	if (!type) type = 'lowpass'
 	if (!fs) fs = 44100

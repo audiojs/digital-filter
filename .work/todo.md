@@ -118,6 +118,9 @@
 
 ## Integration targets
 
+### [ ] loudness meter
+### [ ] Crossover network
+
 ### web-audio-api
 - [ ] Replace BiquadFilterNode._coefficients() → digital-filter/biquad
 - [ ] Replace IIRFilterNode._tick() → digital-filter/filter
@@ -125,6 +128,8 @@
 ### defeedback (Dante Virtual Soundcard)
 - [ ] analyzer, tracker, notch-bank modules
 - [ ] Dante VSC audio I/O integration
+
+
 
 ---
 

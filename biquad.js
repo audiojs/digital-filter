@@ -11,6 +11,12 @@ function intermediates (fc, Q, fs) {
 	return { sinw, cosw, alpha }
 }
 
+/**
+ * @param {number} fc - Cutoff frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function lowpass (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
@@ -19,6 +25,12 @@ export function lowpass (fc, Q, fs) {
 	)
 }
 
+/**
+ * @param {number} fc - Cutoff frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function highpass (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
@@ -27,6 +39,12 @@ export function highpass (fc, Q, fs) {
 	)
 }
 
+/**
+ * @param {number} fc - Center frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function bandpass (fc, Q, fs) {
 	let { sinw, cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
@@ -35,6 +53,13 @@ export function bandpass (fc, Q, fs) {
 	)
 }
 
+/**
+ * Constant-skirt-gain bandpass (peak gain = Q).
+ * @param {number} fc - Center frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function bandpass2 (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
@@ -43,6 +68,12 @@ export function bandpass2 (fc, Q, fs) {
 	)
 }
 
+/**
+ * @param {number} fc - Center frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function notch (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
@@ -51,6 +82,12 @@ export function notch (fc, Q, fs) {
 	)
 }
 
+/**
+ * @param {number} fc - Center frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function allpass (fc, Q, fs) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
@@ -59,6 +96,13 @@ export function allpass (fc, Q, fs) {
 	)
 }
 
+/**
+ * @param {number} fc - Center frequency in Hz
+ * @param {number} Q - Quality factor
+ * @param {number} fs - Sample rate in Hz
+ * @param {number} dBgain - Gain in dB
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function peaking (fc, Q, fs, dBgain) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)
@@ -68,6 +112,13 @@ export function peaking (fc, Q, fs, dBgain) {
 	)
 }
 
+/**
+ * @param {number} fc - Shelf frequency in Hz
+ * @param {number} Q - Quality factor (slope)
+ * @param {number} fs - Sample rate in Hz
+ * @param {number} dBgain - Gain in dB
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function lowshelf (fc, Q, fs, dBgain) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)
@@ -82,6 +133,13 @@ export function lowshelf (fc, Q, fs, dBgain) {
 	)
 }
 
+/**
+ * @param {number} fc - Shelf frequency in Hz
+ * @param {number} Q - Quality factor (slope)
+ * @param {number} fs - Sample rate in Hz
+ * @param {number} dBgain - Gain in dB
+ * @returns {{b0: number, b1: number, b2: number, a1: number, a2: number}}
+ */
 export function highshelf (fc, Q, fs, dBgain) {
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)

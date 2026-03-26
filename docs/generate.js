@@ -239,4 +239,99 @@ perFilter('riaa', dsp.riaa(FS), 'RIAA playback equalization')
 perFilter('linkwitz-riley-low', dsp.linkwitzRiley(4, 1000, FS).low, 'Linkwitz-Riley LR4, low band')
 perFilter('linkwitz-riley-high', dsp.linkwitzRiley(4, 1000, FS).high, 'Linkwitz-Riley LR4, high band')
 
+// ── FIR plots ──
+
+function perFir (name, h, title) {
+	let nf = 512
+	let freqs = new Float64Array(nf)
+	let mag = new Float64Array(nf)
+	for (let k = 0; k < nf; k++) {
+		freqs[k] = k * FS / (2 * nf)
+		let re = 0, im = 0, w = Math.PI * k / nf
+		for (let n = 0; n < h.length; n++) {
+			re += h[n] * Math.cos(w * n)
+			im -= h[n] * Math.sin(w * n)
+		}
+		mag[k] = 20 * Math.log10(Math.max(Math.sqrt(re * re + im * im), 1e-15))
+	}
+
+	let IP = { x: 530, y: 20, w: 200, h: 100 }
+
+	let s = svg(W, 240) +
+		axes(FP) + label(FP, 'Frequency (Hz)', 'Magnitude (dB)') +
+		logXGrid(FP, [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000], 20, 20000) +
+		hGrid(FP, [0, -20, -40, -60, -80], -80, 5) +
+		logLine(FP, freqs, Array.from(mag), 20, 20000, -80, 5, C[0], 1.8)
+
+	s += `  <text x="${FP.x}" y="${FP.y+FP.h+48}" font-size="12" font-weight="600" fill="${TXT}">${title || name}</text>\n`
+
+	// Coefficients inset
+	let irMax = 0
+	for (let i = 0; i < h.length; i++) if (Math.abs(h[i]) > irMax) irMax = Math.abs(h[i])
+	if (irMax < 1e-10) irMax = 1
+	s += `  <rect x="${IP.x-1}" y="${IP.y-1}" width="${IP.w+2}" height="${IP.h+2}" fill="white" fill-opacity="0.85" rx="3"/>\n`
+	s += `  <text x="${IP.x+2}" y="${IP.y+10}" font-size="8" fill="${TXT}">Coefficients</text>\n`
+	s += linLine(IP, h, 0, h.length, -irMax, irMax, C[0])
+
+	writeFileSync(`docs/plots/${name}.svg`, s + '</svg>\n')
+}
+
+// FIR filters
+perFir('firwin-lp', dsp.firwin(63, 1000, FS), 'firwin lowpass, 63 taps, fc=1kHz')
+perFir('firwin-hp', dsp.firwin(63, 1000, FS, {type:'highpass'}), 'firwin highpass, 63 taps, fc=1kHz')
+perFir('firwin-bp', dsp.firwin(127, [500,2000], FS, {type:'bandpass'}), 'firwin bandpass, 127 taps')
+perFir('firls', dsp.firls(63, [0,0.3,0.4,1], [1,1,0,0]), 'firls lowpass, 63 taps')
+perFir('remez', dsp.remez(63, [0,0.3,0.4,1], [1,1,0,0]), 'remez equiripple, 63 taps')
+perFir('hilbert', dsp.hilbert(63), 'Hilbert transform, 63 taps')
+perFir('differentiator', dsp.differentiator(31), 'Differentiator, 31 taps')
+perFir('raised-cosine', dsp.raisedCosine(65, 0.35, 4), 'Raised cosine, β=0.35, 4 sps')
+perFir('savitzky-golay', (() => { let d = new Float64Array(31); d[15] = 1; dsp.savitzkyGolay(d, {windowSize:11, degree:3}); return d })(), 'Savitzky-Golay, window=11, degree=3')
+
+// Simple IIR as SOS
+let dcbR = 0.995
+perFilter('dc-blocker', [{b0:1, b1:-1, b2:0, a1:-dcbR, a2:0}], 'DC Blocker (R=0.995)')
+
+let opA = Math.exp(-2 * Math.PI * 1000 / FS)
+perFilter('one-pole', [{b0:1-opA, b1:0, b2:0, a1:-opA, a2:0}], 'One-pole lowpass, fc=1kHz')
+
+// Resonator
+let rBw = 50, rFc = 1000
+let rR = 1 - Math.PI * rBw / FS
+let rW = 2 * Math.PI * rFc / FS
+perFilter('resonator', [{b0:1-rR*rR, b1:0, b2:0, a1:-2*rR*Math.cos(rW), a2:rR*rR}], 'Resonator, fc=1kHz, bw=50Hz')
+
+// ITU-R 468
+perFilter('itu468', dsp.itu468(48000), 'ITU-R 468 noise weighting')
+
+// Impulse-response filters (run on impulse, then compute freq response)
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.gammatone(data, {fc:1000, fs:FS})
+	perFir('gammatone', data, 'Gammatone, fc=1kHz, order=4')
+}
+
+for (let [name, fn, params, title] of [
+	['moog-ladder', dsp.moogLadder, {fc:1000, resonance:0.5, fs:FS}, 'Moog ladder, fc=1kHz, res=0.5'],
+	['diode-ladder', dsp.diodeLadder, {fc:1000, resonance:0.5, fs:FS}, 'Diode ladder, fc=1kHz, res=0.5'],
+	['korg35', dsp.korg35, {fc:1000, resonance:0.3, fs:FS}, 'Korg35 lowpass, fc=1kHz, res=0.3'],
+]) {
+	let data = new Float64Array(2048); data[0] = 1
+	fn(data, params)
+	perFir(name, data, title)
+}
+
+// SVF modes
+for (let type of ['lowpass', 'highpass', 'bandpass', 'notch']) {
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.svf(data, {fc:1000, Q:1, fs:FS, type})
+	perFir('svf-' + type, data, 'SVF ' + type + ', fc=1kHz, Q=1')
+}
+
+// Comb
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.comb(data, {delay:100, gain:0.7, type:'feedback'})
+	perFir('comb', data, 'Feedback comb, delay=100, gain=0.7')
+}
+
 console.log('SVGs generated in docs/plots/')

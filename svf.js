@@ -9,6 +9,13 @@ let types = {
 	allpass:  (v0, v1, v2, k) => v0 - 2 * k * v1
 }
 
+/**
+ * State Variable Filter (SVF) — Andrew Simper / Cytomic topology.
+ *
+ * @param {Float64Array|Float32Array|Array<number>} data - Input samples (modified in-place)
+ * @param {{fc: number, Q?: number, fs?: number, type?: 'lowpass'|'highpass'|'bandpass'|'notch'|'peak'|'allpass', ic1eq?: number, ic2eq?: number}} params - Filter parameters
+ * @returns {Float64Array|Float32Array|Array<number>} Filtered data (same reference as input)
+ */
 export default function svf (data, params) {
 	if (!params.type) params.type = 'lowpass'
 	if (!params.Q) params.Q = .707

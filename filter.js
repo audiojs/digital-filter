@@ -2,8 +2,10 @@
  * Biquad cascade (SOS) filter, Direct Form II Transposed
  *
  * @module  digital-filter/filter
+ * @param {Float64Array|Float32Array|Array<number>} data - Input samples (modified in-place)
+ * @param {{coefs: Array<{b0:number,b1:number,b2:number,a1:number,a2:number}>|{b0:number,b1:number,b2:number,a1:number,a2:number}, state?: Array<[number,number]>}} params - Filter coefficients and optional state
+ * @returns {Float64Array|Float32Array|Array<number>} Filtered data (same reference as input)
  */
-
 export default function filter(data, params) {
 	let coefs = params.coefs
 	if (!Array.isArray(coefs)) coefs = [coefs]
