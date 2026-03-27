@@ -32,22 +32,22 @@ import firwin from 'digital-filter/fir/firwin.js'
 
 ## Contents
 
-**[IIR](#iir)**
+**[IIR](#iir)**<br>
 [biquad](#biquad) · [svf](#svfdata-params) · [butterworth](#butterworthorder-fc-fs-type) · [chebyshev](#chebyshevorder-fc-fs-ripple-type) · [chebyshev2](#chebyshev2order-fc-fs-attenuation-type) · [elliptic](#ellipticorder-fc-fs-ripple-attenuation-type) · [bessel](#besselorder-fc-fs-type) · [legendre](#legendreorder-fc-fs-type) · [linkwitzRiley](#linkwitzrileyorder-fc-fs) · [iirdesign](#iirdesignfpass-fstop-rp-rs-fs)
 
-**[FIR](#fir)**
+**[FIR](#fir)**<br>
 [firwin](#firwinnumtaps-cutoff-fs-opts) · [firls](#firlsnumtaps-bands-desired-weight) · [remez](#remeznumtaps-bands-desired-weight) · [firwin2](#firwin2numtaps-freq-gain-opts) · [hilbert](#hilbertn) · [differentiator](#differentiatorn-opts) · [raisedCosine](#raisedcosinen-beta-sps-opts) · [gaussianFir](#gaussianfirn-bt-sps) · [matchedFilter](#matchedfiltertemplate) · [minimumPhase](#minimumphaseh) · [yulewalk](#yulewalkorder-frequencies-magnitudes) · [kaiserord](#kaiserorddeltaf-attenuation) · [integrator](#integratorrule) · [lattice](#latticedata-params) · [warpedFir](#warpedfirdata-params)
 
-**[Smooth](#smooth)**
+**[Smooth](#smooth)**<br>
 [onePole](#onepoledata-params) · [movingAverage](#movingaveragedata-params) · [leakyIntegrator](#leakyintegratordata-params) · [median](#mediandata-params) · [savitzkyGolay](#savitzkygolaydata-params) · [gaussianIir](#gaussianiirdata-params) · [oneEuro](#oneeuropdata-params) · [dynamicSmoothing](#dynamicsmoothingdata-params)
 
-**[Adaptive](#adaptive)**
+**[Adaptive](#adaptive)**<br>
 [lms](#lmsinput-desired-params) · [nlms](#nlmsinput-desired-params) · [rls](#rlsinput-desired-params) · [levinson](#levinsonr-order)
 
-**[Multirate](#multirate)**
+**[Multirate](#multirate)**<br>
 [decimate](#decimatedata-factor-opts) · [interpolate](#interpolatedata-factor-opts) · [halfBand](#halfbandnumtaps) · [cic](#cicdata-r-n) · [polyphase](#polypaseh-m) · [farrow](#farrowdata-params) · [thiran](#thirandelay-order) · [oversample](#oversampledata-factor-opts)
 
-**[Core](#core)**
+**[Core](#core)**<br>
 [filter](#filterdata-params) · [filtfilt](#filtfiltdata-params) · [convolution](#convolutionsignal-ir) · [freqz](#freqzcoefs-n-fs) · [mag2db](#mag2dbmag) · [groupDelay](#groupdelaycoefs-n-fs) · [phaseDelay](#phasedelaycoefs-n-fs) · [impulseResponse](#impulseresponsecoefs-n) · [stepResponse](#stepresponsecoefs-n) · [isStable](#isstablesos) · [isMinPhase](#isminphasesos) · [isFir](#isfirsos) · [isLinPhase](#islinphaseh) · [sos2zpk](#sos2zpksos) · [sos2tf](#sos2tfsos) · [tf2zpk](#tf2zpkb-a) · [zpk2sos](#zpk2soszpk) · [transform](#transform)
 
 
