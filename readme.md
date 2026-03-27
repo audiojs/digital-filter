@@ -30,87 +30,14 @@ import firwin from 'digital-filter/fir/firwin.js'
 
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
 
-## Contents
 
-<details><summary>
+## Reading the plots
 
-**[IIR](#iir)**
-</summary>
+Each filter shows four panels. **Magnitude** (top-left) – how much of each frequency passes through, in dB. 0 dB = unchanged, –3 dB = half power (the conventional cutoff), –40 dB = 1%. **Phase** (top-right) – how much each frequency is delayed in degrees. Constant slope = linear phase = waveform preserved. **Group delay** (bottom-left) – the derivative of phase; shows delay variation across frequency in samples. Flat = no distortion. **Impulse response** (bottom-right) – the filter's output when fed a single 1-sample pulse; its "fingerprint."
 
-* [biquad](#biquad)
-* [svf](#svfdata-params)
-* [butterworth](#butterworthorder-fc-fs-type)
-* [chebyshev](#chebyshevorder-fc-fs-ripple-type)
-* [chebyshev2](#chebyshev2order-fc-fs-attenuation-type)
-* [elliptic](#ellipticorder-fc-fs-ripple-attenuation-type)
-* [bessel](#besselorder-fc-fs-type)
-* [legendre](#legendreorder-fc-fs-type)
-* [linkwitzRiley](#linkwitzrileyorder-fc-fs)
-* [iirdesign](#iirdesignfpass-fstop-rp-rs-fs)
-</details>
+The formulas describe the filter's frequency response. $|H(j\omega)|^2$ is the squared magnitude as a function of analog frequency $\omega$ – it defines the shape of the passband/stopband. $H(z)$ is the digital transfer function – what the code computes per sample. $h[n]$ is the impulse response – the FIR coefficients directly.
 
-**[FIR](#fir)**
-* [firwin](#firwinnumtaps-cutoff-fs-opts)
-* [firls](#firlsnumtaps-bands-desired-weight)
-* [remez](#remeznumtaps-bands-desired-weight)
-* [firwin2](#firwin2numtaps-freq-gain-opts)
-* [hilbert](#hilbertn)
-* [differentiator](#differentiatorn-opts)
-* [raisedCosine](#raisedcosinen-beta-sps-opts)
-* [gaussianFir](#gaussianfirn-bt-sps)
-* [matchedFilter](#matchedfiltertemplate)
-* [minimumPhase](#minimumphaseh)
-* [yulewalk](#yulewalkorder-frequencies-magnitudes)
-* [kaiserord](#kaiserorddeltaf-attenuation)
-* [integrator](#integratorrule)
-* [lattice](#latticedata-params)
-* [warpedFir](#warpedfirdata-params)
-
-**[Smooth](#smooth)**
-* * [onePole](#onepoledata-params)
-* [movingAverage](#movingaveragedata-params)
-* [leakyIntegrator](#leakyintegratordata-params)
-* [median](#mediandata-params)
-* [savitzkyGolay](#savitzkygolaydata-params)
-* [gaussianIir](#gaussianiirdata-params)
-* [oneEuro](#oneeuropdata-params)
-* [dynamicSmoothing](#dynamicsmoothingdata-params)
-
-**[Adaptive](#adaptive)**
-* [lms](#lmsinput-desired-params)
-* [nlms](#nlmsinput-desired-params)
-* [rls](#rlsinput-desired-params)
-* [levinson](#levinsonr-order)
-
-**[Multirate](#multirate)**
-* [decimate](#decimatedata-factor-opts)
-* [interpolate](#interpolatedata-factor-opts)
-* [halfBand](#halfbandnumtaps)
-* [cic](#cicdata-r-n)
-* [polyphase](#polypaseh-m)
-* [farrow](#farrowdata-params)
-* [thiran](#thirandelay-order)
-* [oversample](#oversampledata-factor-opts)
-
-**[Core](#core)**
-* [filter](#filterdata-params)
-* [filtfilt](#filtfiltdata-params)
-* [convolution](#convolutionsignal-ir)
-* [freqz](#freqzcoefs-n-fs)
-* [mag2db](#mag2dbmag)
-* [groupDelay](#groupdelaycoefs-n-fs)
-* [phaseDelay](#phasedelaycoefs-n-fs)
-* [impulseResponse](#impulseresponsecoefs-n)
-* [stepResponse](#stepresponsecoefs-n)
-* [isStable](#isstablesos)
-* [isMinPhase](#isminphasesos)
-* [isFir](#isfirsos)
-* [isLinPhase](#islinphaseh)
-* [sos2zpk](#sos2zpksos)
-* [sos2tf](#sos2tfsos)
-* [tf2zpk](#tf2zpkb-a)
-* [zpk2sos](#zpk2soszpk)
-* [transform](#transform)
+The dashed vertical line marks the cutoff frequency $f_c$.
 
 
 ## IIR
@@ -125,105 +52,96 @@ Nine second-order filter types – the building block for everything else. Every
 
 [^rbj]: Robert Bristow-Johnson, [Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/), 1998.
 
-* `biquad.lowpass(fc, Q, fs)`
-* `biquad.highpass`
-* `biquad.bandpass`
-* `biquad.bandpass2`
-* `biquad.notch`
-* `biquad.allpass`
-* `biquad.peaking(fc, Q, fs, dBgain)`
-* `biquad.lowshelf(fc, Q, fs, dBgain)`
-* `biquad.highshelf(fc, Q, fs, dBgain)`
+* `biquad.lowpass(fc, Q, fs)` · `highpass` · `bandpass` · `bandpass2` · `notch` · `allpass`
+* `biquad.peaking(fc, Q, fs, dBgain)` · `lowshelf` · `highshelf`
 
-$$H(z) = \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+Digital transfer function: $H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$. The numerator zeros set the nulls, denominator poles set the resonances. Q controls the peak width – 0.707 is Butterworth-flat, higher values produce a sharper resonance.
 
 <img src="plots/biquad-types.svg">
 
 ### `svf(data, params)`
 
-State variable filter – the workhorse of real-time synthesis. Trapezoidal integration keeps it stable even when you sweep cutoff with an LFO or envelope. Six outputs (LP/HP/BP/notch/peak/allpass) from one computation. Used in every modern soft synth. Simper/Cytomic (2011). Params: `fc`, `Q`, `fs`, `type`.
+State variable filter. Same 2nd-order transfer function as a biquad, but the trapezoidal integration topology allows zero-delay feedback – safe for per-sample parameter modulation (LFO, envelope). Six simultaneous outputs from one computation. Simper/Cytomic (2011). Params: `fc`, `Q`, `fs`, `type`.
 
-$$g = \tan(\pi f_c/f_s), \quad k = 1/Q$$
+Coefficients: $g = \tan(\pi f_c/f_s)$, $k = 1/Q$. Equivalent to bilinear-transformed biquad.
 
 <img src="plots/svf-lowpass.svg">
 
 ### `butterworth(order, fc, fs, type?)`
 
-Maximally flat magnitude – no ripple anywhere. The safe default when you don't know which filter to pick. Anti-aliasing, crossovers, general-purpose lowpass/highpass. Butterworth (1930).[^bw]
+Maximally flat magnitude – no ripple anywhere. The safe default for anti-aliasing, crossovers, general-purpose filtering. Butterworth (1930).[^bw]
 
 [^bw]: S. Butterworth, "On the Theory of Filter Amplifiers," *Wireless Engineer*, 1930.
 
-$$|H(j\omega)|^2 = \frac{1}{1 + (\omega/\omega_c)^{2N}}$$
+Analog prototype: $|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ – the magnitude squared drops monotonically. At $\omega = \omega_c$ it equals 0.5 (–3 dB). Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$, uniformly spaced on a circle.
+**–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
 
 <img src="plots/butterworth.svg">
 
-Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$, uniformly spaced on a circle. Slope: $-6N$ dB/oct.
-
 ### `chebyshev(order, fc, fs, ripple?, type?)`
 
-Steeper cutoff than Butterworth for the same order – at the cost of passband ripple. When you need a sharper edge and can tolerate small amplitude variations in the passband.
+Steeper cutoff than Butterworth for the same order – at the cost of passband ripple. When you need a sharper edge and can tolerate small amplitude variations.
 
-$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 T_N^2(\omega/\omega_c)}, \quad \varepsilon = \sqrt{10^{R_p/10} - 1}$$
+Analog prototype: $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ where $T_N$ is the Nth Chebyshev polynomial – it oscillates in the passband (causing ripple) then grows fast in the stopband (steep rolloff). $\varepsilon = \sqrt{10^{R_p/10} - 1}$ controls the ripple depth.
+**Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**
 
 <img src="plots/chebyshev.svg">
 
-Poles on an s-plane ellipse. Default ripple: 1 dB.
-
 ### `chebyshev2(order, fc, fs, attenuation?, type?)`
 
-Flat passband with sharp cutoff – the ripple goes into the stopband instead. Best when passband must be perfectly flat but you don't care about the exact shape of the rejection region.
+Flat passband, equiripple stopband. The ripple goes into the rejection region instead. Best when passband must be perfectly flat but you don't care about exact stopband shape.
 
-$$|H(j\omega)|^2 = \frac{1}{1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega))}$$
+Analog prototype: $|H(j\omega)|^2 = 1/(1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega)))$ – inverse of Type I. Zeros on the $j\omega$ axis create notches that enforce the stopband floor.
+**Flat passband · –40 dB stopband floor · –40 dB at 2× fc**
 
 <img src="plots/chebyshev2.svg">
 
-Default attenuation: 40 dB.
-
 ### `elliptic(order, fc, fs, ripple?, attenuation?, type?)`
 
-The sharpest transition you can get for a given order – ripple in both passband and stopband. A 4th-order elliptic matches a 7th-order Butterworth in transition width. Used when filter order (= latency, cost) is the bottleneck. Cauer (1958).[^cauer]
+Sharpest transition for a given order – ripple in both passband and stopband. A 4th-order elliptic matches a 7th-order Butterworth in transition width. Cauer (1958).[^cauer]
 
 [^cauer]: W. Cauer, *Synthesis of Linear Communication Networks*, 1958.
 
-$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 R_N^2(\omega/\omega_c)}$$
+Analog prototype: $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 R_N^2(\omega/\omega_c))$ where $R_N$ is a rational Chebyshev (Jacobi elliptic) function – optimal distribution of error between passband and stopband.
+**Default 1 dB ripple, 40 dB attenuation · –40 dB at 2× fc · 10.6% overshoot**
 
 <img src="plots/elliptic.svg">
 
-$R_N$ is a rational Chebyshev (Jacobi elliptic) function. Default: 1 dB ripple, 40 dB attenuation.
-
 ### `bessel(order, fc, fs, type?)`
 
-Maximally flat group delay – preserves waveform shape with near-zero overshoot (0.9% at order 4). The choice for biomedical signals (ECG, EEG), control systems, and anywhere ringing distorts the measurement. Thomson (1949).[^thomson]
+Maximally flat group delay – preserves waveform shape with near-zero overshoot. The choice for biomedical signals (ECG, EEG), control systems, and anywhere ringing distorts the measurement. Thomson (1949).[^thomson]
 
 [^thomson]: W.E. Thomson, "Delay Networks Having Maximally Flat Frequency Characteristics," *Proc. IEE*, 1949.
 
-$$H(s) = \frac{\theta_N(0)}{\theta_N(s/\omega_c)}$$
+Analog prototype: $H(s) = \theta_N(0)/\theta_N(s/\omega_c)$ where $\theta_N$ is the reverse Bessel polynomial. Poles cluster near the negative real axis, producing the flattest possible group delay.
+**–3 dB at fc · –14 dB at 2× fc (gentlest rolloff) · 0.9% overshoot · 28 samples settling**
 
 <img src="plots/bessel.svg">
 
-Gentlest rolloff of all families, but best transient response.
-
 ### `legendre(order, fc, fs, type?)`
 
-Steepest rolloff you can get without any ripple – the sweet spot between Butterworth (gentle) and Chebyshev (sharp but rippled). Papoulis (1958), Bond (2004).[^papoulis]
+Steepest monotonic (ripple-free) rolloff. The sweet spot between Butterworth (gentle) and Chebyshev (sharp but rippled). Papoulis (1958), Bond (2004).[^papoulis]
 
 [^papoulis]: A. Papoulis, "Optimum Filters with Monotonic Response," *Proc. IRE*, 1958.
 
-$$|H(j\omega)|^2 = 1 - P_N\!\left(1 - 2(\omega/\omega_c)^2\right)$$
+Analog prototype: $|H(j\omega)|^2 = 1 - P_N(1 - 2(\omega/\omega_c)^2)$ where $P_N$ is an optimized Legendre polynomial that maximizes the rolloff slope while keeping it monotonic.
+**–3 dB at fc · –31 dB at 2× fc · no ripple · 11.3% overshoot**
 
 <img src="plots/legendre.svg">
 
 ### `linkwitzRiley(order, fc, fs)`
 
-Crossover filter – LP + HP sum to perfectly flat magnitude. The standard for loudspeaker crossovers and multi-band processing. Two cascaded Butterworth filters. Linkwitz & Riley (1976).[^lr] Returns `{ low, high }`. Order must be even (2, 4, 6, 8).
+Crossover: LP + HP sum to perfectly flat magnitude. The standard for loudspeaker crossovers and multi-band processing. Two cascaded Butterworth filters. Linkwitz & Riley (1976).[^lr] Returns `{ low, high }`. Order must be even (2, 4, 6, 8).
 
 [^lr]: S.H. Linkwitz, "Active Crossover Networks for Noncoincident Drivers," *JAES*, 1976.
+
+**–6 dB at fc (both bands) · bands sum to 0 dB at all frequencies**
 
 <img src="plots/linkwitz-riley-low.svg">
 
 ### `iirdesign(fpass, fstop, rp?, rs?, fs?)`
 
-Give it your specs (passband, stopband, ripple, rejection) and it picks the best family and minimum order automatically. Returns `{ sos, order, type }`.
+Give it your specs (passband edge, stopband edge, max ripple, min rejection) and it picks the best family and minimum order automatically. Returns `{ sos, order, type }`.
 
 ### IIR comparison
 
@@ -245,130 +163,131 @@ Finite impulse response – no feedback, always stable. Symmetric coefficients g
 
 ### `firwin(numtaps, cutoff, fs, opts?)`
 
-Window method FIR – truncated sinc × window function. Quick to design, predictable, good enough for most lowpass/highpass/bandpass needs. The default for 80% of FIR tasks.
-
-$$h[n] = \frac{\sin(\omega_c n)}{\pi n} \cdot w[n]$$
+Window method FIR – truncated ideal lowpass (sinc) multiplied by a window function. Impulse response: $h[n] = \sin(\omega_c n)/(\pi n) \cdot w[n]$ – the sinc gives the ideal brick-wall response, the window smooths the truncation. Supports `lowpass`, `highpass`, `bandpass`, `bandstop`. Default window: Hamming (–43 dB sidelobes).
+**Linear phase · delay = (N–1)/2 samples**
 
 <img src="plots/firwin-lp.svg">
 
-Supports `lowpass`, `highpass`, `bandpass`, `bandstop`. Default window: Hamming.
-
 ### `firls(numtaps, bands, desired, weight?)`
 
-Least-squares optimal FIR – minimizes total squared error between actual and desired response. Smoother than remez, better for audio applications where average error matters more than worst-case.
+Least-squares optimal – minimizes total squared error between actual and desired response. Smoother transitions than remez, better for audio where average error matters more than worst-case.
+**Linear phase · smooth transition · no equiripple**
 
 <img src="plots/firls.svg">
 
 ### `remez(numtaps, bands, desired, weight?)`
 
-Parks-McClellan equiripple – minimizes peak error, giving the narrowest transition band for a given number of taps. The gold standard when you have tight specs. Parks & McClellan (1972).[^pm]
+Parks-McClellan equiripple – minimizes peak error: $\min \max_\omega |W(\omega)(H(\omega) - D(\omega))|$. Narrowest transition band for a given number of taps. Parks & McClellan (1972).[^pm]
+**Linear phase · equiripple error · sharpest cutoff per tap**
 
 [^pm]: T.W. Parks, J.H. McClellan, "Chebyshev Approximation for Nonrecursive Digital Filters," *IEEE Trans.*, 1972.
-
-$$\min \max_\omega \left| W(\omega)(H(\omega) - D(\omega)) \right|$$
 
 <img src="plots/remez.svg">
 
 ### `firwin2(numtaps, freq, gain, opts?)`
 
-Arbitrary magnitude response via frequency sampling. Specify gain at any set of frequency points – draw any shape you want. Used for custom EQ curves, matching measured responses.
+Arbitrary magnitude response via frequency sampling. Specify gain at any set of frequency points. Used for custom EQ curves, matching measured responses.
+**Linear phase · any shape**
 
 <img src="plots/firwin2.svg">
 
 ### `hilbert(N)`
 
-90° phase shift at unity magnitude. The key to analytic signals – combine with the original to get instantaneous amplitude and frequency. Used in envelope extraction, SSB modulation, pitch detection.
-
-$$h[n] = \begin{cases} 2/(\pi n) & n \text{ odd} \\ 0 & n \text{ even} \end{cases}$$
+90° phase shift at unity magnitude. Impulse response: $h[n] = 2/(\pi n)$ for odd $n$, $0$ for even. Combine with the original to get the analytic signal (instantaneous amplitude + frequency). Used in envelope extraction, SSB modulation, pitch detection.
+**Linear phase · zero at DC and Nyquist**
 
 <img src="plots/hilbert.svg">
 
 ### `differentiator(N, opts?)`
 
-FIR derivative filter – discrete derivative with better noise immunity than a simple first difference. Used in edge detection, rate-of-change estimation, velocity from position data.
+FIR derivative: $h[n] = (-1)^n/n$ windowed. Discrete derivative with better noise immunity than a first difference. Used in edge detection, rate-of-change, velocity from position.
+**Antisymmetric · linear phase**
 
 <img src="plots/differentiator.svg">
 
 ### `raisedCosine(N, beta?, sps?, opts?)`
 
-Pulse shaping for digital communications (QAM, PSK, OFDM). Zero intersymbol interference at symbol centers. `root: true` for matched TX/RX pair.
+Pulse shaping for digital communications (QAM, PSK, OFDM). Zero intersymbol interference at symbol centers. $\beta$ controls excess bandwidth: 0 = minimum bandwidth (long ringing), 0.35 = standard, 1 = widest. `root: true` for matched TX/RX pair.
 
 <img src="plots/raised-cosine.svg">
 
 ### `gaussianFir(N, bt?, sps?)`
 
-Gaussian pulse shaping – the standard for GMSK (GSM) and Bluetooth. More spectrally compact than raised cosine, at the cost of some ISI. BT=0.3 for GMSK.
+Gaussian pulse shaping – the standard for GMSK (GSM) and Bluetooth. More spectrally compact than raised cosine at the cost of some ISI. BT=0.3 for GMSK.
 
 <img src="plots/gaussian-fir.svg">
 
 ### `matchedFilter(template)`
 
-Optimal detector for a known waveform in white noise – maximizes SNR at the detection point. Used in radar, sonar, and digital communications for preamble/sync detection.
+Optimal detector for a known waveform in white noise. Time-reversed, energy-normalized template – maximizes SNR at the detection point. Used in radar, sonar, preamble detection.
 
 <img src="plots/matched-filter.svg">
 
 ### `minimumPhase(h)`
 
-Convert linear-phase FIR to minimum-phase via cepstral method. Same magnitude response but half the delay – useful when FIR latency is too high but you don't need linear phase.
+Convert linear-phase FIR to minimum-phase via cepstral method. Same magnitude response, approximately half the delay. Useful when FIR latency is too high and linear phase is not required.
 
 <img src="plots/minimum-phase.svg">
 
 ### `yulewalk(order, frequencies, magnitudes)`
 
-IIR approximation of an arbitrary magnitude response via Yule-Walker method. When you have a target frequency curve and want an IIR filter (not FIR) to match it. Returns `{ b, a }`.
+IIR approximation of an arbitrary magnitude response via Yule-Walker (autocorrelation) method. When you have a target curve and want an IIR (not FIR) filter. Returns `{ b, a }`.
 
 <img src="plots/yulewalk.svg">
 
 ### `kaiserord(deltaF, attenuation)`
 
-Don't know how many taps you need? Give it transition width and desired attenuation, get back the filter length and Kaiser $\beta$. Feed the result to `firwin`. Returns `{ numtaps, beta }`.
+Estimate FIR filter length and Kaiser $\beta$ from specifications. Give it transition width (fraction of Nyquist) and desired attenuation (dB), get `{ numtaps, beta }`. Feed into `firwin`.
 
 ### `integrator(rule?)`
 
-Newton-Cotes quadrature coefficients for numerical integration. Rules: `rectangular`, `trapezoidal`, `simpson`, `simpson38`.
+Newton-Cotes quadrature coefficients. Convolve with signal to integrate. Rules: `rectangular` [1], `trapezoidal` [0.5, 0.5], `simpson` [1/6, 4/6, 1/6], `simpson38` [1/8, 3/8, 3/8, 1/8].
 
 <img src="plots/integrator.svg">
 
 ### `lattice(data, params)`
 
-Lattice/ladder IIR structure using reflection coefficients (PARCOR). Each stage is guaranteed stable if $|k_i| < 1$. Used in speech coding (LPC synthesis) and high-precision filtering. Params: `k`, `v`.
+Lattice/ladder IIR using reflection coefficients (PARCOR). Each stage is guaranteed stable when $|k_i| < 1$. Used in speech coding (LPC synthesis) and high-precision filtering. Params: `k`, `v`.
 
 ### `warpedFir(data, params)`
 
-Frequency-warped FIR – replaces unit delays with allpass delays, concentrating resolution at low frequencies where the ear is most sensitive. Used in perceptual audio coding and efficient EQ. Params: `coefs`, `lambda` (~0.7 for 44.1 kHz).
+Frequency-warped FIR – allpass delay elements instead of unit delays concentrate resolution at low frequencies. Used in perceptual audio coding and efficient EQ. Params: `coefs`, `lambda` (~0.7 for 44.1 kHz).
 
 
 ## Smooth
 
-Noise in, clean signal out. From the simplest one-pole average to adaptive smoothers that track fast movements while suppressing jitter at rest. All operate in-place: `fn(data, params) → data`.
+Smoothing and denoising. All operate in-place: `fn(data, params) → data`.
 
 ### `onePole(data, params)`
 
-One-pole lowpass (exponential moving average) – the simplest possible IIR smoother. One parameter, one multiply, no overshoot. Reach for this first when smoothing control signals, sensor data, or parameter changes. Params: `fc`, `fs`.
-
-$y[n] = (1\!-\!a)\,x[n] + a\,y[n\!-\!1], \quad a = e^{-2\pi f_c/f_s}$
+Exponential moving average – the simplest IIR smoother. One multiply per sample, no overshoot. Difference equation: $y[n] = (1-a)\,x[n] + a\,y[n-1]$ where $a = e^{-2\pi f_c/f_s}$. Transfer function: $H(z) = (1-a)/(1-az^{-1})$. Params: `fc`, `fs`.
+**–6 dB/oct · 1 multiply · IIR (infinite settling)**
 
 <img src="plots/one-pole.svg">
 
 ### `movingAverage(data, params)`
 
-Boxcar average of last N samples. Linear phase, no overshoot, excellent for removing periodic noise when N matches the period. The simplest FIR smoother. Params: `memory`.
+Boxcar average of last N samples. $h[n] = 1/N$ for $n = 0..N-1$, $H(z) = (1 - z^{-N})/(N(1 - z^{-1}))$. Excellent for removing periodic noise when N matches the period. Params: `memory`.
+**Linear phase · FIR · N multiplies · nulls at multiples of fs/N**
 
 <img src="plots/moving-average.svg">
 
 ### `leakyIntegrator(data, params)`
 
-Exponential decay. $y[n] = \lambda\,y[n\!-\!1] + (1\!-\!\lambda)\,x[n]$. Params: `lambda`.
+Exponential decay accumulator. $y[n] = \lambda\,y[n-1] + (1-\lambda)\,x[n]$. Same as onePole but parameterized by decay factor $\lambda$ (0–1) instead of cutoff frequency. Params: `lambda`.
+**1 multiply · IIR**
 
 <img src="plots/leaky-integrator.svg">
 
 ### `median(data, params)`
 
-Nonlinear median filter – replaces each sample with the median of its neighborhood. Removes impulse noise (clicks, pops, outliers) while preserving edges. Used in audio click removal, sensor outlier rejection, image denoising. Params: `size`.
+Nonlinear – replaces each sample with the median of its neighborhood. Removes impulse noise (clicks, pops, outliers) while preserving edges and steps. Used in click removal, sensor outlier rejection, image denoising. Params: `size`.
+**Nonlinear · no formula · preserves edges · O(N log N) per sample**
 
 ### `savitzkyGolay(data, params)`
 
-Polynomial fit to sliding window – smooths noise while preserving peak height, width, and shape. The standard in spectroscopy, chromatography, and any measurement where peak distortion is unacceptable. Also computes smooth derivatives. Savitzky & Golay (1964).[^sg] Params: `windowSize`, `degree`, `derivative`.
+Polynomial fit to sliding window – smooths noise while preserving peak height, width, and shape. The standard in spectroscopy, chromatography, and any measurement where peak distortion matters. Also computes smooth derivatives. Savitzky & Golay (1964).[^sg] Params: `windowSize`, `degree`, `derivative`.
+**FIR · linear phase · preserves moments up to degree**
 
 [^sg]: A. Savitzky, M.J.E. Golay, "Smoothing and Differentiation of Data," *Analytical Chemistry*, 1964.
 
@@ -376,58 +295,57 @@ Polynomial fit to sliding window – smooths noise while preserving peak height,
 
 ### `gaussianIir(data, params)`
 
-Recursive Gaussian smoothing (Young-van Vliet) – O(1) cost regardless of kernel size. When you need Gaussian blur with sigma=100, FIR needs 600+ taps; this needs 6 multiplies. Forward-backward for zero phase. Params: `sigma`.
+Recursive Gaussian approximation (Young-van Vliet). O(1) cost regardless of kernel size – when sigma=100, FIR needs 600+ taps; this uses 6 multiplies. Forward-backward pass for zero phase. Params: `sigma`.
+**IIR · zero phase (offline) · O(1) per sample**
 
 <img src="plots/gaussian-iir.svg">
 
 ### `oneEuro(data, params)`
 
-Adaptive lowpass – cutoff increases with signal speed. Smooth at rest, responsive when moving. The go-to for mouse/touch/gaze input, sensor fusion, any UI where you want low jitter without sluggish response. Casiez et al. (2012).[^euro] Params: `minCutoff`, `beta`, `dCutoff`, `fs`.
+Adaptive lowpass – cutoff increases with signal speed. Smooth at rest, responsive when moving. Used for mouse/touch/gaze input, sensor fusion. Casiez et al. (2012).[^euro] Params: `minCutoff`, `beta`, `dCutoff`, `fs`.
+**Adaptive · 1st-order IIR with time-varying cutoff**
 
 [^euro]: G. Casiez et al., "1€ Filter," *CHI*, 2012.
 
 ### `dynamicSmoothing(data, params)`
 
-Self-adjusting SVF – cutoff adapts to signal speed. Like oneEuro but at audio rate. Smooth knob/fader movements without zipper noise while keeping transients snappy. Params: `minFc`, `maxFc`, `sensitivity`, `fs`.
+Self-adjusting SVF – cutoff adapts to signal speed. Like oneEuro but at audio rate, for smoothing parameter changes without zipper noise. Params: `minFc`, `maxFc`, `sensitivity`, `fs`.
+**Adaptive · 2nd-order SVF with time-varying cutoff**
 
 <img src="plots/dynamic-smoothing.svg">
 
 
 ## Adaptive
 
-Filters that learn. Feed in an input and a desired signal, and the weights converge to minimize the error. Echo cancellation, noise cancellation, system identification, channel equalization. Returns filtered output; `params.error` contains the error signal; `params.w` updated in place.
+Filters that learn from a reference signal. Returns filtered output; `params.error` contains the error signal; `params.w` updated in place.
 
 ### `lms(input, desired, params)`
 
-Least Mean Squares – the original adaptive algorithm (1960). Simple stochastic gradient descent. Educational, but in practice almost always use NLMS instead.[^lms] Params: `order`, `mu`.
+Least Mean Squares – stochastic gradient descent. Update rule: $\mathbf{w}[n+1] = \mathbf{w}[n] + \mu\,e[n]\,\mathbf{x}[n]$ where $e[n] = d[n] - \mathbf{w}^T\mathbf{x}[n]$. Convergence requires $0 < \mu < 2/(N\sigma_x^2)$. Widrow & Hoff (1960).[^lms] Params: `order`, `mu`.
+**O(N)/sample · slow convergence · very robust**
 
 [^lms]: B. Widrow, M.E. Hoff, "Adaptive Switching Circuits," *IRE WESCON*, 1960.
-
-$$\mathbf{w}[n\!+\!1] = \mathbf{w}[n] + \mu\,e[n]\,\mathbf{x}[n]$$
-
-O(N)/sample. Convergence: $0 < \mu < 2/(N\sigma_x^2)$.
 
 <img src="plots/lms.svg">
 
 ### `nlms(input, desired, params)`
 
-Normalized LMS – self-normalizing step size that adapts to input power. The practical default. Start here for echo cancellation, noise cancellation, system identification. Params: `order`, `mu` (0–2), `eps`.
-
-$$\mathbf{w}[n\!+\!1] = \mathbf{w}[n] + \frac{\mu\,e[n]\,\mathbf{x}[n]}{\mathbf{x}^T\mathbf{x} + \varepsilon}$$
-
-O(N)/sample. Convergence: $0 < \mu < 2$ (independent of input power).
+Normalized LMS – step size adapts to input power: $\mathbf{w}[n+1] = \mathbf{w}[n] + \mu\,e[n]\,\mathbf{x}[n] / (\mathbf{x}^T\mathbf{x} + \varepsilon)$. Convergence: $0 < \mu < 2$ regardless of input level. The practical default for echo cancellation, noise cancellation, system identification. Params: `order`, `mu` (0–2), `eps`.
+**O(N)/sample · medium convergence · robust**
 
 <img src="plots/nlms.svg">
 
 ### `rls(input, desired, params)`
 
-Recursive Least Squares – fastest convergence (~2N samples) via inverse correlation matrix. When you need the filter to lock on fast. O(N²)/sample – use for short filters (N ≤ 64). Params: `order`, `lambda`, `delta`.
+Recursive Least Squares – fastest convergence (~2N samples) via inverse correlation matrix. Use when the filter must lock on fast (rapidly changing echo paths, fast channel tracking). Params: `order`, `lambda`, `delta`.
+**O(N²)/sample · fast convergence · fragile if lambda is wrong · use for N ≤ 64**
 
 <img src="plots/rls.svg">
 
 ### `levinson(R, order?)`
 
-Levinson-Durbin recursion – solves Toeplitz system for LPC coefficients from autocorrelation. The foundation of speech coding (CELP, LPC-10), AR spectral estimation, and linear prediction. Returns `{ a, error, k }`. O(N²)/block.
+Levinson-Durbin recursion – solves Toeplitz system for LPC coefficients from autocorrelation. Used in speech coding (CELP, LPC-10), AR spectral estimation, linear prediction. Returns `{ a, error, k }` (prediction coefficients, error power, reflection coefficients).
+**O(N²)/block · batch (not real-time)**
 
 
 ## Multirate
@@ -649,5 +567,3 @@ filter(block2, params)  // seamless
 
 - **[audio-filter](https://github.com/audiojs/audio-filter)** – weighting, EQ, synthesis, measurement, effects
 - **[window-function](https://github.com/scijs/window-function)** – 34 window functions
-
-<p align=center><a href="./LICENSE">MIT</a> · <a href="https://github.com/krishnized/license/">ॐ</a></p>
