@@ -38,8 +38,8 @@ Maximally flat magnitude response. No ripple. Butterworth (1930).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Filter order (1-10). Slope = -6N dB/oct. |
-| fc | number | -- | Cutoff Hz (-3 dB) |
+| order | number | – | Filter order (1-10). Slope = -6N dB/oct. |
+| fc | number | – | Cutoff Hz (-3 dB) |
 
 $$|H(j\omega)|^2 = \frac{1}{1 + (\omega/\omega_c)^{2N}}$$
 
@@ -58,8 +58,8 @@ Chebyshev Type I. Trades passband ripple for steeper cutoff. Chebyshev (1854).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Filter order |
-| fc | number | -- | Passband edge Hz (NOT -3 dB point) |
+| order | number | – | Filter order |
+| fc | number | – | Passband edge Hz (NOT -3 dB point) |
 | ripple | number | 1 | Max passband ripple dB |
 
 $$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 T_N^2(\omega/\omega_c)}$$
@@ -81,8 +81,8 @@ Chebyshev Type II (inverse Chebyshev). Flat passband, equiripple stopband with c
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Filter order |
-| fc | number | -- | Stopband edge Hz (NOT passband edge) |
+| order | number | – | Filter order |
+| fc | number | – | Stopband edge Hz (NOT passband edge) |
 | attenuation | number | 40 | Minimum stopband rejection dB |
 
 $$|H(j\omega)|^2 = \frac{1}{1 + \frac{1}{\varepsilon^2 T_N^2(\omega_c/\omega)}}$$
@@ -104,8 +104,8 @@ Elliptic (Cauer) filter. Sharpest possible transition for a given order. Ripple 
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Filter order |
-| fc | number | -- | Cutoff Hz |
+| order | number | – | Filter order |
+| fc | number | – | Cutoff Hz |
 | ripple | number | 1 | Max passband ripple dB |
 | attenuation | number | 40 | Min stopband rejection dB |
 
@@ -128,8 +128,8 @@ Maximally flat group delay. Preserves waveform shape. Thomson (1949).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Filter order (1-10) |
-| fc | number | -- | Cutoff Hz (-3 dB point) |
+| order | number | – | Filter order (1-10) |
+| fc | number | – | Cutoff Hz (-3 dB point) |
 
 $$H(s) = \frac{\theta_N(0)}{\theta_N(s/\omega_c)}$$
 
@@ -150,8 +150,8 @@ Steepest monotonic (ripple-free) response. Papoulis (1958), Bond (2004).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Filter order (1-8) |
-| fc | number | -- | Cutoff Hz (-3 dB) |
+| order | number | – | Filter order (1-8) |
+| fc | number | – | Cutoff Hz (-3 dB) |
 
 $$|H(j\omega)|^2 = 1 - P_N\!\left(1 - 2(\omega/\omega_c)^2\right)$$
 
@@ -170,8 +170,8 @@ Auto-design: picks optimal IIR family and order from passband/stopband specs.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| fpass | number | -- | Passband edge Hz |
-| fstop | number | -- | Stopband edge Hz |
+| fpass | number | – | Passband edge Hz |
+| fstop | number | – | Stopband edge Hz |
 | rp | number | 1 | Max passband ripple dB |
 | rs | number | 40 | Min stopband attenuation dB |
 | fs | number | 44100 | Sample rate Hz |
@@ -223,8 +223,8 @@ Window method FIR design. Truncated sinc with window function.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| numtaps | number | -- | Filter length (odd, >=3) |
-| cutoff | number or [number, number] | -- | Cutoff Hz. Array for bandpass/bandstop. |
+| numtaps | number | – | Filter length (odd, >=3) |
+| cutoff | number or [number, number] | – | Cutoff Hz. Array for bandpass/bandstop. |
 | fs | number | 44100 | Sample rate Hz |
 | opts.type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
 | opts.window | string or Float64Array | `'hamming'` | Window function name or custom array |
@@ -246,9 +246,9 @@ Arbitrary frequency response via frequency sampling. Draw any magnitude curve.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| numtaps | number | -- | Filter length (odd, >=3) |
-| freq | Array | -- | Normalized frequency breakpoints [0...1] (1=Nyquist). Must start at 0, end at 1. |
-| gain | Array | -- | Desired gain at each frequency point |
+| numtaps | number | – | Filter length (odd, >=3) |
+| freq | Array | – | Normalized frequency breakpoints [0...1] (1=Nyquist). Must start at 0, end at 1. |
+| gain | Array | – | Desired gain at each frequency point |
 | opts.window | string | `'hamming'` | Window function |
 | opts.nfft | number | 1024 | FFT size for interpolation |
 
@@ -266,9 +266,9 @@ Least-squares optimal FIR. Minimizes total squared error between actual and desi
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| numtaps | number | -- | Filter length (odd, >=3) |
-| bands | Array | -- | Band edges as fractions of Nyquist [0-1], in pairs |
-| desired | Array | -- | Desired gain at each band edge (piecewise linear) |
+| numtaps | number | – | Filter length (odd, >=3) |
+| bands | Array | – | Band edges as fractions of Nyquist [0-1], in pairs |
+| desired | Array | – | Desired gain at each band edge (piecewise linear) |
 | weight | Array | all 1s | Weight per band. Higher = tighter fit. |
 
 ```js
@@ -277,7 +277,7 @@ let h = firls(51, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
 
 ## remez
 
-Parks-McClellan equiripple. Optimal minimax FIR -- narrowest transition for given length.
+Parks-McClellan equiripple. Optimal minimax FIR – narrowest transition for given length.
 
 `remez(numtaps, bands, desired, weight?, maxiter?)` -> Float64Array
 
@@ -285,9 +285,9 @@ Parks-McClellan equiripple. Optimal minimax FIR -- narrowest transition for give
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| numtaps | number | -- | Filter length (odd, >=3) |
-| bands | Array | -- | Band edges as fractions of Nyquist [0-1] |
-| desired | Array | -- | Desired gain at each band edge |
+| numtaps | number | – | Filter length (odd, >=3) |
+| bands | Array | – | Band edges as fractions of Nyquist [0-1] |
+| desired | Array | – | Desired gain at each band edge |
 | weight | Array | all 1s | Relative importance per band |
 | maxiter | number | 40 | Maximum Remez iterations |
 
@@ -305,7 +305,7 @@ let h = remez(51, [0, 0.3, 0.4, 1], [1, 1, 0, 0], [1, 10])
 
 Estimate Kaiser window FIR length and beta from specifications.
 
-`kaiserord(deltaF, attenuation)` -> `{ numtaps, beta }` -- deltaF: transition BW as fraction of Nyquist, attenuation: stopband dB
+`kaiserord(deltaF, attenuation)` -> `{ numtaps, beta }` – deltaF: transition BW as fraction of Nyquist, attenuation: stopband dB
 
 ## hilbert
 
@@ -319,7 +319,7 @@ $$h[n] = \begin{cases} \frac{2}{\pi n} & n \text{ odd} \\ 0 & n \text{ even} \en
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| N | number | -- | Filter length (odd, >=3) |
+| N | number | – | Filter length (odd, >=3) |
 | opts.window | Float64Array or function | Hamming | Window function |
 
 ```js
@@ -339,9 +339,9 @@ $$h[n] = \frac{(-1)^n}{n} \cdot w[n], \quad n \neq 0$$
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| N | number | -- | Filter length (odd, >=3) |
+| N | number | – | Filter length (odd, >=3) |
 | opts.window | string | `'hamming'` | Window function |
-| opts.fs | number | -- | If provided, scales output to units/second |
+| opts.fs | number | – | If provided, scales output to units/second |
 
 ```js
 let h = differentiator(31, { fs: 44100 })
@@ -352,7 +352,7 @@ let deriv = convolution(signal, h)
 
 FIR integrator via Newton-Cotes quadrature.
 
-`integrator(rule='trapezoidal')` -> Float64Array -- `'rectangular'` `'trapezoidal'` `'simpson'` `'simpson38'`
+`integrator(rule='trapezoidal')` -> Float64Array – `'rectangular'` `'trapezoidal'` `'simpson'` `'simpson38'`
 
 ## raisedCosine
 
@@ -366,7 +366,7 @@ $$h(t) = \operatorname{sinc}\!\left(\frac{t}{T}\right) \frac{\cos(\pi\beta t/T)}
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| N | number | -- | Filter length (odd) |
+| N | number | – | Filter length (odd) |
 | beta | number | 0.35 | Roll-off factor (0=sinc, 1=widest) |
 | sps | number | 4 | Samples per symbol |
 | opts.root | boolean | false | Root-raised cosine if true |
@@ -385,13 +385,13 @@ Gaussian pulse shaping (GMSK, Bluetooth). $h(t) = \frac{\sqrt{2\pi}\,BT}{T} \exp
 
 Optimal detector for known signal in white Gaussian noise. Time-reversed, energy-normalized template.
 
-`matchedFilter(template)` -> Float64Array -- `let corr = convolution(received, matchedFilter(chirp))`
+`matchedFilter(template)` -> Float64Array – `let corr = convolution(received, matchedFilter(chirp))`
 
 ## yulewalk
 
 IIR design matching arbitrary frequency response via Yule-Walker method.
 
-`yulewalk(order, frequencies, magnitudes)` -> `{ b, a }` -- frequencies/magnitudes: [0-1] breakpoints (1=Nyquist)
+`yulewalk(order, frequencies, magnitudes)` -> `{ b, a }` – frequencies/magnitudes: [0-1] breakpoints (1=Nyquist)
 
 ```js
 let { b, a } = yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
@@ -401,7 +401,7 @@ let { b, a } = yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
 
 Converts linear-phase FIR to minimum-phase FIR. Same magnitude, near-zero latency. Cepstral method.
 
-`minimumPhase(h)` -> Float64Array -- `let minph = minimumPhase(firwin(101, 4000, 44100))`
+`minimumPhase(h)` -> Float64Array – `let minph = minimumPhase(firwin(101, 4000, 44100))`
 
 # Simple Filters
 
@@ -415,7 +415,7 @@ One-pole lowpass (exponential moving average). $y[n] = (1-a)\,x[n] + a\,y[n\!-\!
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| params.fc | number | -- | Cutoff frequency Hz (used to compute `a`) |
+| params.fc | number | – | Cutoff frequency Hz (used to compute `a`) |
 | params.a | number | auto | Pole coefficient. Auto-computed from fc/fs if omitted. |
 | params.fs | number | 44100 | Sample rate Hz |
 
@@ -427,19 +427,19 @@ onePole(data, { fc: 1000, fs: 44100 })
 
 Simple moving average. Replaces each sample with mean of last N samples.
 
-`movingAverage(data, { memory })` -> data (in-place) -- memory: window size (default 8)
+`movingAverage(data, { memory })` -> data (in-place) – memory: window size (default 8)
 
 ## leakyIntegrator
 
 $y[n] = \lambda\,y[n\!-\!1] + (1-\lambda)\,x[n]$.
 
-`leakyIntegrator(data, { lambda })` -> data (in-place) -- lambda: decay factor 0-1 (default 0.95)
+`leakyIntegrator(data, { lambda })` -> data (in-place) – lambda: decay factor 0-1 (default 0.95)
 
 ## dcBlocker
 
 Removes DC offset. $H(z) = (1 - z^{-1}) / (1 - Rz^{-1})$.
 
-`dcBlocker(data, { R })` -> data (in-place) -- R: pole radius (default 0.995)
+`dcBlocker(data, { R })` -> data (in-place) – R: pole radius (default 0.995)
 
 ![](plots/dc-blocker.svg)
 
@@ -453,7 +453,7 @@ Comb filter. Feedforward: $H(z) = 1 + g\,z^{-M}$, Feedback: $H(z) = 1/(1 - g\,z^
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| params.delay | number | -- | Delay in samples (M) |
+| params.delay | number | – | Delay in samples (M) |
 | params.gain | number | 0.5 | Feedforward/feedback gain |
 | params.type | string | `'feedforward'` | `'feedforward'` or `'feedback'` |
 
@@ -465,14 +465,14 @@ comb(data, { delay: 441, gain: 0.5, type: 'feedback' })
 
 Allpass filter. Unity magnitude, frequency-dependent phase shift.
 
-`allpass.first(data, params)` -> data (in-place) -- $H(z) = (a + z^{-1})/(1 + a\,z^{-1})$
+`allpass.first(data, params)` -> data (in-place) – $H(z) = (a + z^{-1})/(1 + a\,z^{-1})$
 
-`allpass.second(data, params)` -> data (in-place) -- Second-order via biquad
+`allpass.second(data, params)` -> data (in-place) – Second-order via biquad
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| params.a | number | -- | First-order coefficient |
-| params.fc | number | -- | Center frequency Hz (second-order) |
+| params.a | number | – | First-order coefficient |
+| params.fc | number | – | Center frequency Hz (second-order) |
 | params.Q | number | 0.707 | Quality factor (second-order) |
 | params.fs | number | 44100 | Sample rate Hz |
 
@@ -485,7 +485,7 @@ allpass.second(data, { fc: 1000, Q: 2, fs: 44100 })
 
 Pre-emphasis: $H(z) = 1 - \alpha z^{-1}$. De-emphasis: $H(z) = 1/(1 - \alpha z^{-1})$.
 
-`emphasis(data, { alpha })` / `deemphasis(data, { alpha })` -> data (in-place) -- alpha: coefficient 0-1 (default 0.97)
+`emphasis(data, { alpha })` / `deemphasis(data, { alpha })` -> data (in-place) – alpha: coefficient 0-1 (default 0.97)
 
 ## resonator
 
@@ -497,7 +497,7 @@ Constant-peak-gain resonator. Peak gain stays constant regardless of Q.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| params.fc | number | -- | Center frequency Hz |
+| params.fc | number | – | Center frequency Hz |
 | params.bw | number | 50 | Bandwidth Hz |
 | params.fs | number | 44100 | Sample rate Hz |
 
@@ -541,7 +541,7 @@ slewLimiter(data, { rise: 1000, fall: 1000, fs: 44100 })
 
 Median filter. Replaces each sample with median of its neighborhood.
 
-`median(data, { size })` -> data (in-place) -- size: window width, odd (default 5)
+`median(data, { size })` -> data (in-place) – size: window width, odd (default 5)
 
 # Specialized
 
@@ -555,7 +555,7 @@ State Variable Filter. Trapezoidal integration, stable under real-time parameter
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| params.fc | number | -- | Cutoff frequency Hz |
+| params.fc | number | – | Cutoff frequency Hz |
 | params.Q | number | 0.707 | Quality factor |
 | params.fs | number | 44100 | Sample rate Hz |
 | params.type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'notch'` `'peak'` `'allpass'` |
@@ -587,8 +587,8 @@ Crossover filter. LP + HP sum to flat magnitude. Linkwitz & Riley (1976).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| order | number | -- | Even: 2, 4, 6, 8. Slope = -6N dB/oct per band. |
-| fc | number | -- | Crossover frequency Hz (-6 dB point) |
+| order | number | – | Even: 2, 4, 6, 8. Slope = -6N dB/oct per band. |
+| fc | number | – | Crossover frequency Hz (-6 dB point) |
 | fs | number | 44100 | Sample rate Hz |
 
 ```js
@@ -619,13 +619,13 @@ savitzkyGolay(data, { windowSize: 11, degree: 2 })
 
 Zero-phase forward-backward filtering. Eliminates phase distortion (offline only). Doubles the filter order.
 
-`filtfilt(data, { coefs })` -> data (in-place) -- `filtfilt(data, { coefs: butterworth(4, 1000, 44100) })`
+`filtfilt(data, { coefs })` -> data (in-place) – `filtfilt(data, { coefs: butterworth(4, 1000, 44100) })`
 
 ## gaussianIir
 
 Recursive Gaussian smoothing (Young-van Vliet). O(N) cost regardless of sigma.
 
-`gaussianIir(data, { sigma })` -> data (in-place) -- sigma: std dev in samples (default 5)
+`gaussianIir(data, { sigma })` -> data (in-place) – sigma: std dev in samples (default 5)
 
 # Virtual Analog
 
@@ -763,8 +763,8 @@ Least Mean Squares adaptive filter. Widrow & Hoff (1960).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| input | Float64Array | -- | Input signal |
-| desired | Float64Array | -- | Desired (reference) signal, same length |
+| input | Float64Array | – | Input signal |
+| desired | Float64Array | – | Desired (reference) signal, same length |
 | params.order | number | 32 | Number of filter taps |
 | params.mu | number | 0.01 | Step size. 0 < mu < 2/(N*sigma^2). |
 
@@ -786,8 +786,8 @@ Normalized LMS. Self-normalizing step size. Nagumo & Noda (1967).
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| input | Float64Array | -- | Input signal |
-| desired | Float64Array | -- | Desired (reference) signal |
+| input | Float64Array | – | Input signal |
+| desired | Float64Array | – | Desired (reference) signal |
 | params.order | number | 32 | Number of filter taps |
 | params.mu | number | 0.5 | Normalized step size (0 < mu < 2) |
 | params.eps | number | 1e-8 | Regularization (prevents div by zero) |
@@ -808,8 +808,8 @@ Recursive Least Squares. Fast convergence (~2N samples). O(N^2) per sample.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| input | Float64Array | -- | Input signal |
-| desired | Float64Array | -- | Desired (reference) signal |
+| input | Float64Array | – | Input signal |
+| desired | Float64Array | – | Desired (reference) signal |
 | params.order | number | 16 | Number of filter taps |
 | params.lambda | number | 0.99 | Forgetting factor (0.9-1.0). 1 = no forgetting. |
 | params.delta | number | 100 | Initial P matrix scaling |
@@ -824,7 +824,7 @@ let output = rls(speaker, mic, { order: 32, lambda: 0.99 })
 
 Levinson-Durbin. Toeplitz solver for LPC coefficients in O(N^2).
 
-`levinson(R, order?)` -> `{ a, error, k }` -- a: prediction coefficients, error: prediction error, k: reflection coefficients
+`levinson(R, order?)` -> `{ a, error, k }` – a: prediction coefficients, error: prediction error, k: reflection coefficients
 
 # Dynamic
 
@@ -832,13 +832,13 @@ Levinson-Durbin. Toeplitz solver for LPC coefficients in O(N^2).
 
 Noise shaping for quantization. Feeds quantization error through filter to shape noise spectrum.
 
-`noiseShaping(data, { bits, coefs? })` -> data (in-place) -- bits: target depth (default 16), coefs: shaping filter (default 1st-order HP)
+`noiseShaping(data, { bits, coefs? })` -> data (in-place) – bits: target depth (default 16), coefs: shaping filter (default 1st-order HP)
 
 ## pinkNoise
 
 Pink noise filter (1/f, -3 dB/oct). Paul Kellet's refined IIR method. Apply to white noise.
 
-`pinkNoise(data, params)` -> data (in-place) -- `pinkNoise(whiteNoise, {})`
+`pinkNoise(data, params)` -> data (in-place) – `pinkNoise(whiteNoise, {})`
 
 ## oneEuro
 
@@ -878,7 +878,7 @@ dynamicSmoothing(data, { minFc: 1, maxFc: 5000, sensitivity: 1 })
 
 Constant dB/octave slope. Cascade of octave-spaced shelving sections.
 
-`spectralTilt(data, { slope, fs? })` -> data (in-place) -- slope: dB/oct (positive = boost HF). `spectralTilt(data, { slope: -3 })`
+`spectralTilt(data, { slope, fs? })` -> data (in-place) – slope: dB/oct (positive = boost HF). `spectralTilt(data, { slope: -3 })`
 
 ## variableBandwidth
 
@@ -910,8 +910,8 @@ Downsample by factor M with anti-alias FIR lowpass.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| data | Float64Array | -- | Input signal |
-| factor | number | -- | Decimation factor M |
+| data | Float64Array | – | Input signal |
+| factor | number | – | Decimation factor M |
 | opts.numtaps | number | 30*M+1 | Anti-alias FIR length |
 | opts.fs | number | 44100 | Sample rate Hz |
 
@@ -927,8 +927,8 @@ Upsample by factor L with anti-image FIR lowpass.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| data | Float64Array | -- | Input signal |
-| factor | number | -- | Interpolation factor L |
+| data | Float64Array | – | Input signal |
+| factor | number | – | Interpolation factor L |
 | opts.numtaps | number | 30*L+1 | Anti-image FIR length |
 | opts.fs | number | 44100 | Sample rate Hz |
 
@@ -952,8 +952,8 @@ $$H(z) = \left(\frac{1 - z^{-RM}}{1 - z^{-1}}\right)^N$$
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| data | Float64Array | -- | Input signal |
-| R | number | -- | Decimation ratio |
+| data | Float64Array | – | Input signal |
+| R | number | – | Decimation ratio |
 | N | number | 3 | Number of CIC stages |
 
 ```js
@@ -964,25 +964,25 @@ let down = cic(data, 8, 3)
 
 Decompose FIR into M polyphase components.
 
-`polyphase(h, M)` -> Array\<Float64Array\> -- `let phases = polyphase(firCoefs, 4)`
+`polyphase(h, M)` -> Array\<Float64Array\> – `let phases = polyphase(firCoefs, 4)`
 
 ## farrow
 
 Farrow fractional delay. Variable delay via polynomial interpolation.
 
-`farrow(data, { delay, order? })` -> data (in-place) -- delay: fractional samples (e.g. 3.7), order: polynomial degree (default 3)
+`farrow(data, { delay, order? })` -> data (in-place) – delay: fractional samples (e.g. 3.7), order: polynomial degree (default 3)
 
 ## thiran
 
 Thiran allpass fractional delay. Unity magnitude, maximally flat group delay.
 
-`thiran(delay, order?)` -> `{ b, a }` -- order defaults to ceil(delay). `let { b, a } = thiran(3.7)`
+`thiran(delay, order?)` -> `{ b, a }` – order defaults to ceil(delay). `let { b, a } = thiran(3.7)`
 
 ## oversample
 
 Upsample with anti-alias FIR filtering.
 
-`oversample(data, factor, { numtaps? })` -> Float64Array -- numtaps default 63. `let up = oversample(data, 4)`
+`oversample(data, factor, { numtaps? })` -> Float64Array – numtaps default 63. `let up = oversample(data, 4)`
 
 # Composites
 
@@ -990,7 +990,7 @@ Upsample with anti-alias FIR filtering.
 
 10-band graphic EQ at ISO octave frequencies (31.25 - 16000 Hz). Peaking biquads.
 
-`graphicEq(data, { gains, fs? })` -> data (in-place) -- gains: `{ 125: 3, 4000: -2 }` (dB per band)
+`graphicEq(data, { gains, fs? })` -> data (in-place) – gains: `{ 125: 3, 4000: -2 }` (dB per band)
 
 ## parametricEq
 
@@ -1019,7 +1019,7 @@ N-way crossover using Linkwitz-Riley filters. Returns SOS arrays per band.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| frequencies | Array | -- | Crossover points [f1, f2, ...]. N-1 freqs for N bands. |
+| frequencies | Array | – | Crossover points [f1, f2, ...]. N-1 freqs for N bands. |
 | order | number | 4 | LR order (2, 4, 8) |
 | fs | number | 44100 | Sample rate Hz |
 
@@ -1032,7 +1032,7 @@ bands.forEach(b => filter(Float64Array.from(data), { coefs: b }))
 
 Headphone crossfeed. Mixes L->R and R->L through lowpass.
 
-`crossfeed(left, right, { fc, level, fs? })` -> modifies in-place -- fc: cutoff Hz (700), level: mix 0-1 (0.3)
+`crossfeed(left, right, { fc, level, fs? })` -> modifies in-place – fc: cutoff Hz (700), level: mix 0-1 (0.3)
 
 ## formant
 
@@ -1061,8 +1061,8 @@ Channel vocoder. Analyzes modulator spectrum, applies it to carrier.
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| carrier | Float64Array | -- | Carrier signal (e.g., sawtooth) |
-| modulator | Float64Array | -- | Modulator signal (e.g., voice) |
+| carrier | Float64Array | – | Carrier signal (e.g., sawtooth) |
+| modulator | Float64Array | – | Modulator signal (e.g., voice) |
 | params.bands | number | 16 | Number of analysis/synthesis bands |
 | params.fmin | number | 100 | Min frequency Hz |
 | params.fmax | number | 8000 | Max frequency Hz |
@@ -1078,13 +1078,13 @@ let output = vocoder(carrier, voice, { bands: 16 })
 
 Lattice IIR filter. Uses reflection coefficients (k) instead of direct-form.
 
-`lattice(data, { k, v? })` -> data (in-place) -- k: reflection coefficients, v: ladder coefficients (optional, ARMA)
+`lattice(data, { k, v? })` -> data (in-place) – k: reflection coefficients, v: ladder coefficients (optional, ARMA)
 
 ## warpedFir
 
 Frequency-warped FIR. Allpass delay elements instead of unit delays.
 
-`warpedFir(data, { coefs, lambda })` -> data (in-place) -- lambda: warping factor -1..1 (0.7 typical for 44.1 kHz)
+`warpedFir(data, { coefs, lambda })` -> data (in-place) – lambda: warping factor -1..1 (0.7 typical for 44.1 kHz)
 
 ## convolution
 
@@ -1111,8 +1111,8 @@ $20\log_{10}(\text{mag})$. Accepts number or Float64Array.
 
 ## groupDelay / phaseDelay
 
-`groupDelay(coefs, n?, fs?)` -> `{ frequencies, delay }` -- $\tau_g = -d\phi/d\omega$
-`phaseDelay(coefs, n?, fs?)` -> `{ frequencies, delay }` -- $\tau_p = -\phi/\omega$
+`groupDelay(coefs, n?, fs?)` -> `{ frequencies, delay }` – $\tau_g = -d\phi/d\omega$
+`phaseDelay(coefs, n?, fs?)` -> `{ frequencies, delay }` – $\tau_p = -\phi/\omega$
 
 ## impulseResponse / stepResponse
 
@@ -1147,8 +1147,8 @@ Biquad cascade (SOS) processor. Direct Form II Transposed. Processes data in-pla
 
 | Param | Type | Default | Description |
 |---|---|---|---|
-| data | Float64Array | -- | Input samples (modified in-place) |
-| params.coefs | SOS[] or SOS | -- | Biquad coefficients `{b0,b1,b2,a1,a2}` or array thereof |
+| data | Float64Array | – | Input samples (modified in-place) |
+| params.coefs | SOS[] or SOS | – | Biquad coefficients `{b0,b1,b2,a1,a2}` or array thereof |
 | params.state | Array | auto | Filter state `[[s0,s1], ...]` (persisted between calls) |
 
 ```js

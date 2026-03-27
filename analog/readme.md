@@ -1,14 +1,14 @@
 # Virtual Analog Filters
 
-Digital models of classic analog synthesizer circuits. These filters recreate the sonic character of hardware -- the warmth, the saturation, the screaming resonance -- that clean digital IIR filters cannot produce.
+Digital models of classic analog synthesizer circuits. These filters recreate the sonic character of hardware – the warmth, the saturation, the screaming resonance – that clean digital IIR filters cannot produce.
 
 ## Why analog sounds different
 
 A standard digital biquad is a linear system: double the input, double the output. Real analog circuits are nonlinear. Transistors and diodes have a transfer characteristic that compresses loud signals (approximately $\tanh$). This nonlinearity does three things:
 
-1. **Soft saturation** -- harmonics are generated, especially odd-order. This is perceived as warmth and fatness.
-2. **Resonance character** -- at high resonance, the filter sings rather than rings. In a linear filter, resonance = 1 means infinite gain at the cutoff frequency. In a nonlinear circuit, the saturation limits the peak and shapes the timbre of the self-oscillation.
-3. **Bass preservation** -- in the Moog ladder, high resonance sucks out bass (the feedback cancels low-frequency energy). In the diode ladder, per-stage saturation prevents this, keeping the bottom end intact.
+1. **Soft saturation** – harmonics are generated, especially odd-order. This is perceived as warmth and fatness.
+2. **Resonance character** – at high resonance, the filter sings rather than rings. In a linear filter, resonance = 1 means infinite gain at the cutoff frequency. In a nonlinear circuit, the saturation limits the peak and shapes the timbre of the self-oscillation.
+3. **Bass preservation** – in the Moog ladder, high resonance sucks out bass (the feedback cancels low-frequency energy). In the diode ladder, per-stage saturation prevents this, keeping the bottom end intact.
 
 ## Zero-delay feedback (ZDF)
 
@@ -17,7 +17,7 @@ Naive discretization of an analog filter (e.g., Euler forward difference) introd
 - Self-oscillation at the wrong frequency
 - Instability at high cutoff settings
 
-Zero-delay feedback solves this by using the **trapezoidal rule** for integration and solving the implicit equation analytically. The feedback path has no unit delay -- the output at sample $n$ depends on the input at sample $n$ and the current state, resolved simultaneously. This is the approach described in Vadim Zavalishin's "The Art of VA Filter Design" (2012).
+Zero-delay feedback solves this by using the **trapezoidal rule** for integration and solving the implicit equation analytically. The feedback path has no unit delay – the output at sample $n$ depends on the input at sample $n$ and the current state, resolved simultaneously. This is the approach described in Vadim Zavalishin's "The Art of VA Filter Design" (2012).
 
 The trapezoidal integrator coefficient:
 
@@ -50,11 +50,11 @@ moogLadder(chunk2, params) // continues from previous state
 ```
 
 **API**: `moogLadder(data, params)` &rarr; `data`
-- `data` -- `Float32Array | Float64Array`, modified in-place
-- `params.fc` -- cutoff frequency Hz (default 1000)
-- `params.resonance` -- 0--1 (default 0)
-- `params.fs` -- sample rate (default 44100)
-- `params.drive` -- input drive / saturation amount (default 1)
+- `data` – `Float32Array | Float64Array`, modified in-place
+- `params.fc` – cutoff frequency Hz (default 1000)
+- `params.resonance` – 0--1 (default 0)
+- `params.fs` – sample rate (default 44100)
+- `params.drive` – input drive / saturation amount (default 1)
 
 ![Moog ladder](../plots/moog-ladder.svg)
 
@@ -67,7 +67,7 @@ Diode ladder filter in the style of the **Roland TB-303** and EMS VCS3. Four cas
 - **Slope**: -24 dB/octave (4-pole)
 - **Resonance**: 0--1
 - **Saturation**: per-stage $\tanh$ nonlinearity
-- **Character**: Bright, squelchy, acidic. The per-stage saturation preserves bass content at high resonance -- where the Moog thins out, the diode ladder stays fat.
+- **Character**: Bright, squelchy, acidic. The per-stage saturation preserves bass content at high resonance – where the Moog thins out, the diode ladder stays fat.
 
 The feedback topology also differs: the diode ladder feeds back a weighted sum of all stage outputs, giving a gentler, less peaked resonance than the Moog's all-or-nothing 4th-stage feedback.
 
@@ -79,10 +79,10 @@ diodeLadder(data, params)   // in-place
 ```
 
 **API**: `diodeLadder(data, params)` &rarr; `data`
-- `data` -- `Float32Array | Float64Array`, modified in-place
-- `params.fc` -- cutoff frequency Hz (default 1000)
-- `params.resonance` -- 0--1 (default 0)
-- `params.fs` -- sample rate (default 44100)
+- `data` – `Float32Array | Float64Array`, modified in-place
+- `params.fc` – cutoff frequency Hz (default 1000)
+- `params.resonance` – 0--1 (default 0)
+- `params.fs` – sample rate (default 44100)
 
 ![Diode ladder](../plots/diode-ladder.svg)
 
@@ -90,7 +90,7 @@ diodeLadder(data, params)   // in-place
 
 ### korg35.js
 
-The **Korg MS-20** filter (Korg35 topology). Two cascaded one-pole stages with nonlinear feedback -- a simpler, more aggressive circuit than the 4-pole ladders.
+The **Korg MS-20** filter (Korg35 topology). Two cascaded one-pole stages with nonlinear feedback – a simpler, more aggressive circuit than the 4-pole ladders.
 
 - **Slope**: -12 dB/octave (2-pole)
 - **Resonance**: 0--1, where $k = 2 \cdot \text{resonance}$
@@ -110,11 +110,11 @@ korg35(data, { fc: 500, resonance: 0.6, type: 'highpass', fs: 44100 })
 ```
 
 **API**: `korg35(data, params)` &rarr; `data`
-- `data` -- `Float32Array | Float64Array`, modified in-place
-- `params.fc` -- cutoff frequency Hz (default 1000)
-- `params.resonance` -- 0--1 (default 0)
-- `params.fs` -- sample rate (default 44100)
-- `params.type` -- `'lowpass'` (default) or `'highpass'`
+- `data` – `Float32Array | Float64Array`, modified in-place
+- `params.fc` – cutoff frequency Hz (default 1000)
+- `params.resonance` – 0--1 (default 0)
+- `params.fs` – sample rate (default 44100)
+- `params.type` – `'lowpass'` (default) or `'highpass'`
 
 ![Korg35](../plots/korg35.svg)
 
@@ -136,6 +136,6 @@ korg35(data, { fc: 500, resonance: 0.6, type: 'highpass', fs: 44100 })
 
 **Modulation**: Parameters can change between `process()` calls (the state vector `params._s` persists). For per-sample modulation of cutoff, call the function with single-sample buffers or modify the source to accept parameter arrays.
 
-**What resonance = 1 means**: The filter self-oscillates -- it produces a (roughly) sinusoidal output at the cutoff frequency even with zero input. In the Moog, this is a clean sine. In the diode ladder, the per-stage saturation adds slight harmonic content. In the Korg35, the 2-pole structure and feedback nonlinearity produce a more complex, buzzy oscillation.
+**What resonance = 1 means**: The filter self-oscillates – it produces a (roughly) sinusoidal output at the cutoff frequency even with zero input. In the Moog, this is a clean sine. In the diode ladder, the per-stage saturation adds slight harmonic content. In the Korg35, the 2-pole structure and feedback nonlinearity produce a more complex, buzzy oscillation.
 
 **Drive** (Moog only): Values above 1 push the input harder into the $\tanh$ saturation, adding harmonics before the filter. At `drive: 1` the filter is relatively clean; at `drive: 4+` it is heavily saturated.

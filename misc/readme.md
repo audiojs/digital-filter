@@ -1,6 +1,6 @@
 # Building Blocks
 
-Small, focused, single-purpose processors. Each solves one specific problem. They don't form a class -- they're the toolbox drawer you reach into when you need a specific tool.
+Small, focused, single-purpose processors. Each solves one specific problem. They don't form a class – they're the toolbox drawer you reach into when you need a specific tool.
 
 Grouped loosely by function:
 
@@ -12,7 +12,7 @@ Remove DC offset (0 Hz component) from a signal. A recording with DC offset wast
 
 $$H(z) = \frac{1 - z^{-1}}{1 - R z^{-1}}$$
 
-The numerator is a zero at DC (blocks 0 Hz). The denominator is a pole near DC (keeps the filter's gain near unity at all other frequencies). $R$ controls how close the pole is to the unit circle -- closer to 1 means a narrower notch at DC but slower settling. Default $R = 0.995$.
+The numerator is a zero at DC (blocks 0 Hz). The denominator is a pole near DC (keeps the filter's gain near unity at all other frequencies). $R$ controls how close the pole is to the unit circle – closer to 1 means a narrower notch at DC but slower settling. Default $R = 0.995$.
 
 ```js
 import dcBlocker from 'digital-filter/misc/dc-blocker.js'
@@ -35,7 +35,7 @@ De-emphasis (IIR, cuts highs):
 
 $$H(z) = \frac{1}{1 - \alpha z^{-1}}$$
 
-Default $\alpha = 0.97$. They are exact inverses -- applying both in sequence yields unity.
+Default $\alpha = 0.97$. They are exact inverses – applying both in sequence yields unity.
 
 ```js
 import { emphasis, deemphasis } from 'digital-filter/misc/pre-emphasis.js'
@@ -64,7 +64,7 @@ spectralTilt(data, params)
 
 ### comb.js
 
-Comb filter -- signal plus a delayed copy of itself. The frequency response has evenly spaced peaks and notches (looks like a comb).
+Comb filter – signal plus a delayed copy of itself. The frequency response has evenly spaced peaks and notches (looks like a comb).
 
 Feedforward (FIR):
 
@@ -74,7 +74,7 @@ Feedback (IIR):
 
 $$H(z) = \frac{1}{1 - g \cdot z^{-M}}$$
 
-where $M$ is the delay in samples and $g$ is the gain. Feedforward combs create the hollow, swept sound of flanging. Feedback combs create resonant peaks -- the basis of Karplus-Strong plucked-string synthesis and Schroeder reverb structures.
+where $M$ is the delay in samples and $g$ is the gain. Feedforward combs create the hollow, swept sound of flanging. Feedback combs create resonant peaks – the basis of Karplus-Strong plucked-string synthesis and Schroeder reverb structures.
 
 ```js
 import comb from 'digital-filter/misc/comb.js'
@@ -118,13 +118,13 @@ second(data, { fc: 1000, Q: 2, fs: 44100 })
 
 ### resonator.js
 
-Constant-peak-gain resonator. Unlike a peaking EQ biquad (whose peak gain depends on Q), this resonator's peak amplitude stays constant regardless of bandwidth -- only the width of the resonance changes.
+Constant-peak-gain resonator. Unlike a peaking EQ biquad (whose peak gain depends on Q), this resonator's peak amplitude stays constant regardless of bandwidth – only the width of the resonance changes.
 
 $$H(z) = \frac{1 - R^2}{1 - 2R\cos\omega_0 z^{-1} + R^2 z^{-2}}$$
 
 where $R = 1 - \pi \cdot BW / f_s$ and $\omega_0 = 2\pi f_c / f_s$.
 
-Used for modal synthesis (bells, drums -- each mode is a resonator at a partial frequency), formant synthesis (the `formant` module uses these internally), and physical modeling.
+Used for modal synthesis (bells, drums – each mode is a resonator at a partial frequency), formant synthesis (the `formant` module uses these internally), and physical modeling.
 
 ```js
 import resonator from 'digital-filter/misc/resonator.js'
@@ -158,7 +158,7 @@ envelope(data, params)
 
 ### slew-limiter.js
 
-Rate-of-change limiter. Clips the derivative of the signal -- the output can only change by a maximum amount per sample. Nonlinear (not a conventional filter).
+Rate-of-change limiter. Clips the derivative of the signal – the output can only change by a maximum amount per sample. Nonlinear (not a conventional filter).
 
 If the input jumps instantaneously, the output ramps to the new value at the maximum slew rate. This prevents clicks from sudden parameter changes (gain jumps, mute/unmute), implements portamento/glide in synthesizers, and smooths control voltages.
 
@@ -177,7 +177,7 @@ slewLimiter(data, params)
 
 Reshape quantization noise spectrum during bit-depth reduction. Instead of rounding each sample independently (which produces white quantization noise), feed the quantization error back through a filter to push the noise into less audible frequency ranges.
 
-First-order noise shaping (the default) is simple error feedback -- equivalent to differentiating the quantization noise, which pushes energy toward high frequencies where hearing is less sensitive.
+First-order noise shaping (the default) is simple error feedback – equivalent to differentiating the quantization noise, which pushes energy toward high frequencies where hearing is less sensitive.
 
 ```js
 import noiseShaping from 'digital-filter/misc/noise-shaping.js'
@@ -191,7 +191,7 @@ noiseShaping(data, params)
 
 ### pink-noise.js
 
-Convert white noise to pink noise (1/f spectral slope, -3 dB/octave). Uses Paul Kellet's refined IIR approximation -- a parallel bank of first-order filters with empirically tuned coefficients that approximate the ideal -3 dB/octave slope to within 0.5 dB accuracy.
+Convert white noise to pink noise (1/f spectral slope, -3 dB/octave). Uses Paul Kellet's refined IIR approximation – a parallel bank of first-order filters with empirically tuned coefficients that approximate the ideal -3 dB/octave slope to within 0.5 dB accuracy.
 
 Pink noise has equal energy per octave (unlike white noise, which has equal energy per Hz). It sounds more natural and is the standard test signal for room acoustics, speaker calibration, and audio system measurement.
 
@@ -211,7 +211,7 @@ pinkNoise(white, params)
 
 ### variable-bandwidth.js
 
-A biquad filter (lowpass, highpass, or bandpass) that automatically recomputes its coefficients when `fc` or `Q` change. Tracks parameter changes via internal cache -- coefficients are only recomputed when values actually differ.
+A biquad filter (lowpass, highpass, or bandpass) that automatically recomputes its coefficients when `fc` or `Q` change. Tracks parameter changes via internal cache – coefficients are only recomputed when values actually differ.
 
 This is the module to use when filter parameters change over time (LFO-modulated filter, user-controlled knob) but you don't need the per-sample safety of the SVF. It uses the standard biquad topology, so it is not safe for rapid per-sample modulation (use `svf` for that). It is appropriate for block-rate parameter changes.
 
@@ -221,7 +221,7 @@ import variableBandwidth from 'digital-filter/misc/variable-bandwidth.js'
 let params = { fc: 1000, Q: 2, type: 'lowpass', fs: 44100 }
 variableBandwidth(data, params)
 
-// Change parameters -- coefficients auto-recompute
+// Change parameters – coefficients auto-recompute
 params.fc = 2000
 variableBandwidth(data2, params)
 ```

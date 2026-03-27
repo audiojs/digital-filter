@@ -1,6 +1,6 @@
-# smooth/ -- Smoothing and Denoising
+# Smoothing and Denoising
 
-Real signals are noisy. Sensor jitter, quantization steps, electromagnetic interference, user input tremor -- every measurement carries unwanted variation on top of the true signal. Smoothing filters separate signal from noise, trading time resolution for amplitude certainty.
+Real signals are noisy. Sensor jitter, quantization steps, electromagnetic interference, user input tremor – every measurement carries unwanted variation on top of the true signal. Smoothing filters separate signal from noise, trading time resolution for amplitude certainty.
 
 The spectrum of smoothers runs from trivially simple (moving average) to self-adapting (one-euro). The right choice depends on three questions: what kind of noise, how much latency is tolerable, and whether sharp features must survive.
 
@@ -12,7 +12,7 @@ These treat every sample equally within their window or memory. Output is a weig
 
 ### Nonlinear: median
 
-Replaces each sample with the rank-order median of its neighborhood. Immune to outliers -- a single spike has zero effect if it is outnumbered. Preserves step edges that linear filters smear. Not expressible as a convolution.
+Replaces each sample with the rank-order median of its neighborhood. Immune to outliers – a single spike has zero effect if it is outnumbered. Preserves step edges that linear filters smear. Not expressible as a convolution.
 
 ### Polynomial: savitzky-golay, gaussian-iir
 
@@ -20,7 +20,7 @@ Fit a local model (polynomial or Gaussian kernel) to the data, preserving shape 
 
 ### Adaptive: one-euro, dynamic-smoothing
 
-The cutoff frequency changes per sample based on signal behavior. Slow-moving signals get heavy smoothing; fast transients pass through with minimal lag. No single fixed parameter can achieve this tradeoff -- adaptivity is the only way.
+The cutoff frequency changes per sample based on signal behavior. Slow-moving signals get heavy smoothing; fast transients pass through with minimal lag. No single fixed parameter can achieve this tradeoff – adaptivity is the only way.
 
 ## Modules
 
@@ -43,10 +43,10 @@ onePole(data, params)           // in-place
 ```
 
 **API**: `onePole(data, { a?, fc?, fs?, y1? })` &rarr; `data` (in-place)
-- `a` -- feedback coefficient (0-1). If omitted, computed from `fc`/`fs`.
-- `fc` -- cutoff frequency in Hz
-- `fs` -- sample rate (default 44100)
-- `y1` -- initial state (persists between calls)
+- `a` – feedback coefficient (0-1). If omitted, computed from `fc`/`fs`.
+- `fc` – cutoff frequency in Hz
+- `fs` – sample rate (default 44100)
+- `y1` – initial state (persists between calls)
 
 **Use when**: you need the simplest possible smoother with minimal latency. Control signals, envelope followers, DC estimation.
 
@@ -60,7 +60,7 @@ Boxcar average of the last N samples. FIR, linear phase, zero overshoot. The out
 
 $$y[n] = \frac{1}{N} \sum_{k=0}^{N-1} x[n-k]$$
 
-The frequency response is a sinc function -- nulls at multiples of $f_s / N$. This makes it excellent for removing periodic interference when the period is known.
+The frequency response is a sinc function – nulls at multiples of $f_s / N$. This makes it excellent for removing periodic interference when the period is known.
 
 ```js
 import movingAverage from 'digital-filter/smooth/moving-average.js'
@@ -71,8 +71,8 @@ movingAverage(data2, params)    // stateful: continues from previous call
 ```
 
 **API**: `movingAverage(data, { memory?, ptr? })` &rarr; `data` (in-place)
-- `memory` -- window size (default 8). Can be a number or pre-allocated array.
-- `ptr` -- internal pointer (auto-managed, persists between calls)
+- `memory` – window size (default 8). Can be a number or pre-allocated array.
+- `ptr` – internal pointer (auto-managed, persists between calls)
 
 **Use when**: you want no overshoot, exact linear phase, or need to null a known periodic frequency.
 
@@ -93,12 +93,12 @@ leaky(data, { lambda: 0.95 })   // in-place
 ```
 
 **API**: `leaky(data, { lambda?, y? })` &rarr; `data` (in-place)
-- `lambda` -- retention factor 0-1 (default 0.95). Higher = smoother.
-- `y` -- initial state (persists between calls)
+- `lambda` – retention factor 0-1 (default 0.95). Higher = smoother.
+- `y` – initial state (persists between calls)
 
 **Use when**: you think in terms of "how fast does the accumulator decay" rather than "what is the cutoff frequency." Common in reinforcement learning, statistics, level metering.
 
-**Avoid when**: you need frequency-domain control -- use one-pole with `fc` instead.
+**Avoid when**: you need frequency-domain control – use one-pole with `fc` instead.
 
 ---
 
@@ -113,11 +113,11 @@ median(data, { size: 5 })       // in-place, 5-sample window
 ```
 
 **API**: `median(data, { size? })` &rarr; `data` (in-place)
-- `size` -- window size, should be odd (default 5)
+- `size` – window size, should be odd (default 5)
 
 Edges are clamped (boundary samples are replicated).
 
-**Use when**: the noise is impulsive -- clicks, dropouts, salt-and-pepper spikes. The median removes them completely while preserving step edges.
+**Use when**: the noise is impulsive – clicks, dropouts, salt-and-pepper spikes. The median removes them completely while preserving step edges.
 
 **Avoid when**: the noise is Gaussian (median is less efficient than linear filters for Gaussian noise) or you need a frequency-domain description.
 
@@ -137,9 +137,9 @@ savitzkyGolay(data, { windowSize: 7, degree: 3, derivative: 1 }) // 1st derivati
 ```
 
 **API**: `savitzkyGolay(data, { windowSize?, degree?, derivative? })` &rarr; `data` (in-place)
-- `windowSize` -- number of points, must be odd (default 5)
-- `degree` -- polynomial degree (default 2). Must be < windowSize.
-- `derivative` -- derivative order (default 0 = smoothing)
+- `windowSize` – number of points, must be odd (default 5)
+- `degree` – polynomial degree (default 2). Must be < windowSize.
+- `derivative` – derivative order (default 0 = smoothing)
 
 Coefficients are computed once and cached in `params._coefs`.
 
@@ -151,7 +151,7 @@ Coefficients are computed once and cached in `params._coefs`.
 
 ### gaussian-iir.js
 
-Approximates Gaussian smoothing using a 3rd-order recursive filter (Young-van Vliet). Forward-backward passes give zero-phase response. Cost is O(N) regardless of sigma -- a sigma=100 Gaussian kernel would need 601+ taps as FIR, but this uses 6 multiplies per sample always.
+Approximates Gaussian smoothing using a 3rd-order recursive filter (Young-van Vliet). Forward-backward passes give zero-phase response. Cost is O(N) regardless of sigma – a sigma=100 Gaussian kernel would need 601+ taps as FIR, but this uses 6 multiplies per sample always.
 
 $$\text{Forward: } y[n] = B \cdot x[n] + \frac{b_1 y[n\!-\!1] + b_2 y[n\!-\!2] + b_3 y[n\!-\!3]}{b_0}$$
 
@@ -164,7 +164,7 @@ gaussianIir(data, { sigma: 10 })    // in-place, sigma in samples
 ```
 
 **API**: `gaussianIir(data, { sigma? })` &rarr; `data` (in-place)
-- `sigma` -- standard deviation in samples (default 5)
+- `sigma` – standard deviation in samples (default 5)
 
 **Use when**: you need wide, isotropic smoothing at constant cost. Image processing (per-scanline), scale-space construction, large-kernel denoising.
 
@@ -193,11 +193,11 @@ oneEuro(data2, params)          // stateful
 ```
 
 **API**: `oneEuro(data, { minCutoff?, beta?, dCutoff?, fs?, x?, dx? })` &rarr; `data` (in-place)
-- `minCutoff` -- minimum cutoff Hz when signal is still (default 1)
-- `beta` -- speed coefficient, higher = more responsive to movement (default 0.007)
-- `dCutoff` -- cutoff for derivative estimation (default 1)
-- `fs` -- sample rate (default 60, typical for UI; set higher for audio)
-- `x`, `dx` -- internal state (persists between calls)
+- `minCutoff` – minimum cutoff Hz when signal is still (default 1)
+- `beta` – speed coefficient, higher = more responsive to movement (default 0.007)
+- `dCutoff` – cutoff for derivative estimation (default 1)
+- `fs` – sample rate (default 60, typical for UI; set higher for audio)
+- `x`, `dx` – internal state (persists between calls)
 
 **Use when**: sensor data, mouse/touch input, VR tracking, any signal where jitter at rest and lag during motion are both unacceptable.
 
@@ -221,10 +221,10 @@ dynamicSmoothing(data, params)
 ```
 
 **API**: `dynamicSmoothing(data, { minFc?, maxFc?, sensitivity?, fs? })` &rarr; `data` (in-place)
-- `minFc` -- cutoff when signal is still (default 1 Hz)
-- `maxFc` -- cutoff when signal is changing fast (default 5000 Hz)
-- `sensitivity` -- speed-to-cutoff scaling (default 1)
-- `fs` -- sample rate (default 44100)
+- `minFc` – cutoff when signal is still (default 1 Hz)
+- `maxFc` – cutoff when signal is changing fast (default 5000 Hz)
+- `sensitivity` – speed-to-cutoff scaling (default 1)
+- `fs` – sample rate (default 44100)
 
 Internal SVF state (`_s1`, `_s2`, `_prev`) persists between calls.
 

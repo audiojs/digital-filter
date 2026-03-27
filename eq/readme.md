@@ -1,14 +1,14 @@
 # Equalization and Audio Composites
 
-Multi-band audio processing chains built from biquad cascades. Each module here combines lower-level primitives (biquads, resonators, envelope followers) into a complete processing unit -- the kind of thing that has a front panel in hardware.
+Multi-band audio processing chains built from biquad cascades. Each module here combines lower-level primitives (biquads, resonators, envelope followers) into a complete processing unit – the kind of thing that has a front panel in hardware.
 
 The common thread: these all operate on multiple frequency bands simultaneously, splitting or shaping the spectrum in parallel, then recombining. A single biquad handles one band; these modules orchestrate many.
 
 ## Graphic EQ
 
-A 10-band equalizer at ISO octave-spaced center frequencies: 31.25, 62.5, 125, 250, 500, 1k, 2k, 4k, 8k, 16kHz. Each band is a peaking biquad with fixed center frequency and Q -- you control only gain per band.
+A 10-band equalizer at ISO octave-spaced center frequencies: 31.25, 62.5, 125, 250, 500, 1k, 2k, 4k, 8k, 16kHz. Each band is a peaking biquad with fixed center frequency and Q – you control only gain per band.
 
-This is the hardware graphic EQ: a row of sliders, each boosting or cutting its octave band. Simple, visual, predictable. The tradeoff versus parametric EQ is precision -- you cannot adjust bandwidth or move center frequencies.
+This is the hardware graphic EQ: a row of sliders, each boosting or cutting its octave band. Simple, visual, predictable. The tradeoff versus parametric EQ is precision – you cannot adjust bandwidth or move center frequencies.
 
 Bands at 0 dB gain are skipped entirely (no processing cost).
 
@@ -53,9 +53,9 @@ parametricEq(data, params)
 
 ## Crossover
 
-N-way frequency band splitter using Linkwitz-Riley (LR) filters. Given N-1 crossover frequencies, returns N arrays of SOS coefficients -- one filter chain per output band.
+N-way frequency band splitter using Linkwitz-Riley (LR) filters. Given N-1 crossover frequencies, returns N arrays of SOS coefficients – one filter chain per output band.
 
-**Why Linkwitz-Riley, not Butterworth?** A Butterworth lowpass and highpass at the same frequency are each -3 dB at the crossover point. Summing two -3 dB signals gives +3 dB -- a bump. Linkwitz-Riley solves this: it is a squared Butterworth (two cascaded Butterworths of half order), placing the crossover point at -6 dB. Two -6 dB signals sum to 0 dB. The LP and HP outputs sum to an allpass -- perfectly flat magnitude, no comb filtering.
+**Why Linkwitz-Riley, not Butterworth?** A Butterworth lowpass and highpass at the same frequency are each -3 dB at the crossover point. Summing two -3 dB signals gives +3 dB – a bump. Linkwitz-Riley solves this: it is a squared Butterworth (two cascaded Butterworths of half order), placing the crossover point at -6 dB. Two -6 dB signals sum to 0 dB. The LP and HP outputs sum to an allpass – perfectly flat magnitude, no comb filtering.
 
 This matters for loudspeaker crossovers (woofer + tweeter must sum flat) and multi-band processing (compress/limit each band separately, then recombine without artifacts).
 
@@ -79,7 +79,7 @@ filter(hi,  { coefs: bands[2] })
 
 Headphone spatialization filter. Mixes a lowpass-filtered version of each channel into the opposite ear.
 
-**The problem.** With speakers, sound from the left speaker reaches your right ear (and vice versa) -- attenuated and delayed, mostly at low frequencies. This interaural crosstalk is how you perceive spatial width. Headphones eliminate it entirely: each ear hears only its channel. The result is an unnaturally wide, "inside the head" stereo image.
+**The problem.** With speakers, sound from the left speaker reaches your right ear (and vice versa) – attenuated and delayed, mostly at low frequencies. This interaural crosstalk is how you perceive spatial width. Headphones eliminate it entirely: each ear hears only its channel. The result is an unnaturally wide, "inside the head" stereo image.
 
 **The solution.** Feed a lowpass-filtered copy of L into R and R into L. The lowpass models the head's acoustic shadow (high frequencies are blocked by the head; low frequencies diffract around it). The `level` parameter controls how much crossfeed to apply (0 = none, 1 = full mono). Default 0.3 is a mild, natural correction.
 
@@ -95,7 +95,7 @@ crossfeed(left, right, params)
 
 Parallel bank of resonators for vowel/formant synthesis. Each resonator is tuned to a formant frequency with a specified bandwidth and gain. The outputs are summed.
 
-Vowel identity is determined by formant frequencies -- resonant peaks in the vocal tract's transfer function. F1 and F2 alone distinguish most vowels: /a/ has F1~730Hz, F2~1090Hz; /i/ has F1~270Hz, F2~2290Hz. F3 adds speaker-specific color. By tuning a bank of resonators to these frequencies, you can impose vowel character on any source signal (noise, impulse train, synth waveform).
+Vowel identity is determined by formant frequencies – resonant peaks in the vocal tract's transfer function. F1 and F2 alone distinguish most vowels: /a/ has F1~730Hz, F2~1090Hz; /i/ has F1~270Hz, F2~2290Hz. F3 adds speaker-specific color. By tuning a bank of resonators to these frequencies, you can impose vowel character on any source signal (noise, impulse train, synth waveform).
 
 Default formants approximate the open vowel /a/.
 
@@ -116,7 +116,7 @@ formant(data, params)
 
 ## Vocoder
 
-Channel vocoder -- analyzes the spectral envelope of a modulator signal (typically voice) and applies it to a carrier signal (typically a synth waveform). The classic "robot voice" / "talking synthesizer" effect.
+Channel vocoder – analyzes the spectral envelope of a modulator signal (typically voice) and applies it to a carrier signal (typically a synth waveform). The classic "robot voice" / "talking synthesizer" effect.
 
 How it works, band by band:
 1. **Analysis**: bandpass-filter the modulator, extract its envelope (amplitude over time)

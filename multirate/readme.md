@@ -1,10 +1,10 @@
-# multirate/ -- Multirate Signal Processing
+# Multirate Signal Processing
 
 Not every part of a system needs to run at the same sample rate. A 192 kHz recording needs 44.1 kHz for playback. A control loop runs at 1 kHz but the sensor samples at 48 kHz. Nonlinear processing (distortion, waveshaping) needs higher rates to avoid aliasing, then returns to the original rate. Multirate processing changes sample rates efficiently.
 
 The two fundamental operations:
 
-- **Decimation** (downsample): reduce sample rate by factor $M$. Must lowpass filter first to prevent aliasing -- frequencies above the new Nyquist fold back in.
+- **Decimation** (downsample): reduce sample rate by factor $M$. Must lowpass filter first to prevent aliasing – frequencies above the new Nyquist fold back in.
 - **Interpolation** (upsample): increase sample rate by factor $L$. Insert $L-1$ zeros between samples, then lowpass filter to remove spectral images.
 
 The order matters: filter *before* downsampling, filter *after* upsampling. Reversing either creates artifacts that cannot be undone.
@@ -23,10 +23,10 @@ let out2 = decimate(data, 4, { numtaps: 127 })      // longer filter, sharper cu
 ```
 
 **API**: `decimate(data, factor, opts?)` &rarr; `Float64Array` (new buffer, length = `ceil(N / factor)`)
-- `data` -- input signal (`Float64Array`)
-- `factor` -- decimation factor $M$
-- `opts.numtaps` -- FIR filter length (default `30 * factor + 1`)
-- `opts.fs` -- input sample rate (default 44100)
+- `data` – input signal (`Float64Array`)
+- `factor` – decimation factor $M$
+- `opts.numtaps` – FIR filter length (default `30 * factor + 1`)
+- `opts.fs` – input sample rate (default 44100)
 
 Uses `firwin` internally for the anti-aliasing filter.
 
@@ -45,10 +45,10 @@ let out = interpolate(data, 4)   // 11025 → 44100 Hz
 ```
 
 **API**: `interpolate(data, factor, opts?)` &rarr; `Float64Array` (new buffer, length = `N * factor`)
-- `data` -- input signal
-- `factor` -- interpolation factor $L$
-- `opts.numtaps` -- FIR filter length (default `30 * factor + 1`)
-- `opts.fs` -- original sample rate (default 44100)
+- `data` – input signal
+- `factor` – interpolation factor $L$
+- `opts.numtaps` – FIR filter length (default `30 * factor + 1`)
+- `opts.fs` – original sample rate (default 44100)
 
 **Use when**: you need to increase sample rate for DAC output, format conversion, or before processing that requires higher rates.
 
@@ -68,7 +68,7 @@ let h = halfBand(31)   // Float64Array, 31 taps
 ```
 
 **API**: `halfBand(numtaps?)` &rarr; `Float64Array`
-- `numtaps` -- filter length, should be of the form $4k+3$ (default 31)
+- `numtaps` – filter length, should be of the form $4k+3$ (default 31)
 
 The center tap is forced to 0.5. Even-indexed coefficients (except center) are forced to 0. These structural constraints are what make half-band filters efficient.
 
@@ -78,7 +78,7 @@ The center tap is forced to 0.5. Even-indexed coefficients (except center) are f
 
 ### cic.js
 
-Cascaded Integrator-Comb filter. Performs decimation using only additions and subtractions -- no multiplications. The transfer function of an $N$-stage CIC with decimation ratio $R$:
+Cascaded Integrator-Comb filter. Performs decimation using only additions and subtractions – no multiplications. The transfer function of an $N$-stage CIC with decimation ratio $R$:
 
 $$H(z) = \left(\frac{1 - z^{-R}}{1 - z^{-1}}\right)^N$$
 
@@ -91,13 +91,13 @@ let out = cic(data, 16, 3)   // decimate by 16, 3 stages
 ```
 
 **API**: `cic(data, R, N?)` &rarr; `Float64Array` (new buffer, length = `floor(data.length / R)`)
-- `data` -- input signal
-- `R` -- decimation ratio
-- `N` -- number of CIC stages (default 3). More stages = steeper rolloff but more passband droop.
+- `data` – input signal
+- `R` – decimation ratio
+- `N` – number of CIC stages (default 3). More stages = steeper rolloff but more passband droop.
 
 **Use when**: high decimation ratios (8x, 16x, 64x) where multiplier cost matters. Common first stage in SDR (software-defined radio) receivers, sigma-delta ADC decimation chains.
 
-**Avoid when**: you need flat passband -- CIC has significant droop ($\text{sinc}^N$ shape). Follow with a short compensating FIR if flatness matters.
+**Avoid when**: you need flat passband – CIC has significant droop ($\text{sinc}^N$ shape). Follow with a short compensating FIR if flatness matters.
 
 ---
 
@@ -107,7 +107,7 @@ Decomposes an FIR filter $h$ of length $L$ into $M$ polyphase sub-filters, each 
 
 $$E_m[k] = h[m + kM], \quad m = 0, \ldots, M-1$$
 
-This is the foundation of efficient multirate filtering. By the Noble identities, filtering then downsampling by $M$ is equivalent to downsampling first, then filtering each phase separately -- reducing computation by factor $M$.
+This is the foundation of efficient multirate filtering. By the Noble identities, filtering then downsampling by $M$ is equivalent to downsampling first, then filtering each phase separately – reducing computation by factor $M$.
 
 ```js
 import polyphase from 'digital-filter/multirate/polyphase.js'
@@ -116,8 +116,8 @@ let phases = polyphase(h, 4)   // Array of 4 Float64Arrays
 ```
 
 **API**: `polyphase(h, M)` &rarr; `Array<Float64Array>`
-- `h` -- FIR coefficients (`Float64Array`)
-- `M` -- number of phases (= decimation/interpolation factor)
+- `h` – FIR coefficients (`Float64Array`)
+- `M` – number of phases (= decimation/interpolation factor)
 
 **Use when**: implementing efficient decimation or interpolation. Instead of filtering at the high rate and throwing away $M-1$ out of every $M$ outputs, compute only the outputs you keep.
 
@@ -125,7 +125,7 @@ let phases = polyphase(h, 4)   // Array of 4 Float64Arrays
 
 ### farrow.js
 
-Fractional delay filter using Lagrange polynomial interpolation. The delay can be any real number -- not limited to integer samples. Computes the interpolated value by evaluating the Lagrange basis polynomials at the fractional offset.
+Fractional delay filter using Lagrange polynomial interpolation. The delay can be any real number – not limited to integer samples. Computes the interpolated value by evaluating the Lagrange basis polynomials at the fractional offset.
 
 For a delay of $D = D_{\text{int}} + \mu$ where $\mu \in [0, 1)$:
 
@@ -138,18 +138,18 @@ farrow(data, { delay: 3.7, order: 3 })   // in-place, 3.7-sample delay
 ```
 
 **API**: `farrow(data, { delay?, order? })` &rarr; `data` (in-place)
-- `delay` -- fractional delay in samples (default 0)
-- `order` -- polynomial interpolation order (default 3). Higher = more accurate but wider kernel.
+- `delay` – fractional delay in samples (default 0)
+- `order` – polynomial interpolation order (default 3). Higher = more accurate but wider kernel.
 
 **Use when**: the delay changes per sample (pitch shifting, resampling with arbitrary ratio, time-varying delay lines). The Farrow structure allows changing $\mu$ without recomputing coefficients.
 
-**Avoid when**: you need flat group delay across all frequencies -- polynomial interpolation has frequency-dependent error. Use Thiran for maximally flat delay.
+**Avoid when**: you need flat group delay across all frequencies – polynomial interpolation has frequency-dependent error. Use Thiran for maximally flat delay.
 
 ---
 
 ### thiran.js
 
-Thiran allpass fractional delay filter. Produces an IIR allpass filter with maximally flat group delay at DC. Unity magnitude at all frequencies -- only the phase is affected.
+Thiran allpass fractional delay filter. Produces an IIR allpass filter with maximally flat group delay at DC. Unity magnitude at all frequencies – only the phase is affected.
 
 The coefficients are computed from the closed-form Thiran formula:
 
@@ -165,8 +165,8 @@ let { b, a } = thiran(3.7, 3)     // force order 3
 ```
 
 **API**: `thiran(delay, order?)` &rarr; `{ b: Float64Array, a: Float64Array }`
-- `delay` -- fractional delay in samples
-- `order` -- filter order (default `ceil(delay)`)
+- `delay` – fractional delay in samples
+- `order` – filter order (default `ceil(delay)`)
 
 Returns allpass transfer function coefficients. Apply with a standard IIR filter.
 
@@ -188,9 +188,9 @@ let up2 = oversample(data, 4, { numtaps: 127 })   // sharper anti-image filter
 ```
 
 **API**: `oversample(data, factor, opts?)` &rarr; `Float64Array` (new buffer, length = `N * factor`)
-- `data` -- input signal
-- `factor` -- oversampling factor (2, 4, 8, ...)
-- `opts.numtaps` -- FIR filter length (default 63)
+- `data` – input signal
+- `factor` – oversampling factor (2, 4, 8, ...)
+- `opts.numtaps` – FIR filter length (default 63)
 
 Uses Kaiser-windowed FIR with cutoff at $1/(2 \cdot \text{factor})$ of the new Nyquist.
 

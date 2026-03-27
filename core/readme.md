@@ -1,10 +1,10 @@
-# core/
+# DSP engine
 
-The DSP engine. Every filter in this package -- IIR, FIR, adaptive, analog -- ultimately runs through these modules: design coefficients, apply them to samples, analyze the result.
+Every filter in this package – IIR, FIR, adaptive, analog – ultimately runs through these modules: design coefficients, apply them to samples, analyze the result.
 
 ## SOS format
 
-All IIR filters are stored as **second-order sections** (SOS) -- a cascade of biquad stages, each described by five coefficients:
+All IIR filters are stored as **second-order sections** (SOS) – a cascade of biquad stages, each described by five coefficients:
 
 ```
 { b0, b1, b2, a1, a2 }
@@ -37,9 +37,9 @@ filter(chunk2, params)  // continues from previous state
 ```
 
 **API**: `filter(data, { coefs, state? })` &rarr; `data`
-- `data` -- `Float64Array | Float32Array | Array<number>`, modified in-place
-- `coefs` -- single SOS object or array of SOS objects
-- `state` -- optional `Array<[number, number]>`, auto-created if omitted, persists between calls
+- `data` – `Float64Array | Float32Array | Array<number>`, modified in-place
+- `coefs` – single SOS object or array of SOS objects
+- `state` – optional `Array<[number, number]>`, auto-created if omitted, persists between calls
 
 ---
 
@@ -87,9 +87,9 @@ let dB = mag2db(magnitude)
 
 **API**:
 - `freqz(coefs, n?, fs?)` &rarr; `{ frequencies, magnitude, phase }` (all `Float64Array`)
-  - `n` -- number of frequency points (default 512)
-  - `fs` -- sample rate in Hz (default 44100)
-- `mag2db(mag)` &rarr; `number | Float64Array` -- $20 \log_{10}(\text{mag})$
+  - `n` – number of frequency points (default 512)
+  - `fs` – sample rate in Hz (default 44100)
+- `mag2db(mag)` &rarr; `number | Float64Array` – $20 \log_{10}(\text{mag})$
 
 ---
 
@@ -106,18 +106,18 @@ import {
 ```
 
 **Delay analysis**:
-- `groupDelay(coefs, n?, fs?)` &rarr; `{ frequencies, delay }` -- $\tau_g(\omega) = -d\varphi/d\omega$
-- `phaseDelay(coefs, n?, fs?)` &rarr; `{ frequencies, delay }` -- $\tau_p(\omega) = -\varphi(\omega)/\omega$ (in samples)
+- `groupDelay(coefs, n?, fs?)` &rarr; `{ frequencies, delay }` – $\tau_g(\omega) = -d\varphi/d\omega$
+- `phaseDelay(coefs, n?, fs?)` &rarr; `{ frequencies, delay }` – $\tau_p(\omega) = -\varphi(\omega)/\omega$ (in samples)
 
 **Time-domain response**:
-- `impulseResponse(coefs, N?)` &rarr; `Float64Array` -- response to $\delta[n]$, default 256 samples
-- `stepResponse(coefs, N?)` &rarr; `Float64Array` -- response to $u[n]$, default 256 samples
+- `impulseResponse(coefs, N?)` &rarr; `Float64Array` – response to $\delta[n]$, default 256 samples
+- `stepResponse(coefs, N?)` &rarr; `Float64Array` – response to $u[n]$, default 256 samples
 
 **Filter properties**:
-- `isStable(sos)` &rarr; `boolean` -- all poles inside unit circle
-- `isMinPhase(sos)` &rarr; `boolean` -- all zeros inside or on unit circle
-- `isFir(sos)` &rarr; `boolean` -- all `a1 === 0 && a2 === 0`
-- `isLinPhase(h)` &rarr; `boolean` -- FIR coefficients are symmetric or antisymmetric
+- `isStable(sos)` &rarr; `boolean` – all poles inside unit circle
+- `isMinPhase(sos)` &rarr; `boolean` – all zeros inside or on unit circle
+- `isFir(sos)` &rarr; `boolean` – all `a1 === 0 && a2 === 0`
+- `isLinPhase(h)` &rarr; `boolean` – FIR coefficients are symmetric or antisymmetric
 
 ---
 
@@ -135,10 +135,10 @@ let roundTripped = zpk2sos(zpk)
 ```
 
 **API**:
-- `sos2zpk(sos)` &rarr; `{ zeros, poles, gain }` -- zeros/poles as `{ re, im }` objects
-- `sos2tf(sos)` &rarr; `{ b, a }` -- numerator/denominator `Float64Array` polynomials
-- `tf2zpk(b, a)` &rarr; `{ zeros, poles, gain }` -- uses Durand-Kerner root finding
-- `zpk2sos(zpk)` &rarr; `SOS[]` -- pairs poles with nearest zeros for numerical stability
+- `sos2zpk(sos)` &rarr; `{ zeros, poles, gain }` – zeros/poles as `{ re, im }` objects
+- `sos2tf(sos)` &rarr; `{ b, a }` – numerator/denominator `Float64Array` polynomials
+- `tf2zpk(b, a)` &rarr; `{ zeros, poles, gain }` – uses Durand-Kerner root finding
+- `zpk2sos(zpk)` &rarr; `SOS[]` – pairs poles with nearest zeros for numerical stability
 
 ---
 
@@ -160,12 +160,12 @@ let sos2 = poleZerosSos(poles, zeros, 1000, 44100, 'lowpass')
 
 **API**:
 - `polesSos(poles, fc, fs, type)` &rarr; `SOS[]`
-  - `poles` -- `[[sigma, omega], ...]`, normalized prototype at 1 rad/s. `omega > 0` = conjugate pair, `omega === 0` = real pole
-  - `fc` -- cutoff Hz, or `[fLow, fHigh]` for bandpass/bandstop
-  - `fs` -- sample rate
-  - `type` -- `'lowpass' | 'highpass' | 'bandpass' | 'bandstop'`
-- `poleZerosSos(poles, zeros, fc, fs, type)` &rarr; `SOS[]` -- same, with finite zeros
-- `prewarp(f, fs)` &rarr; `number` -- frequency prewarping: $\omega_a = 2 f_s \tan(\pi f / f_s)$
+  - `poles` – `[[sigma, omega], ...]`, normalized prototype at 1 rad/s. `omega > 0` = conjugate pair, `omega === 0` = real pole
+  - `fc` – cutoff Hz, or `[fLow, fHigh]` for bandpass/bandstop
+  - `fs` – sample rate
+  - `type` – `'lowpass' | 'highpass' | 'bandpass' | 'bandstop'`
+- `poleZerosSos(poles, zeros, fc, fs, type)` &rarr; `SOS[]` – same, with finite zeros
+- `prewarp(f, fs)` &rarr; `number` – frequency prewarping: $\omega_a = 2 f_s \tan(\pi f / f_s)$
 
 ---
 
@@ -201,4 +201,4 @@ polesSos(proto)    ──→  convolution(data, ir)       impulseResponse(sos)
 2. **Apply** runs the SOS cascade on sample data (`filter.js` for real-time, `filtfilt.js` for offline).
 3. **Analyze** inspects the result: frequency response, delay characteristics, stability, pole-zero locations.
 
-The SOS format is the common currency -- design functions produce it, processing functions consume it, analysis functions inspect it.
+The SOS format is the common currency – design functions produce it, processing functions consume it, analysis functions inspect it.

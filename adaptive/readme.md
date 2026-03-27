@@ -1,4 +1,4 @@
-# adaptive/ -- Adaptive Filtering
+# Adaptive Filtering
 
 A conventional filter has fixed coefficients chosen at design time. An adaptive filter adjusts its coefficients sample-by-sample to minimize the error between its output and a desired signal. The filter learns from the data.
 
@@ -38,7 +38,7 @@ The update rule:
 
 $$\mathbf{w}[n+1] = \mathbf{w}[n] + \mu \cdot e[n] \cdot \mathbf{x}[n]$$
 
-Each weight moves in the direction that would have reduced the current error, scaled by step size $\mu$. The gradient is approximated by the instantaneous product $e[n] \cdot \mathbf{x}[n]$ rather than the true expectation -- hence "stochastic."
+Each weight moves in the direction that would have reduced the current error, scaled by step size $\mu$. The gradient is approximated by the instantaneous product $e[n] \cdot \mathbf{x}[n]$ rather than the true expectation – hence "stochastic."
 
 Convergence requires $0 < \mu < 2 / (\lambda_{\max})$, where $\lambda_{\max}$ is the largest eigenvalue of the input autocorrelation matrix. In practice, keep $\mu$ small. Too large diverges; too small converges slowly.
 
@@ -47,24 +47,24 @@ import lms from 'digital-filter/adaptive/lms.js'
 
 let params = { order: 32, mu: 0.01 }
 let output = lms(input, desired, params)
-// params.w     -- learned coefficients (Float64Array)
-// params.error -- error signal (Float64Array)
+// params.w     – learned coefficients (Float64Array)
+// params.error – error signal (Float64Array)
 ```
 
 **API**: `lms(input, desired, params)` &rarr; `Float64Array` (new output buffer)
-- `input` -- input signal (`Float64Array`)
-- `desired` -- desired signal (same length)
-- `params.order` -- number of FIR taps (default 32)
-- `params.mu` -- step size (default 0.01)
-- `params.w` -- weight vector (auto-initialized to zeros, persists)
-- `params.buf` -- input delay line (auto-initialized, persists)
-- `params.error` -- error signal (written after each call)
+- `input` – input signal (`Float64Array`)
+- `desired` – desired signal (same length)
+- `params.order` – number of FIR taps (default 32)
+- `params.mu` – step size (default 0.01)
+- `params.w` – weight vector (auto-initialized to zeros, persists)
+- `params.buf` – input delay line (auto-initialized, persists)
+- `params.error` – error signal (written after each call)
 
 **Complexity**: $O(N)$ per sample, where $N$ is the filter order.
 
 **Use when**: learning, prototyping, or when computational budget is tight. Also when the input signal has relatively uniform power.
 
-**Avoid when**: the input has high eigenvalue spread (e.g., colored noise, speech) -- convergence becomes very slow. Use NLMS instead.
+**Avoid when**: the input has high eigenvalue spread (e.g., colored noise, speech) – convergence becomes very slow. Use NLMS instead.
 
 ---
 
@@ -74,27 +74,27 @@ Normalized LMS. The step size is divided by the instantaneous input power, makin
 
 $$\mathbf{w}[n+1] = \mathbf{w}[n] + \frac{\mu}{\|\mathbf{x}[n]\|^2 + \varepsilon} \cdot e[n] \cdot \mathbf{x}[n]$$
 
-The regularization term $\varepsilon$ prevents division by zero during silence. With normalization, $\mu$ can be set in $(0, 2)$ without knowing the signal statistics -- $\mu = 1$ is unit-norm step, $\mu = 0.5$ is a safe default.
+The regularization term $\varepsilon$ prevents division by zero during silence. With normalization, $\mu$ can be set in $(0, 2)$ without knowing the signal statistics – $\mu = 1$ is unit-norm step, $\mu = 0.5$ is a safe default.
 
 ```js
 import nlms from 'digital-filter/adaptive/nlms.js'
 
 let params = { order: 32, mu: 0.5, eps: 1e-8 }
 let output = nlms(input, desired, params)
-// params.w, params.error -- same as lms
+// params.w, params.error – same as lms
 ```
 
 **API**: `nlms(input, desired, params)` &rarr; `Float64Array`
-- `params.order` -- number of taps (default 32)
-- `params.mu` -- normalized step size, 0-2 (default 0.5)
-- `params.eps` -- regularization (default 1e-8)
-- `params.w`, `params.buf`, `params.error` -- same as LMS
+- `params.order` – number of taps (default 32)
+- `params.mu` – normalized step size, 0-2 (default 0.5)
+- `params.eps` – regularization (default 1e-8)
+- `params.w`, `params.buf`, `params.error` – same as LMS
 
 **Complexity**: $O(N)$ per sample (one extra dot product for power).
 
 **Use when**: this is the practical default. Echo cancellation, noise cancellation, real-time system identification. Works across a wide range of signal statistics without tuning.
 
-**Avoid when**: you need the fastest possible convergence and can afford $O(N^2)$ -- use RLS.
+**Avoid when**: you need the fastest possible convergence and can afford $O(N^2)$ – use RLS.
 
 ---
 
@@ -112,35 +112,35 @@ $$\mathbf{P}[n] = \frac{1}{\lambda}(\mathbf{P}[n-1] - \mathbf{k}[n] \cdot \mathb
 
 The forgetting factor $\lambda \in (0, 1]$ controls how fast old data is discounted. $\lambda = 1$ is infinite memory (growing window). $\lambda = 0.99$ forgets with a time constant of ~100 samples.
 
-RLS converges in roughly $2N$ samples regardless of eigenvalue spread -- dramatically faster than LMS for correlated inputs. The cost is $O(N^2)$ per sample for the matrix update.
+RLS converges in roughly $2N$ samples regardless of eigenvalue spread – dramatically faster than LMS for correlated inputs. The cost is $O(N^2)$ per sample for the matrix update.
 
 ```js
 import rls from 'digital-filter/adaptive/rls.js'
 
 let params = { order: 16, lambda: 0.99, delta: 100 }
 let output = rls(input, desired, params)
-// params.w     -- learned coefficients
-// params.P     -- inverse correlation matrix (N x N)
-// params.error -- error signal
+// params.w     – learned coefficients
+// params.P     – inverse correlation matrix (N x N)
+// params.error – error signal
 ```
 
 **API**: `rls(input, desired, params)` &rarr; `Float64Array`
-- `params.order` -- number of taps (default 16)
-- `params.lambda` -- forgetting factor (default 0.99)
-- `params.delta` -- initial diagonal of $\mathbf{P}$ (default 100). Larger = faster initial convergence but more noise.
-- `params.w`, `params.P`, `params.buf`, `params.error` -- state (auto-initialized, persists)
+- `params.order` – number of taps (default 16)
+- `params.lambda` – forgetting factor (default 0.99)
+- `params.delta` – initial diagonal of $\mathbf{P}$ (default 100). Larger = faster initial convergence but more noise.
+- `params.w`, `params.P`, `params.buf`, `params.error` – state (auto-initialized, persists)
 
 **Complexity**: $O(N^2)$ per sample.
 
 **Use when**: fast convergence matters more than computation. Fast-changing systems, short adaptation windows, situations where LMS/NLMS converge too slowly.
 
-**Avoid when**: $N$ is large (hundreds of taps) -- the $O(N^2)$ cost dominates. Use NLMS for long filters.
+**Avoid when**: $N$ is large (hundreds of taps) – the $O(N^2)$ cost dominates. Use NLMS for long filters.
 
 ---
 
 ### levinson.js
 
-Levinson-Durbin recursion. Not an online adaptive filter -- it is a batch algorithm that solves the Toeplitz system $\mathbf{R}\mathbf{a} = \mathbf{r}$ in $O(N^2)$ given the autocorrelation sequence $R[0], R[1], \ldots, R[N]$.
+Levinson-Durbin recursion. Not an online adaptive filter – it is a batch algorithm that solves the Toeplitz system $\mathbf{R}\mathbf{a} = \mathbf{r}$ in $O(N^2)$ given the autocorrelation sequence $R[0], R[1], \ldots, R[N]$.
 
 Produces linear prediction coefficients (LPC), reflection coefficients (PARCOR), and the prediction error power.
 
@@ -159,23 +159,23 @@ import levinson from 'digital-filter/adaptive/levinson.js'
 
 // R = autocorrelation values R[0], R[1], ..., R[order]
 let { a, error, k } = levinson(R, 10)
-// a     -- LPC coefficients (Float64Array, length order+1, a[0]=1)
-// error -- prediction error power
-// k     -- reflection coefficients (Float64Array, length order)
+// a     – LPC coefficients (Float64Array, length order+1, a[0]=1)
+// error – prediction error power
+// k     – reflection coefficients (Float64Array, length order)
 ```
 
 **API**: `levinson(R, order?)` &rarr; `{ a, error, k }`
-- `R` -- autocorrelation sequence (`Float64Array | Array`), length >= order + 1
-- `order` -- LPC order (default `R.length - 1`)
+- `R` – autocorrelation sequence (`Float64Array | Array`), length >= order + 1
+- `order` – LPC order (default `R.length - 1`)
 
 Returns:
-- `a` -- prediction coefficients, `a[0] = 1`
-- `error` -- residual prediction error power
-- `k` -- reflection coefficients (PARCOR)
+- `a` – prediction coefficients, `a[0] = 1`
+- `error` – residual prediction error power
+- `k` – reflection coefficients (PARCOR)
 
 **Use when**: speech coding (LPC-10, CELP), spectral estimation (AR model), lattice filter design, formant analysis.
 
-**Avoid when**: you need sample-by-sample adaptation -- use LMS/NLMS/RLS instead.
+**Avoid when**: you need sample-by-sample adaptation – use LMS/NLMS/RLS instead.
 
 ## Comparison
 

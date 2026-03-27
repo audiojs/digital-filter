@@ -1,12 +1,12 @@
 # Auditory and Psychoacoustic Models
 
-Filter banks that model how the human ear decomposes sound into frequency bands. The cochlea is not an FFT -- it is a bank of overlapping bandpass filters, each tuned to a different frequency, with bandwidth that increases with frequency. These modules provide computational equivalents for audio analysis, feature extraction, and psychoacoustic research.
+Filter banks that model how the human ear decomposes sound into frequency bands. The cochlea is not an FFT – it is a bank of overlapping bandpass filters, each tuned to a different frequency, with bandwidth that increases with frequency. These modules provide computational equivalents for audio analysis, feature extraction, and psychoacoustic research.
 
 ## How hearing works
 
-Sound enters the cochlea and travels along the **basilar membrane**, a tapered structure that vibrates at different positions for different frequencies. High frequencies excite the base (near the entrance), low frequencies excite the apex (the far end). This is **tonotopic mapping** -- frequency is encoded as position.
+Sound enters the cochlea and travels along the **basilar membrane**, a tapered structure that vibrates at different positions for different frequencies. High frequencies excite the base (near the entrance), low frequencies excite the apex (the far end). This is **tonotopic mapping** – frequency is encoded as position.
 
-At each position, the membrane acts as a bandpass filter. The bandwidth of each filter is called a **critical band** -- frequencies within the same critical band interact (mask each other), frequencies in different bands are processed independently. Critical bandwidth is narrow at low frequencies (~100 Hz below 500 Hz) and wide at high frequencies (~2500 Hz at 10 kHz).
+At each position, the membrane acts as a bandpass filter. The bandwidth of each filter is called a **critical band** – frequencies within the same critical band interact (mask each other), frequencies in different bands are processed independently. Critical bandwidth is narrow at low frequencies (~100 Hz below 500 Hz) and wide at high frequencies (~2500 Hz at 10 kHz).
 
 Three frequency scales model this nonlinear spacing.
 
@@ -26,7 +26,7 @@ Approximately 40 ERBs span the audible range. Used in modern psychoacoustic rese
 
 ### Bark
 
-Zwicker 1961. Divides the audible range into **24 critical bands** (Bark 1 through Bark 24). Each band corresponds to roughly 1.3 mm on the basilar membrane. The Bark scale was the foundation of psychoacoustic audio coding -- **MP3**, **AAC**, and other perceptual codecs use critical-band analysis to determine masking thresholds and allocate bits.
+Zwicker 1961. Divides the audible range into **24 critical bands** (Bark 1 through Bark 24). Each band corresponds to roughly 1.3 mm on the basilar membrane. The Bark scale was the foundation of psychoacoustic audio coding – **MP3**, **AAC**, and other perceptual codecs use critical-band analysis to determine masking thresholds and allocate bits.
 
 The 24 bands span approximately:
 
@@ -57,7 +57,7 @@ The **gammatone filter** is the standard computational model of a single auditor
 
 $$h(t) = t^{n-1} \, e^{-2\pi b\,t} \, \cos(2\pi f_c\, t)$$
 
-where $n$ is the filter order (4 is standard -- matches physiological measurements), $f_c$ is the center frequency, and $b = 1.019 \cdot \text{ERB}(f_c)$ is the decay rate derived from the equivalent rectangular bandwidth.
+where $n$ is the filter order (4 is standard – matches physiological measurements), $f_c$ is the center frequency, and $b = 1.019 \cdot \text{ERB}(f_c)$ is the decay rate derived from the equivalent rectangular bandwidth.
 
 The implementation uses a cascade of $n$ complex one-pole filters, which is numerically efficient and naturally produces the $t^{n-1}$ envelope through repeated filtering.
 
@@ -75,10 +75,10 @@ gammatone(chunk2, params)
 ```
 
 **API**: `gammatone(data, params)` &rarr; `data`
-- `data` -- `Float32Array | Float64Array`, modified in-place
-- `params.fc` -- center frequency Hz (default 1000)
-- `params.fs` -- sample rate (default 44100)
-- `params.order` -- filter order (default 4)
+- `data` – `Float32Array | Float64Array`, modified in-place
+- `params.fc` – center frequency Hz (default 1000)
+- `params.fs` – sample rate (default 44100)
+- `params.order` – filter order (default 4)
 
 Gain is automatically normalized to 0 dB at the center frequency.
 
@@ -88,7 +88,7 @@ Gain is automatically normalized to 0 dB at the center frequency.
 
 ### erb-bank.js
 
-Generates center frequencies and bandwidths spaced according to the **ERB scale** (Glasberg & Moore 1990). Returns band descriptors, not filter coefficients -- pair with `gammatone` to build a complete auditory filter bank.
+Generates center frequencies and bandwidths spaced according to the **ERB scale** (Glasberg & Moore 1990). Returns band descriptors, not filter coefficients – pair with `gammatone` to build a complete auditory filter bank.
 
 The spacing ensures that adjacent bands overlap by approximately one ERB, matching the density of auditory filters on the basilar membrane.
 
@@ -107,10 +107,10 @@ for (let band of bands) {
 ```
 
 **API**: `erbBank(fs?, opts?)` &rarr; `Array<{ fc, erb, bw }>`
-- `fs` -- sample rate (default 44100)
-- `opts.fmin` -- minimum frequency (default 50)
-- `opts.fmax` -- maximum frequency (default 16000 or Nyquist)
-- `opts.density` -- bands per ERB (default 1; use 2 for denser spacing)
+- `fs` – sample rate (default 44100)
+- `opts.fmin` – minimum frequency (default 50)
+- `opts.fmax` – maximum frequency (default 16000 or Nyquist)
+- `opts.density` – bands per ERB (default 1; use 2 for denser spacing)
 
 ---
 
@@ -135,9 +135,9 @@ for (let band of bands) {
 ```
 
 **API**: `barkBank(fs?, opts?)` &rarr; `Array<{ bark, fLow, fHigh, fc, coefs }>`
-- `fs` -- sample rate (default 44100)
-- `opts.fmin` -- minimum frequency (default 20)
-- `opts.fmax` -- maximum frequency (default 15500 or Nyquist)
+- `fs` – sample rate (default 44100)
+- `opts.fmin` – minimum frequency (default 20)
+- `opts.fmax` – maximum frequency (default 15500 or Nyquist)
 
 ---
 
@@ -163,10 +163,10 @@ for (let band of bands) {
 ```
 
 **API**: `octaveBank(fraction?, fs?, opts?)` &rarr; `Array<{ fc, coefs }>`
-- `fraction` -- octave fraction: 1, 3, 6, etc. (default 3)
-- `fs` -- sample rate (default 44100)
-- `opts.fmin` -- minimum center frequency (default 31.25)
-- `opts.fmax` -- maximum center frequency (default 16000)
+- `fraction` – octave fraction: 1, 3, 6, etc. (default 3)
+- `fs` – sample rate (default 44100)
+- `opts.fmin` – minimum center frequency (default 31.25)
+- `opts.fmax` – maximum center frequency (default 16000)
 
 ## When to use which scale
 
