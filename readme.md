@@ -32,7 +32,11 @@ import firwin from 'digital-filter/fir/firwin.js'
 
 ## Contents
 
+<details><summary>
+
 **[IIR](#iir)**
+</summary>
+
 * [biquad](#biquad)
 * [svf](#svfdata-params)
 * [butterworth](#butterworthorder-fc-fs-type)
@@ -43,6 +47,7 @@ import firwin from 'digital-filter/fir/firwin.js'
 * [legendre](#legendreorder-fc-fs-type)
 * [linkwitzRiley](#linkwitzrileyorder-fc-fs)
 * [iirdesign](#iirdesignfpass-fstop-rp-rs-fs)
+</details>
 
 **[FIR](#fir)**
 * [firwin](#firwinnumtaps-cutoff-fs-opts)
