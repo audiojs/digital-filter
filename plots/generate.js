@@ -487,24 +487,13 @@ for (let type of bqTypes) {
 	plotFilter('biquad-' + type, coefs, 'Biquad ' + type + ', fc=1kHz')
 }
 
-// Weighting
-plotFilter('a-weighting', dsp.aWeighting(FS), 'A-weighting (IEC 61672)')
-plotFilter('c-weighting', dsp.cWeighting(FS), 'C-weighting (IEC 61672)')
-plotFilter('k-weighting', dsp.kWeighting(48000), 'K-weighting (ITU-R BS.1770)')
-plotFilter('riaa', dsp.riaa(FS), 'RIAA playback equalization')
-plotFilter('itu468', dsp.itu468(48000), 'ITU-R 468 noise weighting')
-
 // Linkwitz-Riley
 plotFilter('linkwitz-riley-low', dsp.linkwitzRiley(4, 1000, FS).low, 'Linkwitz-Riley LR4, low band')
 plotFilter('linkwitz-riley-high', dsp.linkwitzRiley(4, 1000, FS).high, 'Linkwitz-Riley LR4, high band')
 
 // Simple IIR as SOS
-let dcbR = 0.995
-plotFilter('dc-blocker', [{b0: 1, b1: -1, b2: 0, a1: -dcbR, a2: 0}], 'DC Blocker (R=0.995)')
 let opA = Math.exp(-2 * Math.PI * 1000 / FS)
 plotFilter('one-pole', [{b0: 1 - opA, b1: 0, b2: 0, a1: -opA, a2: 0}], 'One-pole lowpass, fc=1kHz')
-let rR = 1 - Math.PI * 50 / FS, rW = 2 * Math.PI * 1000 / FS
-plotFilter('resonator', [{b0: 1 - rR * rR, b1: 0, b2: 0, a1: -2 * rR * Math.cos(rW), a2: rR * rR}], 'Resonator, fc=1kHz, bw=50Hz')
 
 // FIR
 plotFir('firwin-lp', dsp.firwin(63, 1000, FS), 'firwin lowpass, 63 taps, fc=1kHz')
@@ -517,33 +506,10 @@ plotFir('differentiator', dsp.differentiator(31), 'Differentiator, 31 taps')
 plotFir('raised-cosine', dsp.raisedCosine(65, 0.35, 4), 'Raised cosine, β=0.35, 4 sps')
 plotFir('savitzky-golay', (() => { let d = new Float64Array(31); d[15] = 1; dsp.savitzkyGolay(d, {windowSize: 11, degree: 3}); return d })(), 'Savitzky-Golay, window=11, degree=3')
 
-// Impulse-response based (virtual analog, psychoacoustic)
-for (let [name, fn, params, title] of [
-	['moog-ladder', dsp.moogLadder, {fc: 1000, resonance: 0.5, fs: FS}, 'Moog ladder ZDF, fc=1kHz, res=0.5'],
-	['diode-ladder', dsp.diodeLadder, {fc: 1000, resonance: 0.5, fs: FS}, 'Diode ladder ZDF, fc=1kHz, res=0.5'],
-	['korg35', dsp.korg35, {fc: 1000, resonance: 0.3, fs: FS}, 'Korg35 ZDF, fc=1kHz, res=0.3'],
-]) {
-	let data = new Float64Array(2048); data[0] = 1
-	fn(data, params)
-	plotFir(name, data.slice(0, 256), title)
-}
-
 for (let type of ['lowpass', 'highpass', 'bandpass', 'notch']) {
 	let data = new Float64Array(2048); data[0] = 1
 	dsp.svf(data, {fc: 1000, Q: 1, fs: FS, type})
 	plotFir('svf-' + type, data.slice(0, 256), 'SVF ' + type + ', fc=1kHz, Q=1')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.gammatone(data, {fc: 1000, fs: FS})
-	plotFir('gammatone', data.slice(0, 512), 'Gammatone, fc=1kHz, order=4')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.comb(data, {delay: 100, gain: 0.7, type: 'feedback'})
-	plotFir('comb', data.slice(0, 512), 'Feedback comb, delay=100, gain=0.7')
 }
 
 // Smooth filters (impulse-response based)
@@ -571,55 +537,6 @@ for (let type of ['lowpass', 'highpass', 'bandpass', 'notch']) {
 	plotFir('dynamic-smoothing', data.slice(0, 256), 'Dynamic smoothing, fc=1–5kHz')
 }
 
-// Misc filters (impulse-response based)
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.allpass.first(data, {a: 0.5})
-	plotFir('allpass-first', data.slice(0, 256), 'First-order allpass, a=0.5')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.emphasis(data, {alpha: 0.97})
-	plotFir('pre-emphasis', data.slice(0, 256), 'Pre-emphasis, α=0.97')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.spectralTilt(data, {slope: -3, fs: FS})
-	plotFir('spectral-tilt', data.slice(0, 256), 'Spectral tilt, −3 dB/oct')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.noiseShaping(data, {bits: 16})
-	plotFir('noise-shaping', data.slice(0, 256), 'Noise shaping, 16-bit')
-}
-
-{
-	let data = new Float64Array(256); data[0] = 1
-	dsp.pinkNoise(data, {})
-	plotFir('pink-noise', data, 'Pink noise filter, impulse')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.variableBandwidth(data, {fc: 1000, Q: 0.707, fs: FS, type: 'lowpass'})
-	plotFir('variable-bandwidth', data.slice(0, 256), 'Variable bandwidth LP, fc=1kHz')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.envelope(data, {attack: 0.001, release: 0.05, fs: FS})
-	plotFir('envelope', data.slice(0, 512), 'Envelope follower, atk=1ms rel=50ms')
-}
-
-{
-	let data = new Float64Array(2048); data[0] = 1
-	dsp.slewLimiter(data, {rise: 1000, fall: 1000, fs: FS})
-	plotFir('slew-limiter', data.slice(0, 256), 'Slew limiter, rate=1000/s')
-}
-
 // FIR filters
 plotFir('gaussian-fir', dsp.gaussianFir(33, 0.3, 4), 'Gaussian FIR, N=33, BT=0.3')
 plotFir('minimum-phase', dsp.minimumPhase(dsp.firwin(65, 1000, FS)), 'Minimum-phase FIR, 65 taps, fc=1kHz')
@@ -636,6 +553,90 @@ plotFir('integrator', dsp.integrator('simpson'), "Integrator (Simpson's rule)")
 		for (let k = 1; k < a.length; k++) if (n-k >= 0) y[n] -= a[k] * y[n-k]
 	}
 	plotFir('yulewalk', y.slice(0, 256), 'Yule-Walker IIR, order 8')
+}
+
+// ── Multirate plots ──
+
+// Decimate — anti-alias lowpass at 90% of Nyquist/4
+plotFir('decimate', dsp.firwin(121, 0.9 * FS / 8, FS), 'Decimate anti-alias filter, factor 4')
+
+// Interpolate — anti-image lowpass at original Nyquist (fs*4 rate, cutoff at fs/2)
+plotFir('interpolate', dsp.firwin(121, FS / 2, FS * 4), 'Interpolate anti-image filter, factor 4')
+
+// Half-band FIR
+plotFir('half-band', dsp.halfBand(31), 'Half-band FIR, 31 taps')
+
+// CIC decimator — impulse through CIC
+{
+	let data = new Float64Array(2048); data[0] = 1
+	let out = dsp.cic(data, 8, 3)
+	plotFir('cic', out.slice(0, 64), 'CIC decimator, R=8, N=3')
+}
+
+// Polyphase decomposition — phase 0 of a 4-phase split
+{
+	let h = dsp.firwin(64, 0.25 * FS, FS)
+	let phases = dsp.polyphase(h, 4)
+	plotFir('polyphase', phases[0], 'Polyphase component 0 of 4')
+}
+
+// Farrow fractional delay — impulse delayed by 3.7 samples
+{
+	let data = new Float64Array(2048); data[256] = 1
+	dsp.farrow(data, {delay: 3.7, order: 3})
+	plotFir('farrow', data.slice(240, 280), 'Farrow fractional delay, d=3.7')
+}
+
+// Thiran allpass delay — impulse through allpass
+{
+	let {b, a} = dsp.thiran(3.5, 3)
+	let x = new Float64Array(2048); x[0] = 1
+	let y = new Float64Array(2048)
+	for (let n = 0; n < 2048; n++) {
+		for (let k = 0; k < b.length; k++) if (n-k >= 0) y[n] += b[k] * x[n-k]
+		for (let k = 1; k < a.length; k++) if (n-k >= 0) y[n] -= a[k] * y[n-k]
+	}
+	plotFir('thiran', y.slice(0, 64), 'Thiran allpass delay, d=3.5')
+}
+
+// Oversample — impulse upsampled 4x
+{
+	let data = new Float64Array(64); data[0] = 1
+	let up = dsp.oversample(data, 4)
+	plotFir('oversample', up.slice(0, 256), 'Oversample 4x')
+}
+
+// ── Adaptive filter convergence plots ──
+
+{
+	// Unknown system to identify: simple 4-tap FIR
+	let sys = new Float64Array([0.5, -0.3, 0.2, -0.1])
+	let N = 2048
+	let input = new Float64Array(N)
+	for (let i = 0; i < N; i++) input[i] = Math.random() * 2 - 1
+
+	// Desired = input convolved with unknown system
+	let desired = new Float64Array(N)
+	for (let n = 0; n < N; n++) {
+		for (let k = 0; k < sys.length; k++) {
+			if (n - k >= 0) desired[n] += sys[k] * input[n - k]
+		}
+	}
+
+	// LMS
+	let lmsParams = {order: 8, mu: 0.05}
+	dsp.lms(input, desired, lmsParams)
+	plotFir('lms', lmsParams.error.slice(0, 512), 'LMS convergence, \u03bc=0.05')
+
+	// NLMS
+	let nlmsParams = {order: 8, mu: 0.5}
+	dsp.nlms(input, desired, nlmsParams)
+	plotFir('nlms', nlmsParams.error.slice(0, 512), 'NLMS convergence, \u03bc=0.5')
+
+	// RLS
+	let rlsParams = {order: 8, lambda: 0.99, delta: 100}
+	dsp.rls(input, desired, rlsParams)
+	plotFir('rls', rlsParams.error.slice(0, 512), 'RLS convergence, \u03bb=0.99')
 }
 
 console.log('SVGs generated in plots/')

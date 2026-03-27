@@ -352,20 +352,6 @@ test('filtfilt — zero-phase filtering', () => {
 
 // --- FIR design ---
 
-test('window.hann — correct shape', () => {
-	let w = dsp.window.hann(5)
-	is(w.length, 5)
-	almost(w[0], 0, EPSILON)
-	almost(w[2], 1, EPSILON)
-	almost(w[4], 0, EPSILON)
-})
-
-test('window.kaiser — parameterized', () => {
-	let w = dsp.window.kaiser(11, 5)
-	is(w.length, 11)
-	ok(w[5] > w[0], 'center > edge')
-	almost(w[5], 1, EPSILON)
-})
 
 test('firwin — lowpass FIR', () => {
 	let h = dsp.firwin(51, 1000, 44100)

@@ -5,7 +5,6 @@ export { default as freqz, mag2db } from './core/freqz.js'
 export * as transform from './core/transform.js'
 export { default as filtfilt } from './core/filtfilt.js'
 export { default as convolution } from './core/convolution.js'
-export * as window from './core/window.js'
 
 // IIR design
 export { default as butterworth } from './iir/butterworth.js'
