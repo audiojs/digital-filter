@@ -9,13 +9,8 @@
     "./iir/*.js": "./iir/*.js",
     "./fir/*.js": "./fir/*.js",
     "./smooth/*.js": "./smooth/*.js",
-    "./misc/*.js": "./misc/*.js",
     "./adaptive/*.js": "./adaptive/*.js",
-    "./multirate/*.js": "./multirate/*.js",
-    "./weighting/*.js": "./weighting/*.js",
-    "./analog/*.js": "./analog/*.js",
-    "./auditory/*.js": "./auditory/*.js",
-    "./eq/*.js": "./eq/*.js"
+    "./multirate/*.js": "./multirate/*.js"
   },
   "scripts": {
     "test": "node test.js"
