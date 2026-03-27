@@ -10,8 +10,6 @@ filter(data, { coefs: sos })                 // apply
 let dB = mag2db(freqz(sos, 512, 44100).magnitude)  // analyze
 ```
 
-> 53 modules · 116 tests · 1 dependency · pure ESM · **[Guide](guide.md)** — concepts, choosing, recipes
-
 Or import individual modules:
 
 ```js
@@ -20,10 +18,7 @@ import butterworth from 'digital-filter/iir/butterworth.js'
 
 ## Reference
 
-<dl>
-<dt>IIR design</dt>
-<dd>
-
+**IIR**<br>
 [biquad](#biquad) ·
 [svf](#svfdata-params) ·
 [butterworth](#butterworthorder-fc-fs-type) ·
@@ -35,10 +30,7 @@ import butterworth from 'digital-filter/iir/butterworth.js'
 [iirdesign](#iirdesignfpass-fstop-rp-rs-fs) ·
 [linkwitzRiley](#linkwitzrileyorder-fc-fs)
 
-</dd>
-<dt>FIR design</dt>
-<dd>
-
+**FIR**<br>
 [firwin](#firwinnumtaps-cutoff-fs-opts) ·
 [firwin2](#firwin2numtaps-freq-gain-opts) ·
 [firls](#firlsnumtaps-bands-desired-weight) ·
@@ -55,10 +47,7 @@ import butterworth from 'digital-filter/iir/butterworth.js'
 [lattice](#latticedata-params) ·
 [warpedFir](#warpedfirdata-params)
 
-</dd>
-<dt>Smooth</dt>
-<dd>
-
+**Smooth**<br>
 [onePole](#onepoledata-params) ·
 [movingAverage](#movingaveragedata-params) ·
 [leakyIntegrator](#leakyintegratordata-params) ·
@@ -68,19 +57,13 @@ import butterworth from 'digital-filter/iir/butterworth.js'
 [oneEuro](#oneeuropdata-params) ·
 [dynamicSmoothing](#dynamicsmoothingdata-params)
 
-</dd>
-<dt>Adaptive</dt>
-<dd>
-
+**Adaptive**<br>
 [lms](#lmsinput-desired-params) ·
 [nlms](#nlmsinput-desired-params) ·
 [rls](#rlsinput-desired-params) ·
 [levinson](#levinsonr-order)
 
-</dd>
-<dt>Multirate</dt>
-<dd>
-
+**Multirate**<br>
 [decimate](#decimatedata-factor-opts) ·
 [interpolate](#interpolatedata-factor-opts) ·
 [halfBand](#halfbandnumtaps) ·
@@ -90,10 +73,7 @@ import butterworth from 'digital-filter/iir/butterworth.js'
 [thiran](#thirandelay-order) ·
 [oversample](#oversampledata-factor-opts)
 
-</dd>
-<dt>Core</dt>
-<dd>
-
+**Core**<br>
 [filter](#filterdata-params) ·
 [filtfilt](#filtfiltdata-params) ·
 [convolution](#convolutionsignal-ir) ·
@@ -103,9 +83,6 @@ import butterworth from 'digital-filter/iir/butterworth.js'
 [isStable](#isstablesos) · [isMinPhase](#isminphasesos) · [isFir](#isfirsos) · [isLinPhase](#islinphaseh) ·
 [sos2zpk](#sos2zpksos) · [sos2tf](#sos2tfsos) · [tf2zpk](#tf2zpkb-a) · [zpk2sos](#zpk2soszpk) ·
 [transform](#transform) · [window](#window)
-
-</dd>
-</dl>
 
 ## IIR design
 
@@ -119,7 +96,15 @@ Nine second-order filter types. The building block for all higher-order IIR. RBJ
 
 [^rbj]: Robert Bristow-Johnson, [Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/), 1998.
 
-`biquad.lowpass(fc, Q, fs)` · `biquad.highpass(fc, Q, fs)` · `biquad.bandpass(fc, Q, fs)` · `biquad.bandpass2(fc, Q, fs)` · `biquad.notch(fc, Q, fs)` · `biquad.allpass(fc, Q, fs)` · `biquad.peaking(fc, Q, fs, dBgain)` · `biquad.lowshelf(fc, Q, fs, dBgain)` · `biquad.highshelf(fc, Q, fs, dBgain)`
+* `biquad.lowpass(fc, Q, fs)`
+* `biquad.highpass(fc, Q, fs)`
+* `biquad.bandpass(fc, Q, fs)`
+* `biquad.bandpass2(fc, Q, fs)`
+* `biquad.notch(fc, Q, fs)`
+* `biquad.allpass(fc, Q, fs)`
+* `biquad.peaking(fc, Q, fs, dBgain)`
+* `biquad.lowshelf(fc, Q, fs, dBgain)`
+* `biquad.highshelf(fc, Q, fs, dBgain)`
 
 $$H(z) = \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
 
