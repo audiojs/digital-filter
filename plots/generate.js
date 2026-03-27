@@ -402,10 +402,7 @@ function autoTicks (lo, hi, n) {
 // Generate all plots
 // ═══════════════════════════════════════
 
-// ── Comparison plots (keep 2-panel for overlays) ──
-
-let LP = { x: LM, y: TM, w: PW, h: 180 }
-let RP = { x: LM + PW + GAP, y: TM, w: PW, h: 180 }
+// ── Comparison plots (4-panel, same layout as individual filters) ──
 
 // IIR comparison
 {
@@ -416,31 +413,56 @@ let RP = { x: LM + PW + GAP, y: TM, w: PW, h: 180 }
 		['Bessel', dsp.bessel(4, 1000, FS), C[3]],
 		['Legendre', dsp.legendre(4, 1000, FS), C[4]],
 	]
-	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
-	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
-	s += panel(RP, 'Hz', 'Group delay', -25, 5, 0) + logXTicks(RP, fTicks, 10, 20000) + hTicks(RP, [0, -5, -10, -15, -20], -25, 5)
+	let s = svgOpen()
+	s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${TXT}">IIR families, order 4, fc=1kHz</text>\n`
+
+	// P1: magnitude
+	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000) + dbGrid(P1) + fcLine(P1, 1000)
+	// P2: phase
+	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, 1000)
+	// P3: group delay
+	let gdLo = -25, gdHi = 5
+	s += panel(P3, 'Hz', 'Group delay', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, [0, -5, -10, -15, -20], gdLo, gdHi) + fcLine(P3, 1000)
+	// P4: impulse response
+	let irMax = 0.35
+	s += panel(P4, 'Samples', 'Impulse', -irMax, irMax, 0) + linXTicks(P4, [0, 32, 64, 96, 128], 0, 128) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
+
 	for (let [n, sos, c] of fams) {
 		let r = dsp.freqz(sos, NF, FS)
-		s += logPoly(LP, r.frequencies, Array.from(dsp.mag2db(r.magnitude)), 10, 20000, -80, 20, c, 1.3, false)
+		let db = Array.from(dsp.mag2db(r.magnitude))
+		let phase = Array.from(r.phase).map(v => v * 180 / Math.PI)
 		let gd = dsp.groupDelay(sos, NF, FS)
-		s += logPoly(RP, gd.frequencies, Array.from(gd.delay), 10, 20000, -25, 5, c, 1.3, false)
+		let ir = dsp.impulseResponse(sos, 128)
+		s += logPoly(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3, false)
+		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
+		s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, gdLo, gdHi, c, 1.3, false)
+		s += linPoly(P4, ir, 0, 128, -irMax, irMax, c)
 	}
-	s += legend(fams.map(f => [f[0], f[2]]), LP)
+	s += legend(fams.map(f => [f[0], f[2]]), P1)
 	writeFileSync('plots/iir-comparison.svg', s + '</svg>\n')
 }
 
 // Butterworth orders
 {
-	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
-	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
-	s += panel(RP, 'Samples', 'Step response', 0, 1.3, 0) + linXTicks(RP, [0, 50, 100], 0, 120) + hTicks(RP, [0, 0.5, 1], 0, 1.3)
-	for (let o = 1; o <= 8; o++) {
+	let orders = [[1,C[0]], [2,C[1]], [4,C[2]], [8,C[3]]]
+	let s = svgOpen()
+	s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${TXT}">Butterworth orders 1–8, fc=1kHz</text>\n`
+	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000) + dbGrid(P1) + fcLine(P1, 1000)
+	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, 1000)
+	let gdLo = -25, gdHi = 5
+	s += panel(P3, 'Hz', 'Group delay', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(gdLo, gdHi, 4), gdLo, gdHi) + fcLine(P3, 1000)
+	s += panel(P4, 'Samples', 'Step response', 0, 1.3, 0) + linXTicks(P4, [0, 50, 100], 0, 120) + hTicks(P4, [0, 0.5, 1], 0, 1.3)
+	for (let [o, c] of orders) {
 		let sos = dsp.butterworth(o, 1000, FS)
 		let r = dsp.freqz(sos, NF, FS)
-		s += logPoly(LP, r.frequencies, Array.from(dsp.mag2db(r.magnitude)), 10, 20000, -80, 20, C[0], 1.3, false)
-		if ([1, 2, 4, 8].includes(o)) s += linPoly(RP, dsp.stepResponse(sos, 120), 0, 120, 0, 1.3, C[[1,2,4,8].indexOf(o)], false)
+		let phase = Array.from(r.phase).map(v => v * 180 / Math.PI)
+		let gd = dsp.groupDelay(sos, NF, FS)
+		s += logPoly(P1, r.frequencies, Array.from(dsp.mag2db(r.magnitude)), 10, 20000, -80, 20, c, 1.3, false)
+		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
+		s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, gdLo, gdHi, c, 1.3, false)
+		s += linPoly(P4, dsp.stepResponse(sos, 120), 0, 120, 0, 1.3, c, false)
 	}
-	s += legend([[1,C[0]],[2,C[1]],[4,C[2]],[8,C[3]]].map(([o,c]) => ['N='+o, c]), LP)
+	s += legend(orders.map(([o, c]) => ['N=' + o, c]), P1)
 	writeFileSync('plots/butterworth-orders.svg', s + '</svg>\n')
 }
 
@@ -456,15 +478,24 @@ let RP = { x: LM + PW + GAP, y: TM, w: PW, h: 180 }
 		['highshelf', dsp.biquad.highshelf(1000,.707,FS,6), C[6]],
 		['allpass', dsp.biquad.allpass(1000,1,FS), C[7]],
 	]
-	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
-	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
-	s += panel(RP, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(RP, fTicks, 10, 20000) + phaseGrid(RP)
+	let s = svgOpen()
+	s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${TXT}">Biquad types, fc=1kHz</text>\n`
+	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000) + dbGrid(P1) + fcLine(P1, 1000)
+	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, 1000)
+	let irMax = 0.6
+	s += panel(P3, 'Hz', 'Group delay', -10, 5, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(-10, 5, 3), -10, 5) + fcLine(P3, 1000)
+	s += panel(P4, 'Samples', 'Impulse', -irMax, irMax, 0) + linXTicks(P4, [0, 16, 32, 48, 64], 0, 64) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
 	for (let [n, co, c] of types) {
 		let r = dsp.freqz(co, NF, FS)
-		s += logPoly(LP, r.frequencies, Array.from(dsp.mag2db(r.magnitude)), 10, 20000, -80, 20, c, 1.3, false)
-		s += logPoly(RP, r.frequencies, Array.from(r.phase).map(v => v * 180 / Math.PI), 10, 20000, -180, 180, c, 1.3, false)
+		let phase = Array.from(r.phase).map(v => v * 180 / Math.PI)
+		let gd = dsp.groupDelay(co, NF, FS)
+		let ir = dsp.impulseResponse(co, 64)
+		s += logPoly(P1, r.frequencies, Array.from(dsp.mag2db(r.magnitude)), 10, 20000, -80, 20, c, 1.3, false)
+		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
+		s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, -10, 5, c, 1.3, false)
+		s += linPoly(P4, ir, 0, 64, -irMax, irMax, c)
 	}
-	s += legend(types.map(t => [t[0], t[2]]), LP)
+	s += legend(types.map(t => [t[0], t[2]]), P1)
 	writeFileSync('plots/biquad-types.svg', s + '</svg>\n')
 }
 

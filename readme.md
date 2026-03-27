@@ -1,8 +1,17 @@
 # digital-filter [![test](https://github.com/audiojs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/digital-filter/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/digital-filter)](https://www.npmjs.com/package/digital-filter) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Digital filters for signal processing – classical IIR families, FIR design, smoothing, adaptive, multirate.
+Digital filter design and processing –
+[IIR](#iir) (Butterworth, Chebyshev, Elliptic, Bessel),
+[FIR](#fir) (window, least-squares, equiripple),
+[smoothing](#smooth),
+[adaptive](#adaptive),
+[multirate](#multirate).
 
-<img src="plots/iir-comparison.svg">
+## Install
+
+```
+npm install digital-filter
+```
 
 ```js
 import { butterworth, filter, freqz, mag2db } from 'digital-filter'
@@ -12,31 +21,29 @@ filter(data, { coefs: sos })
 let dB = mag2db(freqz(sos, 512, 44100).magnitude)
 ```
 
-> 53 modules · 114 tests · pure ESM
->
+Or import individual modules directly:
+
+```js
+import butterworth from 'digital-filter/iir/butterworth.js'
+import firwin from 'digital-filter/fir/firwin.js'
+```
+
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
 
 ## Contents
 
-**[IIR](#iir)** — classical filter families from analog prototypes (Butterworth, Chebyshev, Elliptic, Bessel). Return SOS coefficient arrays.<br>
-[biquad](#biquad) · [svf](#svfdata-params) · [butterworth](#butterworthorder-fc-fs-type) · [chebyshev](#chebyshevorder-fc-fs-ripple-type) · [chebyshev2](#chebyshev2order-fc-fs-attenuation-type) · [elliptic](#ellipticorder-fc-fs-ripple-attenuation-type) · [bessel](#besselorder-fc-fs-type) · [legendre](#legendreorder-fc-fs-type) · [linkwitzRiley](#linkwitzrileyorder-fc-fs) · [iirdesign](#iirdesignfpass-fstop-rp-rs-fs)
+**[IIR](#iir)**: [biquad](#biquad) · [svf](#svfdata-params) · [butterworth](#butterworthorder-fc-fs-type) · [chebyshev](#chebyshevorder-fc-fs-ripple-type) · [chebyshev2](#chebyshev2order-fc-fs-attenuation-type) · [elliptic](#ellipticorder-fc-fs-ripple-attenuation-type) · [bessel](#besselorder-fc-fs-type) · [legendre](#legendreorder-fc-fs-type) · [linkwitzRiley](#linkwitzrileyorder-fc-fs) · [iirdesign](#iirdesignfpass-fstop-rp-rs-fs)
 
-**[FIR](#fir)** — finite impulse response design. Always stable, linear phase when symmetric. Return `Float64Array` coefficients.<br>
-[firwin](#firwinnumtaps-cutoff-fs-opts) · [firls](#firlsnumtaps-bands-desired-weight) · [remez](#remeznumtaps-bands-desired-weight) · [firwin2](#firwin2numtaps-freq-gain-opts) · [hilbert](#hilbertn) · [differentiator](#differentiatorn-opts) · [raisedCosine](#raisedcosinen-beta-sps-opts) · [gaussianFir](#gaussianfirn-bt-sps) · [matchedFilter](#matchedfiltertemplate) · [minimumPhase](#minimumphaseh) · [yulewalk](#yulewalkorder-frequencies-magnitudes) · [kaiserord](#kaiserorddeltaf-attenuation) · [integrator](#integratorrule) · [lattice](#latticedata-params) · [warpedFir](#warpedfirdata-params)
+**[FIR](#fir)**: [firwin](#firwinnumtaps-cutoff-fs-opts) · [firls](#firlsnumtaps-bands-desired-weight) · [remez](#remeznumtaps-bands-desired-weight) · [firwin2](#firwin2numtaps-freq-gain-opts) · [hilbert](#hilbertn) · [differentiator](#differentiatorn-opts) · [raisedCosine](#raisedcosinen-beta-sps-opts) · [gaussianFir](#gaussianfirn-bt-sps) · [matchedFilter](#matchedfiltertemplate) · [minimumPhase](#minimumphaseh) · [yulewalk](#yulewalkorder-frequencies-magnitudes) · [kaiserord](#kaiserorddeltaf-attenuation) · [integrator](#integratorrule) · [lattice](#latticedata-params) · [warpedFir](#warpedfirdata-params)
 
-**[Smooth](#smooth)** — smoothing and denoising. Simple averagers, polynomial fits, adaptive smoothers. In-place.<br>
-[onePole](#onepoledata-params) · [movingAverage](#movingaveragedata-params) · [leakyIntegrator](#leakyintegratordata-params) · [median](#mediandata-params) · [savitzkyGolay](#savitzkygolaydata-params) · [gaussianIir](#gaussianiirdata-params) · [oneEuro](#oneeuropdata-params) · [dynamicSmoothing](#dynamicsmoothingdata-params)
+**[Smooth](#smooth)**: [onePole](#onepoledata-params) · [movingAverage](#movingaveragedata-params) · [leakyIntegrator](#leakyintegratordata-params) · [median](#mediandata-params) · [savitzkyGolay](#savitzkygolaydata-params) · [gaussianIir](#gaussianiirdata-params) · [oneEuro](#oneeuropdata-params) · [dynamicSmoothing](#dynamicsmoothingdata-params)
 
-**[Adaptive](#adaptive)** — filters that learn from a reference signal. Echo cancellation, system identification, LPC.<br>
-[lms](#lmsinput-desired-params) · [nlms](#nlmsinput-desired-params) · [rls](#rlsinput-desired-params) · [levinson](#levinsonr-order)
+**[Adaptive](#adaptive)**: [lms](#lmsinput-desired-params) · [nlms](#nlmsinput-desired-params) · [rls](#rlsinput-desired-params) · [levinson](#levinsonr-order)
 
-**[Multirate](#multirate)** — sample rate conversion, polyphase decomposition, fractional delay.<br>
-[decimate](#decimatedata-factor-opts) · [interpolate](#interpolatedata-factor-opts) · [halfBand](#halfbandnumtaps) · [cic](#cicdata-r-n) · [polyphase](#polypaseh-m) · [farrow](#farrowdata-params) · [thiran](#thirandelay-order) · [oversample](#oversampledata-factor-opts)
+**[Multirate](#multirate)**: [decimate](#decimatedata-factor-opts) · [interpolate](#interpolatedata-factor-opts) · [halfBand](#halfbandnumtaps) · [cic](#cicdata-r-n) · [polyphase](#polypaseh-m) · [farrow](#farrowdata-params) · [thiran](#thirandelay-order) · [oversample](#oversampledata-factor-opts)
 
-**[Core](#core)** — apply coefficients, analyze responses, convert formats.<br>
-[filter](#filterdata-params) · [filtfilt](#filtfiltdata-params) · [convolution](#convolutionsignal-ir) · [freqz](#freqzcoefs-n-fs) · [mag2db](#mag2dbmag) · [groupDelay](#groupdelaycoefs-n-fs) · [phaseDelay](#phasedelaycoefs-n-fs) · [impulseResponse](#impulseresponsecoefs-n) · [stepResponse](#stepresponsecoefs-n) · [isStable](#isstablesos) · [isMinPhase](#isminphasesos) · [isFir](#isfirsos) · [isLinPhase](#islinphaseh) · [sos2zpk](#sos2zpksos) · [sos2tf](#sos2tfsos) · [tf2zpk](#tf2zpkb-a) · [zpk2sos](#zpk2soszpk) · [transform](#transform)
+**[Core](#core)**: [filter](#filterdata-params) · [filtfilt](#filtfiltdata-params) · [convolution](#convolutionsignal-ir) · [freqz](#freqzcoefs-n-fs) · [mag2db](#mag2dbmag) · [groupDelay](#groupdelaycoefs-n-fs) · [phaseDelay](#phasedelaycoefs-n-fs) · [impulseResponse](#impulseresponsecoefs-n) · [stepResponse](#stepresponsecoefs-n) · [isStable](#isstablesos) · [isMinPhase](#isminphasesos) · [isFir](#isfirsos) · [isLinPhase](#islinphaseh) · [sos2zpk](#sos2zpksos) · [sos2tf](#sos2tfsos) · [tf2zpk](#tf2zpkb-a) · [zpk2sos](#zpk2soszpk) · [transform](#transform)
 
----
 
 ## IIR
 
@@ -146,6 +153,8 @@ Give it your specs (passband, stopband, ripple, rejection) and it picks the best
 
 All at order 4, $f_c = 1\text{kHz}$, $f_s = 44100\text{Hz}$:
 
+<img src="plots/iir-comparison.svg">
+
 | | Butterworth | Chebyshev I | Chebyshev II | Elliptic | Bessel | Legendre |
 |---|---|---|---|---|---|---|
 | **Passband** | Flat | 1 dB ripple | Flat | 1 dB ripple | Flat (soft) | Flat |
@@ -153,7 +162,6 @@ All at order 4, $f_c = 1\text{kHz}$, $f_s = 44100\text{Hz}$:
 | **Overshoot** | 10.9% | 8.7% | 13.0% | 10.6% | **0.9%** | 11.3% |
 | **Best for** | General | Sharp cutoff | Flat pass | Min order | No ringing | Sharp, no ripple |
 
----
 
 ## FIR
 
@@ -253,7 +261,6 @@ Lattice/ladder IIR structure using reflection coefficients (PARCOR). Each stage 
 
 Frequency-warped FIR – replaces unit delays with allpass delays, concentrating resolution at low frequencies where the ear is most sensitive. Used in perceptual audio coding and efficient EQ. Params: `coefs`, `lambda` (~0.7 for 44.1 kHz).
 
----
 
 ## Smooth
 
@@ -309,7 +316,6 @@ Self-adjusting SVF – cutoff adapts to signal speed. Like oneEuro but at audio 
 
 <img src="plots/dynamic-smoothing.svg">
 
----
 
 ## Adaptive
 
@@ -347,7 +353,6 @@ Recursive Least Squares – fastest convergence (~2N samples) via inverse correl
 
 Levinson-Durbin recursion – solves Toeplitz system for LPC coefficients from autocorrelation. The foundation of speech coding (CELP, LPC-10), AR spectral estimation, and linear prediction. Returns `{ a, error, k }`. O(N²)/block.
 
----
 
 ## Multirate
 
@@ -403,7 +408,6 @@ Multi-stage upsampling with anti-alias FIR. Oversample before nonlinear processi
 
 <img src="plots/oversample.svg">
 
----
 
 ## Core
 
@@ -447,7 +451,6 @@ Format conversion between SOS, zeros/poles/gain, and transfer function polynomia
 
 Analog prototype → digital SOS pipeline. `transform.polesSos(poles, fc, fs, type)`, `transform.poleZerosSos(poles, zeros, fc, fs, type)`, `transform.prewarp(f, fs)`.
 
----
 
 ## FAQ
 
@@ -467,7 +470,6 @@ Analog prototype → digital SOS pipeline. `transform.polesSos(poles, fc, fs, ty
 
 **What is aliasing?** A digital system at sample rate $f_s$ can represent frequencies up to $f_s/2$ (Nyquist). Frequencies above Nyquist fold back as artifacts. `decimate` and `interpolate` handle anti-aliasing automatically.
 
----
 
 ## Choosing a filter
 
@@ -512,7 +514,6 @@ Linear phase needed?
                 └── Default → butterworth
 ```
 
----
 
 ## Recipes
 
@@ -555,7 +556,6 @@ filter(block1, params)  // state persists
 filter(block2, params)  // seamless
 ```
 
----
 
 ## Pitfalls
 
@@ -568,7 +568,6 @@ filter(block2, params)  // seamless
 - **In-place** – `filter()` modifies data. Copy first: `Float64Array.from(data)`.
 - **Stale state** – state persists in params. New signal → new params.
 
----
 
 ## See also
 
