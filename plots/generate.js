@@ -257,7 +257,7 @@ function dbGrid (p) {
 
 // Phase grid: labels at ±180 and 0, sublines at ±90 (no labels)
 function phaseGrid (p) {
-	let yMin = -200, yMax = 200, s = ''
+	let yMin = -180, yMax = 180, s = ''
 	let toY = v => (p.y + p.h - (v - yMin) / (yMax - yMin) * p.h).toFixed(1)
 	// Sublines at ±90 (no labels)
 	for (let v of [90, -90]) {
@@ -307,8 +307,8 @@ function plotFilter (name, sos, title) {
 	s += logPoly(P1, r.frequencies, Array.from(db), 10, 20000, -80, 20, C[0], 1.5, true, 'down')
 
 	// P2: Phase — x-axis at 0°, centered
-	s += panel(P2, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
-	s += logPoly(P2, r.frequencies, phase, 10, 20000, -200, 200, C[1], 1.5, true, 'zero')
+	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
+	s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, C[1], 1.5, true, 'zero')
 
 	// P3: Group delay — x-axis at 0, centered vertically around data
 	let gdMid = (gdMax + gdMin) / 2
@@ -370,8 +370,8 @@ function plotFir (name, h, title) {
 	s += logPoly(P1, freqs, Array.from(mag), 10, 20000, -80, 20, C[0], 1.5, true, 'down')
 
 	// P2: Phase — x-axis at 0°, centered
-	s += panel(P2, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
-	s += logPoly(P2, freqs, Array.from(phase), 10, 20000, -200, 200, C[1], 1.5, true, 'zero')
+	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
+	s += logPoly(P2, freqs, Array.from(phase), 10, 20000, -180, 180, C[1], 1.5, true, 'zero')
 
 	// P3: Group delay — x-axis at 0, centered
 	let gdSpan2 = Math.max(Math.abs(gdMin), Math.abs(gdMax), 1) * 1.3
@@ -458,11 +458,11 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 	]
 	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
 	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
-	s += panel(RP, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(RP, fTicks, 10, 20000) + phaseGrid(RP)
+	s += panel(RP, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(RP, fTicks, 10, 20000) + phaseGrid(RP)
 	for (let [n, co, c] of types) {
 		let r = dsp.freqz(co, NF, FS)
 		s += logPoly(LP, r.frequencies, Array.from(dsp.mag2db(r.magnitude)), 10, 20000, -80, 20, c, 1.3, false)
-		s += logPoly(RP, r.frequencies, Array.from(r.phase).map(v => v * 180 / Math.PI), 10, 20000, -200, 200, c, 1.3, false)
+		s += logPoly(RP, r.frequencies, Array.from(r.phase).map(v => v * 180 / Math.PI), 10, 20000, -180, 180, c, 1.3, false)
 	}
 	s += legend(types.map(t => [t[0], t[2]]), LP)
 	writeFileSync('plots/biquad-types.svg', s + '</svg>\n')
