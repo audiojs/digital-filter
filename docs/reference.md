@@ -96,6 +96,20 @@ Maximally flat magnitude response. No ripple. The default choice. Butterworth (1
 | fs | number | 44100 | Sample rate Hz |
 | type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
 
+### Mathematics
+
+**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + (w/wc)^2N)`. Digitized via bilinear transform and decomposed into second-order sections:
+
+`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+
+Each SOS section has poles at `s_k = wc · exp(j·π·(2k+N+1)/(2N))` for k=0..N-1 (left-half only), mapped to z-plane by `z = (1 + s·T/2)/(1 − s·T/2)`.
+
+**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at order 4, fc=1000 Hz, fs=44100**: -3.0 dB at 1 kHz, -24 dB at 2 kHz, -57 dB at 5 kHz. Rolloff = -20N dB/decade = -80 dB/decade. Step response overshoot 10.9%, settling 73 samples. Group delay variation 14 samples.
+
+**Stability**: Unconditionally stable. Poles lie on a circle in the s-plane left half — bilinear transform maps them strictly inside the unit circle for all valid fc < fs/2.
+
 ```js
 import { butterworth, filter } from 'digital-filter'
 let sos = butterworth(4, 1000, 44100)
@@ -124,6 +138,20 @@ Chebyshev Type I. Trades passband ripple for steeper cutoff. Equiripple passband
 | ripple | number | 1 | Max passband ripple dB |
 | type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
 
+### Mathematics
+
+**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + ε²·T_N²(w/wc))` where `T_N` is the Nth Chebyshev polynomial and `ε = √(10^(Rp/10) − 1)`. Digitized via bilinear transform into SOS cascade:
+
+`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+
+Poles lie on an ellipse in the s-plane: `s_k = σ_k + j·Ω_k` where `σ_k = −sinh(a)·sin(θ_k)`, `Ω_k = cosh(a)·cos(θ_k)`, `a = (1/N)·arcsinh(1/ε)`.
+
+**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at order 4, Rp=1 dB, fc=1000 Hz, fs=44100**: passband equiripple between 0 and -1.0 dB. -1.0 dB at fc (passband edge, not -3 dB point). -34 dB at 2 kHz, -69 dB at 5 kHz. Overshoot 8.7%, settling 256 samples. Group delay variation 30 samples.
+
+**Stability**: Stable for all positive ripple values. Poles on left-half s-plane ellipse map inside unit circle via bilinear transform.
+
 ```js
 import { chebyshev, filter } from 'digital-filter'
 let sos = chebyshev(4, 1000, 44100, 1)
@@ -151,6 +179,20 @@ Chebyshev Type II (inverse Chebyshev). Flat passband, equiripple stopband with c
 | fs | number | 44100 | Sample rate Hz |
 | attenuation | number | 40 | Minimum stopband rejection dB |
 | type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
+
+### Mathematics
+
+**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + 1/(ε²·T_N²(wc/w)))` where `ε = 1/√(10^(Rs/10) − 1)`. Inverse of Chebyshev I — zeros in the stopband create equiripple rejection:
+
+`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+
+Has both poles (on s-plane ellipse) and finite zeros (on the jw axis), producing notches that enforce the stopband floor.
+
+**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at order 4, Rs=40 dB, fc=1000 Hz, fs=44100**: flat passband (0.0 dB at 500 Hz), -3.0 dB at fc. -40 dB at 2 kHz (stopband floor), equiripple stopband oscillates between -40 dB and -78 dB. Overshoot 13.0%, settling 89 samples.
+
+**Stability**: Unconditionally stable. Poles are the reciprocal of Chebyshev I zeros reflected into the left half-plane — always inside the unit circle after bilinear transform.
 
 ```js
 import { chebyshev2, filter } from 'digital-filter'
@@ -181,6 +223,20 @@ Elliptic (Cauer) filter. Sharpest possible transition for a given order. Ripple 
 | attenuation | number | 40 | Min stopband rejection dB |
 | type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
 
+### Mathematics
+
+**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + ε²·R_N²(w/wc))` where `R_N` is a rational Chebyshev (Jacobi elliptic) function, `ε = √(10^(Rp/10) − 1)`. Both poles and finite zeros:
+
+`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+
+Poles on an s-plane ellipse (like Chebyshev I). Zeros on the jw axis (like Chebyshev II). The combination yields the sharpest transition band of any classical IIR for a given order. Even orders produce exact equiripple; odd orders are approximate.
+
+**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at order 4, Rp=1 dB, Rs=40 dB, fc=1000 Hz, fs=44100**: passband ripple 0 to -1.0 dB, -1.0 dB at fc. -40 dB at 2 kHz, -46 dB at 5 kHz (stopband bounces between -40 and -46 dB). Overshoot 10.6%, settling 256 samples. Group delay variation 39 samples (worst of all families). A 4th-order elliptic achieves the transition width of a 7th-order Butterworth.
+
+**Stability**: Stable for all positive ripple and attenuation values. Poles in the left half s-plane map inside the unit circle via bilinear transform.
+
 ```js
 import { elliptic, filter } from 'digital-filter'
 let sos = elliptic(4, 1000, 44100, 1, 40)
@@ -208,6 +264,18 @@ Maximally flat group delay. Preserves waveform shape. Near-zero overshoot (0.9%)
 | fs | number | 44100 | Sample rate Hz |
 | type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
 
+### Mathematics
+
+**Transfer function** (analog prototype): `H(s) = θ_N(0) / θ_N(s/wc)` where `θ_N(s)` is the Nth-order reverse Bessel polynomial. For N=4: `θ₄(s) = s⁴ + 10s³ + 45s² + 105s + 105`. Poles cluster near the negative real axis, producing maximally flat group delay. Digitized via bilinear transform into SOS cascade:
+
+`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+
+**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at order 4, fc=1000 Hz, fs=44100**: -3.0 dB at 1 kHz, -14 dB at 2 kHz (gentlest rolloff), -43 dB at 5 kHz. Overshoot 0.9% (near zero). Settling 28 samples (fastest). Group delay variation 5 samples (flattest of all families). Note: bilinear transform warps the group delay property — frequency prewarping at fc partially compensates.
+
+**Stability**: Unconditionally stable. All Bessel polynomial roots are in the strict left half-plane, mapping inside the unit circle.
+
 ```js
 import { bessel, filter } from 'digital-filter'
 let sos = bessel(4, 1000, 44100)
@@ -234,6 +302,18 @@ Steepest monotonic (ripple-free) response. Optimal L-filter. Papoulis (1958), Bo
 | fc | number | -- | Cutoff Hz (-3 dB). Array for BP/BS. |
 | fs | number | 44100 | Sample rate Hz |
 | type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
+
+### Mathematics
+
+**Transfer function** (analog prototype): `|H(jw)|² = 1 − P_N(1 − 2(w/wc)²)` where `P_N` is an optimized Legendre polynomial. Achieves the steepest possible monotonic (ripple-free) magnitude rolloff for a given order. Poles computed via Bond (2004) method — numerical root-finding on the optimal Legendre polynomial. Digitized via bilinear transform:
+
+`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+
+**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at order 4, fc=1000 Hz, fs=44100**: -3.0 dB at 1 kHz (monotonic, no ripple). -0.4 dB at 500 Hz, -31 dB at 2 kHz, -65 dB at 5 kHz. Steeper than Butterworth (-24 dB at 2 kHz) while remaining ripple-free. Overshoot 11.3%, settling 116 samples. Group delay variation 21 samples.
+
+**Stability**: Unconditionally stable. Legendre polynomial roots lie in the left half-plane, mapping inside the unit circle via bilinear transform.
 
 ```js
 import { legendre, filter } from 'digital-filter'
@@ -293,6 +373,23 @@ All biquad functions: `biquad.type(fc, Q, fs, dBgain?)` -> `{b0, b1, b2, a1, a2}
 | `biquad.lowshelf(fc, Q, fs, dBgain)` | fc, Q, fs, dBgain | Shelf boost/cut below fc |
 | `biquad.highshelf(fc, Q, fs, dBgain)` | fc, Q, fs, dBgain | Shelf boost/cut above fc |
 
+### Mathematics (lowpass)
+
+**Transfer function**: `H(z) = (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)` (single section, pre-normalized by a0).
+
+**RBJ Cookbook intermediates**: `w0 = 2π·fc/fs`, `alpha = sin(w0)/(2·Q)`.
+
+**Lowpass coefficients**:
+- `b0 = (1 − cos(w0))/2`, `b1 = 1 − cos(w0)`, `b2 = (1 − cos(w0))/2`
+- `a0 = 1 + alpha`, `a1 = −2·cos(w0)`, `a2 = 1 − alpha`
+- All divided by a0 for normalization.
+
+**Difference equation**: `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+
+**Specs at fc=1000 Hz, Q=0.707, fs=44100**: -3 dB at fc, -12 dB/octave rolloff. Q=0.707 (1/√2) gives Butterworth-flat passband (no resonant peak). Higher Q produces resonance peak at fc.
+
+**Stability**: Stable when Q > 0. Poles are inside the unit circle for all fc < fs/2 and Q > 0. Becomes marginally stable as Q approaches infinity (poles approach unit circle).
+
 ```js
 import { biquad, filter } from 'digital-filter'
 let coefs = biquad.lowpass(2000, 0.707, 44100)
@@ -327,6 +424,20 @@ Window method FIR design. Truncated sinc with window function. Simplest FIR desi
 | fs | number | 44100 | Sample rate Hz |
 | opts.type | string | `'lowpass'` | `'lowpass'` `'highpass'` `'bandpass'` `'bandstop'` |
 | opts.window | string or Float64Array | `'hamming'` | Window function name or custom array |
+
+### Mathematics
+
+**Ideal lowpass impulse response** (infinite, non-causal):
+- `h_ideal[n] = sin(wc·n) / (π·n)` for n != 0, `h_ideal[0] = wc/π`
+- where `wc = π·fc/f_nyq` (normalized cutoff)
+
+**Window method**: `h[n] = h_ideal[n − M] · w[n]` where M = (numtaps−1)/2 (center), w[n] is the window function.
+
+**DC gain normalization**: `h[n] = h[n] / Σh[n]` (lowpass/bandstop normalize at DC; highpass at Nyquist; bandpass at center frequency).
+
+**Specs at numtaps=101, fc=4000 Hz, fs=44100, Hamming window**: linear phase (symmetric FIR), group delay = 50 samples. Stopband rejection -43 dB (Hamming), transition bandwidth ~ 8/N · fs/2 = 1746 Hz. Mainlobe width determined by window; sidelobes by window shape. Kaiser window with beta=8 achieves -65 dB; Blackman -58 dB.
+
+**Stability**: Always stable — FIR filters have all poles at the origin (inside unit circle by definition).
 
 ```js
 import { firwin, convolution } from 'digital-filter'
@@ -408,6 +519,22 @@ Parks-McClellan equiripple. Optimal minimax FIR -- narrowest transition for give
 | desired | Array | -- | Desired gain at each band edge |
 | weight | Array | all 1s | Relative importance per band |
 | maxiter | number | 40 | Maximum Remez iterations |
+
+### Mathematics
+
+**Minimax criterion**: minimize `max|W(ω)·(H(ω) − D(ω))|` over all specified bands, where W(ω) is the weight function, H(ω) is the actual response, D(ω) is the desired response.
+
+**Remez exchange algorithm**: iteratively finds the set of (N/2 + 2) extremal frequencies where the weighted error reaches its maximum, then solves for the optimal polynomial coefficients at those frequencies. Converges to equiripple solution where error oscillates at equal amplitude across each band.
+
+**Chebyshev alternation theorem**: the optimal solution has at least (N/2 + 2) error extrema of alternating sign and equal magnitude — the equiripple property.
+
+**Order estimates**:
+- Bellanger: `N ≈ −2/3 · log10(10·δp·δs) / Δf`
+- Kaiser: `N ≈ (−20·log10(√(δp·δs)) − 13) / (14.6·Δf)`
+
+**Specs at numtaps=51, bands=[0,0.3,0.4,1], desired=[1,1,0,0], weight=[1,10]**: linear phase, equiripple in both passband and stopband. Transition width = 0.1·f_nyq. Stopband weighted 10x tighter than passband. Narrower transition than equivalent firwin or firls at the same length.
+
+**Stability**: Always stable — FIR, all poles at origin.
 
 ```js
 import { remez, convolution } from 'digital-filter'
@@ -936,6 +1063,25 @@ State Variable Filter. Trapezoidal integration, stable under real-time parameter
 | params.ic1eq | number | 0 | State (persisted) |
 | params.ic2eq | number | 0 | State (persisted) |
 
+### Mathematics
+
+**Trapezoidal SVF coefficients**: `g = tan(π·fc/fs)`, `k = 1/Q`.
+- `a1 = 1/(1 + g·(g + k))`, `a2 = g·a1`, `a3 = g·a2`
+
+**Per-sample update** (from integrator states ic1eq, ic2eq):
+- `v3 = v0 − ic2eq`
+- `v1 = a1·ic1eq + a2·v3` (bandpass)
+- `v2 = ic2eq + a2·ic1eq + a3·v3` (lowpass)
+- `ic1eq = 2·v1 − ic1eq`, `ic2eq = 2·v2 − ic2eq`
+
+**Six simultaneous outputs** from one computation:
+- lowpass: `v2`, highpass: `v0 − k·v1 − v2`, bandpass: `v1`
+- notch: `v0 − k·v1`, peak: `v0 − k·v1 − 2·v2`, allpass: `v0 − 2·k·v1`
+
+**Equivalent transfer function** (lowpass): `H(z) = (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)` — identical to a bilinear-transformed biquad, but the trapezoidal integration topology allows zero-delay feedback, making it safe for per-sample parameter modulation.
+
+**Stability**: Unconditionally stable for all fc < fs/2 and Q > 0. The trapezoidal (implicit) integration preserves stability where Euler-based SVFs (Chamberlin) fail above fs/6.
+
 ```js
 import { svf } from 'digital-filter'
 let params = { fc: 1000, Q: 2, fs: 44100, type: 'lowpass' }
@@ -1066,6 +1212,24 @@ Moog transistor ladder filter. 4-pole -24 dB/oct lowpass with tanh saturation an
 | params.fc | number | 1000 | Cutoff frequency Hz (clamped to 0.45*fs) |
 | params.resonance | number | 0 | Resonance 0-1 (1 = self-oscillation) |
 | params.fs | number | 44100 | Sample rate Hz |
+
+### Mathematics
+
+**ZDF trapezoidal integrator**: `g = tan(π·fc/fs)`, `G = g/(1+g)` (one-pole gain factor).
+
+**Implicit feedback solve** (4 cascaded one-pole stages with global feedback):
+- `S = G³·s₀ + G²·s₁ + G·s₂ + s₃` (cascade state propagation)
+- `u = (input − k·S) / (1 + k·G⁴)` (implicit solve, no unit delay in feedback)
+- `u = tanh(u·drive)` (transistor saturation nonlinearity)
+
+Where `k = resonance·4` (feedback coefficient 0-4, self-oscillation at k=4).
+
+**Per-stage trapezoidal integrator** (applied 4 times in cascade):
+- `y = G·(v − s[j]) + s[j]`, `s[j] = 2·y − s[j]`
+
+**Transfer function** (linear, resonance=0): `H(z) = G⁴` through 4 cascaded first-order sections, yielding -24 dB/oct (-80 dB/decade). With feedback: resonance peak at fc, self-oscillation when k=4 (loop gain = 1).
+
+**Stability**: Stable for resonance 0-1. The implicit (zero-delay) feedback solve prevents the instability of naive delay-in-feedback implementations. tanh saturation provides soft limiting that prevents unbounded oscillation at resonance=1.
 
 ```js
 import { moogLadder } from 'digital-filter'
@@ -1260,6 +1424,22 @@ Least Mean Squares adaptive filter. Simplest adaptive algorithm. Widrow & Hoff (
 
 Returns: filtered output. `params.error` contains error signal. `params.w` updated in place.
 
+### Mathematics
+
+**Output**: `y[n] = wᵀ·x[n] = Σ w_j·x[n−j]` for j=0..N-1 (FIR filter with adaptive weights).
+
+**Error**: `e[n] = d[n] − y[n]` (desired minus output).
+
+**Weight update** (stochastic gradient descent on MSE): `w[n+1] = w[n] + μ·e[n]·x[n]`
+
+**Convergence condition**: `0 < μ < 2/(N·σ²_x)` where N is the filter order and σ²_x is the input signal power. Too large: diverges. Too small: slow convergence.
+
+**Steady-state misadjustment**: `M = μ·N·σ²_x / 2`. Tradeoff — faster convergence (larger μ) means higher residual error.
+
+**Complexity**: O(N) multiplications per sample (2N multiply-adds: N for output, N for update).
+
+**Stability**: Very robust. Converges for any μ within bounds. Insensitive to eigenvalue spread of input correlation matrix (unlike RLS), but convergence speed depends on it.
+
 ```js
 import { lms } from 'digital-filter'
 let params = { order: 128, mu: 0.01 }
@@ -1289,6 +1469,24 @@ Normalized LMS. Self-normalizing step size. The practical default for adaptive f
 | params.w | Float64Array | zeros | Weight vector (persisted) |
 
 Returns: filtered output. `params.error` contains error signal.
+
+### Mathematics
+
+**Output**: `y[n] = wᵀ·x[n] = Σ w_j·x[n−j]` for j=0..N-1.
+
+**Error**: `e[n] = d[n] − y[n]`.
+
+**Normalized weight update**: `w[n+1] = w[n] + μ·e[n]·x[n] / (xᵀx + ε)`
+
+where `xᵀx = Σ x²[n−j]` is the input power and ε is a small regularization constant (default 1e-8) preventing division by zero during silence.
+
+**Effective step size**: `μ_eff = μ / (xᵀx + ε)`. Self-normalizing — step automatically shrinks for loud inputs, grows for quiet inputs. Eliminates the need to tune μ to input level.
+
+**Convergence condition**: `0 < μ < 2` (independent of input power or filter order, unlike LMS).
+
+**Complexity**: O(N) per sample — same as LMS, with one extra dot product for power normalization.
+
+**Stability**: Robust. The power normalization prevents divergence from input level changes that would destabilize basic LMS.
 
 ```js
 import { nlms } from 'digital-filter'

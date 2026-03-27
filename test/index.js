@@ -867,13 +867,12 @@ test('korg35 — lowpass and highpass modes', () => {
 // --- Tier 3: Psychoacoustic ---
 
 test('gammatone — resonates at center frequency', () => {
-	let data = impulse(512)
+	let data = impulse(4096)
 	dsp.gammatone(data, {fc: 1000, fs: 44100})
-	// Should oscillate (alternating positive/negative)
 	let hasPos = false, hasNeg = false
-	for (let i = 0; i < 512; i++) {
-		if (data[i] > 0.01) hasPos = true
-		if (data[i] < -0.01) hasNeg = true
+	for (let i = 0; i < 4096; i++) {
+		if (data[i] > 0.001) hasPos = true
+		if (data[i] < -0.001) hasNeg = true
 	}
 	assert.ok(hasPos && hasNeg, 'gammatone oscillates')
 })

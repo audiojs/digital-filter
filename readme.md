@@ -258,6 +258,5 @@ import { window } from 'digital-filter'
 let w = window.hann(1024) // Float64Array
 ```
 
-## License
 
-MIT
+<p align=center><a href="./LICENSE">MIT</a> • <a href="https://github.com/krishnized/license/">ॐ</a></p>
