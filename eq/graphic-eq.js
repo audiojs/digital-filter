@@ -4,8 +4,8 @@
  * @module  digital-filter/graphic-eq
  */
 
-import { peaking } from './biquad.js'
-import filter from './filter.js'
+import { peaking } from '../biquad.js'
+import filter from '../filter.js'
 
 let BANDS = [31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 

@@ -1,4 +1,4 @@
-import { highshelf, highpass } from './biquad.js'
+import { highshelf, highpass } from '../biquad.js'
 
 export default function kWeighting(fs) {
 	if (!fs) fs = 48000

@@ -1,4 +1,4 @@
-import firwin from './firwin.js'
+import firwin from '../fir/firwin.js'
 
 /**
  * Oversample a signal by a given factor with anti-alias filtering.

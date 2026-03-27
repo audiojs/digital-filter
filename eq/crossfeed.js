@@ -5,8 +5,8 @@
  * @module  digital-filter/crossfeed
  */
 
-import { lowpass } from './biquad.js'
-import filter from './filter.js'
+import { lowpass } from '../biquad.js'
+import filter from '../filter.js'
 
 /**
  * @param {Float64Array} left - Left channel (modified in-place)

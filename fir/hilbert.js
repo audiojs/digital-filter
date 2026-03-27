@@ -1,4 +1,4 @@
-import { hamming } from './window.js'
+import { hamming } from '../window.js'
 
 /**
  * Generate Hilbert transform FIR coefficients.

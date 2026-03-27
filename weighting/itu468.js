@@ -1,4 +1,4 @@
-import { highpass, peaking, highshelf, lowpass } from './biquad.js'
+import { highpass, peaking, highshelf, lowpass } from '../biquad.js'
 
 export default function itu468(fs) {
 	if (!fs) fs = 48000

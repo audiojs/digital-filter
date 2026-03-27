@@ -1,4 +1,4 @@
-import firwin from './firwin.js'
+import firwin from '../fir/firwin.js'
 
 /**
  * Generate half-band FIR filter coefficients.

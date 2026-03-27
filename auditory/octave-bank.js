@@ -5,7 +5,7 @@
  * @module  digital-filter/octave-bank
  */
 
-import { bandpass2 } from './biquad.js'
+import { bandpass2 } from '../biquad.js'
 
 let { pow, log, ceil, floor, round } = Math
 

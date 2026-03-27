@@ -1,4 +1,4 @@
-import firwin from './firwin.js'
+import firwin from '../fir/firwin.js'
 
 /**
  * Decimate signal: anti-alias lowpass filter then downsample by factor M.

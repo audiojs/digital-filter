@@ -7,7 +7,7 @@
  * @module  digital-filter/legendre
  */
 
-import { polesSos } from './transform.js'
+import { polesSos } from '../transform.js'
 
 // Exact Papoulis/Legendre poles, normalized to -3dB at ω=1 rad/s.
 // Source: Bond (2004), verified by endolith (mpmath) and independent recomputation.

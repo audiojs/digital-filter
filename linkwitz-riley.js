@@ -4,7 +4,7 @@
  *
  * @module  digital-filter/linkwitz-riley
  */
-import butterworth from './butterworth.js'
+import butterworth from './iir/butterworth.js'
 
 export default function linkwitzRiley(order, fc, fs) {
 	if (!fs) fs = 44100

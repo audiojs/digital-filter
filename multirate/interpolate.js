@@ -1,4 +1,4 @@
-import firwin from './firwin.js'
+import firwin from '../fir/firwin.js'
 
 /**
  * Interpolate signal: upsample by factor L then anti-image lowpass filter.

@@ -1,4 +1,4 @@
-import { poleZerosSos } from './transform.js'
+import { poleZerosSos } from '../transform.js'
 
 let {sin, cos, sqrt, pow, floor, sinh, cosh, asinh, PI} = Math
 
