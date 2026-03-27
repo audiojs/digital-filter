@@ -12,35 +12,35 @@ filter(data, { coefs: sos })
 let dB = mag2db(freqz(sos, 512, 44100).magnitude)
 ```
 
-> 53 modules · 114 tests · pure ESM · **[Guide](guide.md)** — concepts, choosing, recipes
+> 53 modules · 114 tests · pure ESM
 >
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
 
 ## Contents
 
-**[IIR](#iir)** — the classical filter families. Butterworth, Chebyshev, Elliptic, Bessel – analog circuits immortalized as digital math. Design once, cascade biquads forever.<br>
+**[IIR](#iir)** — classical filter families from analog prototypes (Butterworth, Chebyshev, Elliptic, Bessel). Return SOS coefficient arrays.<br>
 [biquad](#biquad) · [svf](#svfdata-params) · [butterworth](#butterworthorder-fc-fs-type) · [chebyshev](#chebyshevorder-fc-fs-ripple-type) · [chebyshev2](#chebyshev2order-fc-fs-attenuation-type) · [elliptic](#ellipticorder-fc-fs-ripple-attenuation-type) · [bessel](#besselorder-fc-fs-type) · [legendre](#legendreorder-fc-fs-type) · [linkwitzRiley](#linkwitzrileyorder-fc-fs) · [iirdesign](#iirdesignfpass-fstop-rp-rs-fs)
 
-**[FIR](#fir)** — finite impulse response. Always stable, linear phase by default. From quick windowed sinc to optimal equiripple, plus specialized transforms for communications and signal analysis.<br>
+**[FIR](#fir)** — finite impulse response design. Always stable, linear phase when symmetric. Return `Float64Array` coefficients.<br>
 [firwin](#firwinnumtaps-cutoff-fs-opts) · [firls](#firlsnumtaps-bands-desired-weight) · [remez](#remeznumtaps-bands-desired-weight) · [firwin2](#firwin2numtaps-freq-gain-opts) · [hilbert](#hilbertn) · [differentiator](#differentiatorn-opts) · [raisedCosine](#raisedcosinen-beta-sps-opts) · [gaussianFir](#gaussianfirn-bt-sps) · [matchedFilter](#matchedfiltertemplate) · [minimumPhase](#minimumphaseh) · [yulewalk](#yulewalkorder-frequencies-magnitudes) · [kaiserord](#kaiserorddeltaf-attenuation) · [integrator](#integratorrule) · [lattice](#latticedata-params) · [warpedFir](#warpedfirdata-params)
 
-**[Smooth](#smooth)** — noise in, clean signal out. From the one-pole EMA to adaptive smoothers that track fast movements while suppressing jitter at rest.<br>
+**[Smooth](#smooth)** — smoothing and denoising. Simple averagers, polynomial fits, adaptive smoothers. In-place.<br>
 [onePole](#onepoledata-params) · [movingAverage](#movingaveragedata-params) · [leakyIntegrator](#leakyintegratordata-params) · [median](#mediandata-params) · [savitzkyGolay](#savitzkygolaydata-params) · [gaussianIir](#gaussianiirdata-params) · [oneEuro](#oneeuropdata-params) · [dynamicSmoothing](#dynamicsmoothingdata-params)
 
-**[Adaptive](#adaptive)** — filters that learn. Feed in a reference signal, the weights converge to cancel echo, identify a channel, or track a changing system.<br>
+**[Adaptive](#adaptive)** — filters that learn from a reference signal. Echo cancellation, system identification, LPC.<br>
 [lms](#lmsinput-desired-params) · [nlms](#nlmsinput-desired-params) · [rls](#rlsinput-desired-params) · [levinson](#levinsonr-order)
 
-**[Multirate](#multirate)** — change sample rates cleanly. Anti-alias before you decimate, anti-image after you interpolate, fractional delays for physical models.<br>
+**[Multirate](#multirate)** — sample rate conversion, polyphase decomposition, fractional delay.<br>
 [decimate](#decimatedata-factor-opts) · [interpolate](#interpolatedata-factor-opts) · [halfBand](#halfbandnumtaps) · [cic](#cicdata-r-n) · [polyphase](#polypaseh-m) · [farrow](#farrowdata-params) · [thiran](#thirandelay-order) · [oversample](#oversampledata-factor-opts)
 
-**[Core](#core)** — the engine. Apply coefficients, analyze responses, convert formats.<br>
+**[Core](#core)** — apply coefficients, analyze responses, convert formats.<br>
 [filter](#filterdata-params) · [filtfilt](#filtfiltdata-params) · [convolution](#convolutionsignal-ir) · [freqz](#freqzcoefs-n-fs) · [mag2db](#mag2dbmag) · [groupDelay](#groupdelaycoefs-n-fs) · [phaseDelay](#phasedelaycoefs-n-fs) · [impulseResponse](#impulseresponsecoefs-n) · [stepResponse](#stepresponsecoefs-n) · [isStable](#isstablesos) · [isMinPhase](#isminphasesos) · [isFir](#isfirsos) · [isLinPhase](#islinphaseh) · [sos2zpk](#sos2zpksos) · [sos2tf](#sos2tfsos) · [tf2zpk](#tf2zpkb-a) · [zpk2sos](#zpk2soszpk) · [transform](#transform)
 
 ---
 
 ## IIR
 
-The classical filter families – born as analog circuits, digitized via the bilinear transform, cascaded as second-order sections. Every higher-order IIR is a chain of biquads. All design functions return SOS arrays.[^sos]
+IIR filters use feedback – efficient (5–20 multiplies for a sharp lowpass), low latency, nonlinear phase. Designed from analog prototypes via the bilinear transform, implemented as cascaded second-order sections (SOS).[^sos]
 
 [^sos]: Direct form above order ~6 loses precision with float64. Cascaded biquads don't.
 
@@ -449,10 +449,130 @@ Analog prototype → digital SOS pipeline. `transform.polesSos(poles, fc, fs, ty
 
 ---
 
+## FAQ
+
+**What is a filter?** A system that takes samples in and produces samples out. It does something in time (averaging, delaying) that corresponds to something in frequency (passing, cutting, boosting). The **magnitude response** shows how much of each frequency passes through.
+
+**What is the dB scale?** Logarithmic ratio. $\text{dB} = 20\log_{10}(\text{ratio})$. 0 dB = unchanged, –3 dB = half power (the conventional cutoff), –6 dB = half amplitude, –20 dB = 10%, –60 dB = 0.1%.
+
+**What are phase and group delay?** Magnitude tells you *how much* passes, phase tells you *when* it arrives. If all frequencies are delayed equally the waveform is preserved (**linear phase**). **Group delay** measures the delay per frequency. Constant group delay = linear phase. FIR can have linear phase; IIR cannot.
+
+**IIR vs FIR?** IIR uses feedback – efficient (5–20 multiplies), low latency, nonlinear phase, can be unstable. FIR has no feedback – always stable, linear phase possible, needs 100–1000+ taps. Use IIR for real-time, FIR for offline or when linear phase is required.
+
+**What are biquads and SOS?** The biquad is a 2nd-order filter with 5 coefficients. Every higher-order IIR is a cascade of biquads (**second-order sections**). Direct form above order ~6 loses precision with float64; SOS doesn't. This library returns SOS arrays by default.
+
+**What is the bilinear transform?** Maps analog filter prototypes to digital: $s = (2/T)(z-1)/(z+1)$. All IIR design functions prewarp automatically – the cutoff you specify is the cutoff you get.
+
+**When is a filter unstable?** When poles move outside the unit circle. Causes: coefficient quantization (use SOS, not direct form), careless parameter changes (Q → 0), feedback gain too high. Check with `isStable(sos)`. FIR is always stable.
+
+**What is aliasing?** A digital system at sample rate $f_s$ can represent frequencies up to $f_s/2$ (Nyquist). Frequencies above Nyquist fold back as artifacts. `decimate` and `interpolate` handle anti-aliasing automatically.
+
+---
+
+## Choosing a filter
+
+| I need to… | Use | Notes |
+|---|---|---|
+| Remove frequencies above/below a cutoff | `butterworth(N, fc, fs)` | Default, flat passband |
+| Sharpest possible cutoff | `elliptic(N, fc, fs, rp, rs)` | Minimum order for specs |
+| Sharp, passband ripple OK | `chebyshev(N, fc, fs, ripple)` | Steeper than Butterworth |
+| Sharp, no ripple anywhere | `legendre(N, fc, fs)` | Between Butterworth and Chebyshev |
+| Auto-select family + order | `iirdesign(fpass, fstop, rp, rs, fs)` | From specs |
+| Notch out one frequency | `biquad.notch(fc, Q, fs)` | Q=30 for narrow null |
+| Boost/cut a band | `biquad.peaking(fc, Q, fs, dB)` | Parametric EQ |
+| Split into bands | `linkwitzRiley(4, fc, fs)` | LP+HP sum to flat |
+| No ringing/overshoot | `bessel(N, fc, fs)` | Flat group delay |
+| No phase distortion | `filtfilt(data, {coefs})` | Zero-phase, offline |
+| Smooth a signal | `onePole(data, {fc, fs})` | Simplest |
+| Smooth, preserve peaks | `savitzkyGolay(data, {windowSize, degree})` | Polynomial fit |
+| Reduce sensor jitter | `oneEuro(data, params)` | Adaptive |
+| Cancel echo/noise | `nlms(input, desired, params)` | Start here |
+| Quick FIR | `firwin(N, fc, fs, {type})` | Window method |
+| Sharp FIR | `remez(N, bands, desired)` | Parks-McClellan |
+| Downsample | `decimate(data, factor)` | Anti-alias included |
+| Upsample | `interpolate(data, factor)` | Anti-image included |
+
+### IIR family decision tree
+
+```
+Linear phase needed?
+├── Yes → FIR or filtfilt (offline)
+└── No
+    Waveform must be preserved?
+    ├── Yes → bessel
+    └── No
+        Passband ripple OK?
+        ├── Yes
+        │   ├── Stopband ripple also OK? → elliptic
+        │   └── Stopband monotonic → chebyshev
+        └── No (passband must be flat)
+            ├── Stopband ripple OK? → chebyshev2
+            └── No ripple anywhere?
+                ├── Steepest monotonic? → legendre
+                └── Default → butterworth
+```
+
+---
+
+## Recipes
+
+### Hum removal
+
+```js
+for (let f of [60, 120, 180]) filter(data, { coefs: biquad.notch(f, 30, 44100) })
+```
+
+### Echo cancellation
+
+```js
+let params = { order: 512, mu: 0.5 }
+nlms(farEnd, microphone, params)
+// params.error = cleaned signal
+```
+
+### ECG filtering
+
+```js
+filter(data, { coefs: butterworth(2, 0.5, 500, 'highpass') })  // baseline wander
+filter(data, { coefs: butterworth(4, 40, 500) })                 // noise
+filter(data, { coefs: biquad.notch(50, 35, 500) })               // powerline
+```
+
+### Pulse shaping
+
+```js
+let htx = raisedCosine(101, 0.35, 8, { root: true })
+let shaped = convolution(symbols, htx)
+```
+
+### Block processing
+
+All stateful filters persist state between calls:
+
+```js
+let params = { coefs: butterworth(4, 1000, 44100) }
+filter(block1, params)  // state persists
+filter(block2, params)  // seamless
+```
+
+---
+
+## Pitfalls
+
+- **FIR when IIR suffices** – Butterworth order 4: 10 multiplies. Equivalent FIR: 100+.
+- **High order when elliptic works** – elliptic 4 ≈ Butterworth 12. Use `iirdesign`.
+- **Forgetting SOS** – never use high-order direct form. This library returns SOS by default.
+- **filtfilt in real-time** – needs entire signal for backward pass.
+- **LP+HP for crossover** – doesn't sum flat. Use `linkwitzRiley`.
+- **Q too high** – Q > 10 creates tall resonance. For EQ: 0.5–8.
+- **In-place** – `filter()` modifies data. Copy first: `Float64Array.from(data)`.
+- **Stale state** – state persists in params. New signal → new params.
+
+---
+
 ## See also
 
-- **[audio-filter](https://github.com/audiojs/audio-filter)** — audio and acoustic filters built on digital-filter: weighting (A/C/K, ITU-468, RIAA), EQ (parametric, graphic, crossover), synthesis (Moog, Korg, formant, vocoder), perception (gammatone, ERB, Bark, octave banks), effects (comb, allpass, envelope, resonator)
-- **[window-function](https://github.com/scijs/window-function)** — 34 window functions for spectral analysis and FIR design
-- **[Guide](guide.md)** — concepts (IIR vs FIR, biquads, SOS, bilinear transform), choosing the right filter, recipes by domain
+- **[audio-filter](https://github.com/audiojs/audio-filter)** – weighting, EQ, synthesis, measurement, effects
+- **[window-function](https://github.com/scijs/window-function)** – 34 window functions
 
 <p align=center><a href="./LICENSE">MIT</a> · <a href="https://github.com/krishnized/license/">ॐ</a></p>

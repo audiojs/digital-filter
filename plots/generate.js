@@ -16,7 +16,7 @@ mkdirSync('plots', { recursive: true })
 
 let GRID = '#e5e7eb', AXIS = '#d1d5db', TXT = '#6b7280'
 let C = ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e']
-let LM = 34, TM = 16, RM = 20, GAP = 36, PW = 365, PH = 155
+let LM = 34, TM = 16, RM = 20, GAP = 50, PW = 358, PH = 155
 let W = LM + PW + GAP + PW + RM, H = TM + PH + GAP + PH + 16
 
 let P1 = { x: LM, y: TM, w: PW, h: PH }
@@ -404,8 +404,8 @@ function autoTicks (lo, hi, n) {
 
 // ── Comparison plots (keep 2-panel for overlays) ──
 
-let LP = { x: 55, y: 12, w: 330, h: 180 }
-let RP = { x: 445, y: 12, w: 330, h: 180 }
+let LP = { x: LM, y: TM, w: PW, h: 180 }
+let RP = { x: LM + PW + GAP, y: TM, w: PW, h: 180 }
 
 // IIR comparison
 {
@@ -416,7 +416,7 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 		['Bessel', dsp.bessel(4, 1000, FS), C[3]],
 		['Legendre', dsp.legendre(4, 1000, FS), C[4]],
 	]
-	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
+	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
 	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
 	s += panel(RP, 'Hz', 'Group delay', -25, 5, 0) + logXTicks(RP, fTicks, 10, 20000) + hTicks(RP, [0, -5, -10, -15, -20], -25, 5)
 	for (let [n, sos, c] of fams) {
@@ -431,7 +431,7 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 
 // Butterworth orders
 {
-	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
+	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
 	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
 	s += panel(RP, 'Samples', 'Step response', 0, 1.3, 0) + linXTicks(RP, [0, 50, 100], 0, 120) + hTicks(RP, [0, 0.5, 1], 0, 1.3)
 	for (let o = 1; o <= 8; o++) {
@@ -456,7 +456,7 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 		['highshelf', dsp.biquad.highshelf(1000,.707,FS,6), C[6]],
 		['allpass', dsp.biquad.allpass(1000,1,FS), C[7]],
 	]
-	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
+	let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 240" style="font-family:system-ui,-apple-system,sans-serif">\n`
 	s += panel(LP, 'Hz', 'dB', -80, 20, 0) + logXTicks(LP, fTicks, 10, 20000) + dbGrid(LP)
 	s += panel(RP, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(RP, fTicks, 10, 20000) + phaseGrid(RP)
 	for (let [n, co, c] of types) {
