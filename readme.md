@@ -1,6 +1,7 @@
 # digital-filter [![npm](https://img.shields.io/npm/v/digital-filter.svg)](https://npmjs.org/package/digital-filter) [![test](https://github.com/scijs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/scijs/digital-filter/actions/workflows/test.yml) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Digital filter design and processing for JavaScript — from biquad to Butterworth to adaptive, with the depth of scipy.signal and the simplicity of a single import.
+Digital filter design and processing.
+From biquad to Butterworth to adaptive, with the depth of scipy.signal and the simplicity of a single import.
 
 > 82 modules · 164 tests · 1 dependency ([window-function](https://github.com/scijs/window-function)) · pure ESM
 >

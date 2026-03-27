@@ -16,17 +16,31 @@ mkdirSync('docs/plots', { recursive: true })
 
 let GRID = '#e5e7eb', AXIS = '#d1d5db', TXT = '#6b7280'
 let C = ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e']
-let W = 800, H = 420
+let LM = 34, TM = 16, RM = 20, GAP = 36, PW = 365, PH = 155
+let W = LM + PW + GAP + PW + RM, H = TM + PH + GAP + PH + 16
 
-// ── 4 panels ──
-let P1 = { x: 55, y: 12, w: 330, h: 150 }    // top-left: magnitude
-let P2 = { x: 445, y: 12, w: 330, h: 150 }   // top-right: phase
-let P3 = { x: 55, y: 210, w: 330, h: 150 }   // bottom-left: group delay
-let P4 = { x: 445, y: 210, w: 330, h: 150 }  // bottom-right: impulse
+let P1 = { x: LM, y: TM, w: PW, h: PH }
+let P2 = { x: LM + PW + GAP, y: TM, w: PW, h: PH }
+let P3 = { x: LM, y: TM + PH + GAP, w: PW, h: PH }
+let P4 = { x: LM + PW + GAP, y: TM + PH + GAP, w: PW, h: PH }
 
 // ── SVG primitives ──
 
 function svgOpen () { return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="font-family:system-ui,-apple-system,sans-serif">\n` }
+
+// dashed vertical line at fc on a log-frequency panel
+function fcLine (p, fc, fMin = 10, fMax = 20000) {
+	if (!fc || fc < fMin || fc > fMax) return ''
+	let x = (p.x + Math.log10(fc / fMin) / Math.log10(fMax / fMin) * p.w).toFixed(1)
+	return `  <line x1="${x}" y1="${p.y}" x2="${x}" y2="${p.y+p.h}" stroke="${AXIS}" stroke-width="1" stroke-dasharray="4 3"/>\n`
+}
+
+// extract fc from title string like "fc=1kHz" or "fc=500Hz"
+function parseFc (title) {
+	let m = title?.match(/fc=(\d+(?:\.\d+)?)\s*(k?)\s*Hz/i)
+	if (!m) return null
+	return +m[1] * (m[2].toLowerCase() === 'k' ? 1000 : 1)
+}
 
 // zeroAt: if provided, places the x-axis at this value (centered panels). Otherwise bottom.
 function panel (p, xLabel, yLabel, yMin, yMax, zeroAt) {
@@ -34,8 +48,8 @@ function panel (p, xLabel, yLabel, yMin, yMax, zeroAt) {
 		(p.y + p.h - (zeroAt - yMin) / (yMax - yMin) * p.h) : (p.y + p.h)
 	return `  <line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y+p.h}" stroke="${AXIS}"/>\n` +
 		`  <line x1="${p.x}" y1="${axisY.toFixed(1)}" x2="${p.x+p.w}" y2="${axisY.toFixed(1)}" stroke="${AXIS}"/>\n` +
-		`  <text x="${p.x+p.w/2}" y="${p.y+p.h+28}" text-anchor="middle" font-size="9" fill="${TXT}">${xLabel}</text>\n` +
-		`  <text x="${p.x-26}" y="${p.y+p.h/2}" text-anchor="middle" font-size="9" fill="${TXT}" transform="rotate(-90 ${p.x-26} ${p.y+p.h/2})">${yLabel}</text>\n`
+		`  <text x="${p.x+p.w/2}" y="${p.y+p.h+26}" text-anchor="middle" font-size="9" fill="${TXT}">${xLabel}</text>\n` +
+		`  <text x="${p.x-22}" y="${p.y+p.h/2}" text-anchor="middle" font-size="9" fill="${TXT}" transform="rotate(-90 ${p.x-22} ${p.y+p.h/2})">${yLabel}</text>\n`
 }
 
 function hTicks (p, ticks, yMin, yMax) {
@@ -281,25 +295,26 @@ function plotFilter (name, sos, title) {
 	let gdLo = -Math.ceil(gdRange * 1.2), gdHi = Math.ceil(gdRange * 0.2)
 	if (gdLo === gdHi) gdHi = gdLo + 2
 
+	let fc = parseFc(title)
 	let s = svgOpen()
 
 	// Title
-	s += `  <text x="55" y="${H-4}" font-size="11" font-weight="600" fill="${TXT}">${title || name}</text>\n`
+	s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${TXT}">${title || name}</text>\n`
 
 	// P1: Magnitude — fixed +20 to -80 dB, x-axis at 0dB
 	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000)
-	s += dbGrid(P1)
+	s += dbGrid(P1) + fcLine(P1, fc)
 	s += logPoly(P1, r.frequencies, Array.from(db), 10, 20000, -80, 20, C[0], 1.5, true, 'down')
 
 	// P2: Phase — x-axis at 0°, centered
-	s += panel(P2, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2)
+	s += panel(P2, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
 	s += logPoly(P2, r.frequencies, phase, 10, 20000, -200, 200, C[1], 1.5, true, 'zero')
 
 	// P3: Group delay — x-axis at 0, centered vertically around data
 	let gdMid = (gdMax + gdMin) / 2
 	let gdSpan = Math.max(Math.abs(gdMax), Math.abs(gdMin), 1) * 1.3
 	let gdLoCentered = -gdSpan, gdHiCentered = gdSpan
-	s += panel(P3, 'Hz', 'Group delay', gdLoCentered, gdHiCentered, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(gdLoCentered, gdHiCentered, 4), gdLoCentered, gdHiCentered)
+	s += panel(P3, 'Hz', 'Group delay', gdLoCentered, gdHiCentered, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(gdLoCentered, gdHiCentered, 4), gdLoCentered, gdHiCentered) + fcLine(P3, fc)
 	s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, gdLoCentered, gdHiCentered, C[2], 1.5, true, 'zero')
 
 	// P4: Impulse response — x-axis at 0, centered
@@ -345,22 +360,23 @@ function plotFir (name, h, title) {
 	if (!isFinite(gdMin)) { gdMin = 0; gdMax = h.length }
 	let gdPad = Math.max((gdMax - gdMin) * 0.1, 1)
 
+	let fc = parseFc(title)
 	let s = svgOpen()
-	s += `  <text x="55" y="${H-4}" font-size="11" font-weight="600" fill="${TXT}">${title || name}</text>\n`
+	s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${TXT}">${title || name}</text>\n`
 
 	// P1: Magnitude — fixed +20 to -80 dB, x-axis at 0dB
 	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000)
-	s += dbGrid(P1)
+	s += dbGrid(P1) + fcLine(P1, fc)
 	s += logPoly(P1, freqs, Array.from(mag), 10, 20000, -80, 20, C[0], 1.5, true, 'down')
 
 	// P2: Phase — x-axis at 0°, centered
-	s += panel(P2, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2)
+	s += panel(P2, 'Hz', 'Phase (deg)', -200, 200, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
 	s += logPoly(P2, freqs, Array.from(phase), 10, 20000, -200, 200, C[1], 1.5, true, 'zero')
 
 	// P3: Group delay — x-axis at 0, centered
 	let gdSpan2 = Math.max(Math.abs(gdMin), Math.abs(gdMax), 1) * 1.3
 	let gdLo2 = -gdSpan2, gdHi2 = gdSpan2
-	s += panel(P3, 'Hz', 'Group delay', gdLo2, gdHi2, 0) + logXTicks(P3, [100, 1000, 10000], 10, 20000) + hTicks(P3, autoTicks(gdLo2, gdHi2, 4), gdLo2, gdHi2)
+	s += panel(P3, 'Hz', 'Group delay', gdLo2, gdHi2, 0) + logXTicks(P3, [100, 1000, 10000], 10, 20000) + hTicks(P3, autoTicks(gdLo2, gdHi2, 4), gdLo2, gdHi2) + fcLine(P3, fc)
 	s += logPoly(P3, gdFreqs, Array.from(gdVals), 10, 20000, gdLo2, gdHi2, C[2], 1.5, true, 'zero')
 
 	// P4: Impulse response — x-axis at 0, centered

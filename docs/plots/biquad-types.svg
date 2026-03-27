@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" style="font-family:system-ui,-apple-system,sans-serif">
   <line x1="55" y1="12" x2="55" y2="192" stroke="#d1d5db"/>
   <line x1="55" y1="48.0" x2="385" y2="48.0" stroke="#d1d5db"/>
-  <text x="220" y="220" text-anchor="middle" font-size="9" fill="#6b7280">Hz</text>
-  <text x="29" y="102" text-anchor="middle" font-size="9" fill="#6b7280" transform="rotate(-90 29 102)">dB</text>
+  <text x="220" y="218" text-anchor="middle" font-size="9" fill="#6b7280">Hz</text>
+  <text x="33" y="102" text-anchor="middle" font-size="9" fill="#6b7280" transform="rotate(-90 33 102)">dB</text>
   <line x1="85.1" y1="12" x2="85.1" y2="192" stroke="#e5e7eb" stroke-width="0.5"/>
   <line x1="102.7" y1="12" x2="102.7" y2="192" stroke="#e5e7eb" stroke-width="0.5"/>
   <line x1="115.2" y1="12" x2="115.2" y2="192" stroke="#e5e7eb" stroke-width="0.5"/>
@@ -49,8 +49,8 @@
   <text x="51" y="195.0" text-anchor="end" font-size="8" fill="#6b7280">-80</text>
   <line x1="445" y1="12" x2="445" y2="192" stroke="#d1d5db"/>
   <line x1="445" y1="102.0" x2="775" y2="102.0" stroke="#d1d5db"/>
-  <text x="610" y="220" text-anchor="middle" font-size="9" fill="#6b7280">Hz</text>
-  <text x="419" y="102" text-anchor="middle" font-size="9" fill="#6b7280" transform="rotate(-90 419 102)">Phase (deg)</text>
+  <text x="610" y="218" text-anchor="middle" font-size="9" fill="#6b7280">Hz</text>
+  <text x="423" y="102" text-anchor="middle" font-size="9" fill="#6b7280" transform="rotate(-90 423 102)">Phase (deg)</text>
   <line x1="475.1" y1="12" x2="475.1" y2="192" stroke="#e5e7eb" stroke-width="0.5"/>
   <line x1="492.7" y1="12" x2="492.7" y2="192" stroke="#e5e7eb" stroke-width="0.5"/>
   <line x1="505.2" y1="12" x2="505.2" y2="192" stroke="#e5e7eb" stroke-width="0.5"/>
