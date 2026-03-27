@@ -1,6 +1,6 @@
 /**
  * Generate SVG plots for filter documentation.
- * Run: node docs/generate.js
+ * Run: node plots/generate.js
  *
  * Each filter gets a 4-panel plot:
  *   Top-left:     Magnitude response (dB vs Hz, log)
@@ -623,5 +623,19 @@ for (let type of ['lowpass', 'highpass', 'bandpass', 'notch']) {
 // FIR filters
 plotFir('gaussian-fir', dsp.gaussianFir(33, 0.3, 4), 'Gaussian FIR, N=33, BT=0.3')
 plotFir('minimum-phase', dsp.minimumPhase(dsp.firwin(65, 1000, FS)), 'Minimum-phase FIR, 65 taps, fc=1kHz')
+plotFir('firwin2', dsp.firwin2(201, [0, 0.1, 0.2, 0.4, 0.5, 1], [0, 0, 1, 1, 0, 0]), 'firwin2 bandpass, 201 taps')
+plotFir('matched-filter', dsp.matchedFilter(dsp.raisedCosine(33, 0.35, 4)), 'Matched filter (raised cosine template)')
+plotFir('integrator', dsp.integrator('simpson'), "Integrator (Simpson's rule)")
+
+{
+	let {b, a} = dsp.yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
+	let x = new Float64Array(2048); x[0] = 1
+	let y = new Float64Array(2048)
+	for (let n = 0; n < 2048; n++) {
+		for (let k = 0; k < b.length; k++) if (n-k >= 0) y[n] += b[k] * x[n-k]
+		for (let k = 1; k < a.length; k++) if (n-k >= 0) y[n] -= a[k] * y[n-k]
+	}
+	plotFir('yulewalk', y.slice(0, 256), 'Yule-Walker IIR, order 8')
+}
 
 console.log('SVGs generated in plots/')
