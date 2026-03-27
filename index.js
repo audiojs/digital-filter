@@ -1,21 +1,31 @@
 // Core
-export * as biquad from './biquad.js'
-export { default as filter } from './filter.js'
-export { default as freqz, mag2db } from './freqz.js'
-export * as transform from './transform.js'
+export * as biquad from './iir/biquad.js'
+export { default as filter } from './core/filter.js'
+export { default as freqz, mag2db } from './core/freqz.js'
+export * as transform from './core/transform.js'
 
-// Simple filters
-export { default as leakyIntegrator } from './leaky-integrator.js'
-export { default as movingAverage } from './moving-average.js'
-export { default as dcBlocker } from './dc-blocker.js'
-export { default as onePole } from './one-pole.js'
-export { default as comb } from './comb.js'
-export * as allpass from './allpass.js'
-export { emphasis, deemphasis } from './pre-emphasis.js'
-export { default as resonator } from './resonator.js'
-export { default as envelope } from './envelope.js'
-export { default as slewLimiter } from './slew-limiter.js'
-export { default as median } from './median.js'
+// Smooth
+export { default as leakyIntegrator } from './smooth/leaky-integrator.js'
+export { default as movingAverage } from './smooth/moving-average.js'
+export { default as onePole } from './smooth/one-pole.js'
+export { default as median } from './smooth/median.js'
+export { default as savitzkyGolay } from './smooth/savitzky-golay.js'
+export { default as gaussianIir } from './smooth/gaussian-iir.js'
+export { default as oneEuro } from './smooth/one-euro.js'
+export { default as dynamicSmoothing } from './smooth/dynamic-smoothing.js'
+
+// Misc
+export { default as dcBlocker } from './misc/dc-blocker.js'
+export { default as comb } from './misc/comb.js'
+export * as allpass from './misc/allpass.js'
+export { emphasis, deemphasis } from './misc/pre-emphasis.js'
+export { default as resonator } from './misc/resonator.js'
+export { default as envelope } from './misc/envelope.js'
+export { default as slewLimiter } from './misc/slew-limiter.js'
+export { default as noiseShaping } from './misc/noise-shaping.js'
+export { default as pinkNoise } from './misc/pink-noise.js'
+export { default as spectralTilt } from './misc/spectral-tilt.js'
+export { default as variableBandwidth } from './misc/variable-bandwidth.js'
 
 // IIR design (return SOS)
 export { default as butterworth } from './iir/butterworth.js'
@@ -25,9 +35,11 @@ export { default as bessel } from './iir/bessel.js'
 export { default as elliptic } from './iir/elliptic.js'
 export { default as legendre } from './iir/legendre.js'
 export { default as iirdesign } from './iir/iirdesign.js'
+export { default as svf } from './iir/svf.js'
+export { default as linkwitzRiley } from './iir/linkwitz-riley.js'
 
 // FIR design
-export * as window from './window.js'
+export * as window from './core/window.js'
 export { default as firwin } from './fir/firwin.js'
 export { default as firwin2 } from './fir/firwin2.js'
 export { default as firls } from './fir/firls.js'
@@ -41,13 +53,12 @@ export { default as raisedCosine } from './fir/raised-cosine.js'
 export { default as gaussianFir } from './fir/gaussian-fir.js'
 export { default as matchedFilter } from './fir/matched-filter.js'
 export { default as yulewalk } from './fir/yulewalk.js'
+export { default as lattice } from './fir/lattice.js'
+export { default as warpedFir } from './fir/warped-fir.js'
 
-// Specialized
-export { default as svf } from './svf.js'
-export { default as linkwitzRiley } from './linkwitz-riley.js'
-export { default as savitzkyGolay } from './savitzky-golay.js'
-export { default as filtfilt } from './filtfilt.js'
-export { default as gaussianIir } from './gaussian-iir.js'
+// Core utilities
+export { default as filtfilt } from './core/filtfilt.js'
+export { default as convolution } from './core/convolution.js'
 
 // Virtual analog / synthesis
 export { default as moogLadder } from './analog/moog-ladder.js'
@@ -65,14 +76,6 @@ export { default as lms } from './adaptive/lms.js'
 export { default as nlms } from './adaptive/nlms.js'
 export { default as rls } from './adaptive/rls.js'
 export { default as levinson } from './adaptive/levinson.js'
-
-// Dynamic / nonlinear
-export { default as noiseShaping } from './noise-shaping.js'
-export { default as pinkNoise } from './pink-noise.js'
-export { default as oneEuro } from './one-euro.js'
-export { default as dynamicSmoothing } from './dynamic-smoothing.js'
-export { default as spectralTilt } from './spectral-tilt.js'
-export { default as variableBandwidth } from './variable-bandwidth.js'
 
 // Multirate
 export { default as decimate } from './multirate/decimate.js'
@@ -92,14 +95,9 @@ export { default as crossfeed } from './eq/crossfeed.js'
 export { default as formant } from './eq/formant.js'
 export { default as vocoder } from './eq/vocoder.js'
 
-// Structures
-export { default as lattice } from './lattice.js'
-export { default as warpedFir } from './warped-fir.js'
-export { default as convolution } from './convolution.js'
-
 // Analysis & conversion
-export { groupDelay, phaseDelay, impulseResponse, stepResponse, isStable, isMinPhase, isFir, isLinPhase } from './analysis.js'
-export { sos2zpk, sos2tf, tf2zpk, zpk2sos } from './convert.js'
+export { groupDelay, phaseDelay, impulseResponse, stepResponse, isStable, isMinPhase, isFir, isLinPhase } from './core/analysis.js'
+export { sos2zpk, sos2tf, tf2zpk, zpk2sos } from './core/convert.js'
 
 // Weighting filters (return SOS)
 export { default as aWeighting } from './weighting/a-weighting.js'

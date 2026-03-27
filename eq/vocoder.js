@@ -5,9 +5,9 @@
  * @module  digital-filter/vocoder
  */
 
-import { bandpass2 } from '../biquad.js'
-import filter from '../filter.js'
-import envelope from '../envelope.js'
+import { bandpass2 } from '../iir/biquad.js'
+import filter from '../core/filter.js'
+import envelope from '../misc/envelope.js'
 
 /**
  * @param {Float64Array} carrier - Carrier signal (e.g., sawtooth)

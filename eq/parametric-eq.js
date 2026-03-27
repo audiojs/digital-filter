@@ -4,8 +4,8 @@
  * @module  digital-filter/parametric-eq
  */
 
-import { peaking, lowshelf, highshelf } from '../biquad.js'
-import filter from '../filter.js'
+import { peaking, lowshelf, highshelf } from '../iir/biquad.js'
+import filter from '../core/filter.js'
 
 /**
  * @param {Float64Array} data - Input (modified in-place)

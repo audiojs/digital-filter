@@ -11,7 +11,7 @@
  */
 
 let {sqrt, pow, sin, cos, abs, atan, PI, floor, max} = Math
-import { poleZerosSos } from '../transform.js'
+import { poleZerosSos } from '../core/transform.js'
 
 /**
  * Design elliptic (Cauer) filter as cascaded second-order sections.

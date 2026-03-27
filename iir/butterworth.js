@@ -6,7 +6,7 @@
  */
 
 let {sin, floor, PI} = Math
-import { polesSos } from '../transform.js'
+import { polesSos } from '../core/transform.js'
 
 /**
  * Design Nth-order Butterworth filter as cascaded second-order sections.

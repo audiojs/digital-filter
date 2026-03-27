@@ -1,4 +1,4 @@
-import filter from './filter.js'
+import filter from '../core/filter.js'
 
 /**
  * Apply noise shaping to quantization.

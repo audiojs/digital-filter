@@ -5,7 +5,7 @@
  * @module  digital-filter/firwin2
  */
 
-import * as windows from '../window.js'
+import * as windows from '../core/window.js'
 
 let { cos, PI } = Math
 

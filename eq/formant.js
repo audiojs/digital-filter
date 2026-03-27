@@ -5,7 +5,7 @@
  * @module  digital-filter/formant
  */
 
-import resonator from '../resonator.js'
+import resonator from '../misc/resonator.js'
 
 /**
  * @param {Float64Array} data - Input (modified in-place)

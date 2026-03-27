@@ -5,7 +5,7 @@
  * @module  digital-filter/variable-bandwidth
  */
 
-import { lowpass, highpass, bandpass2 } from './biquad.js'
+import { lowpass, highpass, bandpass2 } from '../iir/biquad.js'
 
 /**
  * @param {Float64Array} data - Input (modified in-place)

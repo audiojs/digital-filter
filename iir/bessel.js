@@ -5,7 +5,7 @@
  * @module  digital-filter/bessel
  */
 
-import { polesSos } from '../transform.js'
+import { polesSos } from '../core/transform.js'
 
 // Normalized Bessel poles for -3dB cutoff at w=1 rad/s
 // Each entry: [sigma, omega] where pole = sigma ± j*omega

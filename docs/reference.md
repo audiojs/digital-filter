@@ -98,13 +98,19 @@ Maximally flat magnitude response. No ripple. The default choice. Butterworth (1
 
 ### Mathematics
 
-**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + (w/wc)^2N)`. Digitized via bilinear transform and decomposed into second-order sections:
+**Transfer function** (analog prototype):
 
-`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+$$|H(j\omega)|^2 = \frac{1}{1 + (\omega/\omega_c)^{2N}}$$
 
-Each SOS section has poles at `s_k = wc · exp(j·π·(2k+N+1)/(2N))` for k=0..N-1 (left-half only), mapped to z-plane by `z = (1 + s·T/2)/(1 − s·T/2)`.
+Digitized via bilinear transform and decomposed into second-order sections:
 
-**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+$$H(z) = \prod_k \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+Each SOS section has poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$ for k=0..N-1 (left-half only), mapped to z-plane by $z = (1 + sT/2)/(1 - sT/2)$.
+
+**Difference equation** (per section):
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at order 4, fc=1000 Hz, fs=44100**: -3.0 dB at 1 kHz, -24 dB at 2 kHz, -57 dB at 5 kHz. Rolloff = -20N dB/decade = -80 dB/decade. Step response overshoot 10.9%, settling 73 samples. Group delay variation 14 samples.
 
@@ -140,13 +146,19 @@ Chebyshev Type I. Trades passband ripple for steeper cutoff. Equiripple passband
 
 ### Mathematics
 
-**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + ε²·T_N²(w/wc))` where `T_N` is the Nth Chebyshev polynomial and `ε = √(10^(Rp/10) − 1)`. Digitized via bilinear transform into SOS cascade:
+**Transfer function** (analog prototype):
 
-`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 T_N^2(\omega/\omega_c)}$$
 
-Poles lie on an ellipse in the s-plane: `s_k = σ_k + j·Ω_k` where `σ_k = −sinh(a)·sin(θ_k)`, `Ω_k = cosh(a)·cos(θ_k)`, `a = (1/N)·arcsinh(1/ε)`.
+where $T_N$ is the Nth Chebyshev polynomial and $\varepsilon = \sqrt{10^{R_p/10} - 1}$. Digitized via bilinear transform into SOS cascade:
 
-**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+$$H(z) = \prod_k \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+Poles lie on an ellipse in the s-plane: $s_k = \sigma_k + j\Omega_k$ where $\sigma_k = -\sinh(a)\sin(\theta_k)$, $\Omega_k = \cosh(a)\cos(\theta_k)$, $a = (1/N)\operatorname{arcsinh}(1/\varepsilon)$.
+
+**Difference equation** (per section):
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at order 4, Rp=1 dB, fc=1000 Hz, fs=44100**: passband equiripple between 0 and -1.0 dB. -1.0 dB at fc (passband edge, not -3 dB point). -34 dB at 2 kHz, -69 dB at 5 kHz. Overshoot 8.7%, settling 256 samples. Group delay variation 30 samples.
 
@@ -182,13 +194,19 @@ Chebyshev Type II (inverse Chebyshev). Flat passband, equiripple stopband with c
 
 ### Mathematics
 
-**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + 1/(ε²·T_N²(wc/w)))` where `ε = 1/√(10^(Rs/10) − 1)`. Inverse of Chebyshev I — zeros in the stopband create equiripple rejection:
+**Transfer function** (analog prototype):
 
-`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+$$|H(j\omega)|^2 = \frac{1}{1 + \frac{1}{\varepsilon^2 T_N^2(\omega_c/\omega)}}$$
 
-Has both poles (on s-plane ellipse) and finite zeros (on the jw axis), producing notches that enforce the stopband floor.
+where $\varepsilon = 1/\sqrt{10^{R_s/10} - 1}$. Inverse of Chebyshev I — zeros in the stopband create equiripple rejection:
 
-**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+$$H(z) = \prod_k \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+Has both poles (on s-plane ellipse) and finite zeros (on the $j\omega$ axis), producing notches that enforce the stopband floor.
+
+**Difference equation** (per section):
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at order 4, Rs=40 dB, fc=1000 Hz, fs=44100**: flat passband (0.0 dB at 500 Hz), -3.0 dB at fc. -40 dB at 2 kHz (stopband floor), equiripple stopband oscillates between -40 dB and -78 dB. Overshoot 13.0%, settling 89 samples.
 
@@ -225,13 +243,19 @@ Elliptic (Cauer) filter. Sharpest possible transition for a given order. Ripple 
 
 ### Mathematics
 
-**Transfer function** (analog prototype): `|H(jw)|² = 1 / (1 + ε²·R_N²(w/wc))` where `R_N` is a rational Chebyshev (Jacobi elliptic) function, `ε = √(10^(Rp/10) − 1)`. Both poles and finite zeros:
+**Transfer function** (analog prototype):
 
-`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 R_N^2(\omega/\omega_c)}$$
 
-Poles on an s-plane ellipse (like Chebyshev I). Zeros on the jw axis (like Chebyshev II). The combination yields the sharpest transition band of any classical IIR for a given order. Even orders produce exact equiripple; odd orders are approximate.
+where $R_N$ is a rational Chebyshev (Jacobi elliptic) function, $\varepsilon = \sqrt{10^{R_p/10} - 1}$. Both poles and finite zeros:
 
-**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+$$H(z) = \prod_k \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+Poles on an s-plane ellipse (like Chebyshev I). Zeros on the $j\omega$ axis (like Chebyshev II). The combination yields the sharpest transition band of any classical IIR for a given order. Even orders produce exact equiripple; odd orders are approximate.
+
+**Difference equation** (per section):
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at order 4, Rp=1 dB, Rs=40 dB, fc=1000 Hz, fs=44100**: passband ripple 0 to -1.0 dB, -1.0 dB at fc. -40 dB at 2 kHz, -46 dB at 5 kHz (stopband bounces between -40 and -46 dB). Overshoot 10.6%, settling 256 samples. Group delay variation 39 samples (worst of all families). A 4th-order elliptic achieves the transition width of a 7th-order Butterworth.
 
@@ -266,11 +290,21 @@ Maximally flat group delay. Preserves waveform shape. Near-zero overshoot (0.9%)
 
 ### Mathematics
 
-**Transfer function** (analog prototype): `H(s) = θ_N(0) / θ_N(s/wc)` where `θ_N(s)` is the Nth-order reverse Bessel polynomial. For N=4: `θ₄(s) = s⁴ + 10s³ + 45s² + 105s + 105`. Poles cluster near the negative real axis, producing maximally flat group delay. Digitized via bilinear transform into SOS cascade:
+**Transfer function** (analog prototype):
 
-`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+$$H(s) = \frac{\theta_N(0)}{\theta_N(s/\omega_c)}$$
 
-**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+where $\theta_N(s)$ is the Nth-order reverse Bessel polynomial. For N=4:
+
+$$\theta_4(s) = s^4 + 10s^3 + 45s^2 + 105s + 105$$
+
+Poles cluster near the negative real axis, producing maximally flat group delay. Digitized via bilinear transform into SOS cascade:
+
+$$H(z) = \prod_k \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+**Difference equation** (per section):
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at order 4, fc=1000 Hz, fs=44100**: -3.0 dB at 1 kHz, -14 dB at 2 kHz (gentlest rolloff), -43 dB at 5 kHz. Overshoot 0.9% (near zero). Settling 28 samples (fastest). Group delay variation 5 samples (flattest of all families). Note: bilinear transform warps the group delay property — frequency prewarping at fc partially compensates.
 
@@ -305,11 +339,17 @@ Steepest monotonic (ripple-free) response. Optimal L-filter. Papoulis (1958), Bo
 
 ### Mathematics
 
-**Transfer function** (analog prototype): `|H(jw)|² = 1 − P_N(1 − 2(w/wc)²)` where `P_N` is an optimized Legendre polynomial. Achieves the steepest possible monotonic (ripple-free) magnitude rolloff for a given order. Poles computed via Bond (2004) method — numerical root-finding on the optimal Legendre polynomial. Digitized via bilinear transform:
+**Transfer function** (analog prototype):
 
-`H(z) = ∏ (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`
+$$|H(j\omega)|^2 = 1 - P_N\!\left(1 - 2(\omega/\omega_c)^2\right)$$
 
-**Difference equation** (per section): `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+where $P_N$ is an optimized Legendre polynomial. Achieves the steepest possible monotonic (ripple-free) magnitude rolloff for a given order. Poles computed via Bond (2004) method — numerical root-finding on the optimal Legendre polynomial. Digitized via bilinear transform:
+
+$$H(z) = \prod_k \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+**Difference equation** (per section):
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at order 4, fc=1000 Hz, fs=44100**: -3.0 dB at 1 kHz (monotonic, no ripple). -0.4 dB at 500 Hz, -31 dB at 2 kHz, -65 dB at 5 kHz. Steeper than Butterworth (-24 dB at 2 kHz) while remaining ripple-free. Overshoot 11.3%, settling 116 samples. Group delay variation 21 samples.
 
@@ -375,16 +415,23 @@ All biquad functions: `biquad.type(fc, Q, fs, dBgain?)` -> `{b0, b1, b2, a1, a2}
 
 ### Mathematics (lowpass)
 
-**Transfer function**: `H(z) = (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)` (single section, pre-normalized by a0).
+**Transfer function** (single section, pre-normalized by $a_0$):
 
-**RBJ Cookbook intermediates**: `w0 = 2π·fc/fs`, `alpha = sin(w0)/(2·Q)`.
+$$H(z) = \frac{b_0 + b_1 z^{-1} + b_2 z^{-2}}{1 + a_1 z^{-1} + a_2 z^{-2}}$$
+
+**RBJ Cookbook intermediates**: $\omega_0 = 2\pi f_c / f_s$, $\alpha = \sin(\omega_0)/(2Q)$.
 
 **Lowpass coefficients**:
-- `b0 = (1 − cos(w0))/2`, `b1 = 1 − cos(w0)`, `b2 = (1 − cos(w0))/2`
-- `a0 = 1 + alpha`, `a1 = −2·cos(w0)`, `a2 = 1 − alpha`
-- All divided by a0 for normalization.
 
-**Difference equation**: `y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] − a1·y[n-1] − a2·y[n-2]`
+$$b_0 = \frac{1 - \cos(\omega_0)}{2}, \quad b_1 = 1 - \cos(\omega_0), \quad b_2 = \frac{1 - \cos(\omega_0)}{2}$$
+
+$$a_0 = 1 + \alpha, \quad a_1 = -2\cos(\omega_0), \quad a_2 = 1 - \alpha$$
+
+All divided by $a_0$ for normalization.
+
+**Difference equation**:
+
+$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
 
 **Specs at fc=1000 Hz, Q=0.707, fs=44100**: -3 dB at fc, -12 dB/octave rolloff. Q=0.707 (1/√2) gives Butterworth-flat passband (no resonant peak). Higher Q produces resonance peak at fc.
 
@@ -428,12 +475,14 @@ Window method FIR design. Truncated sinc with window function. Simplest FIR desi
 ### Mathematics
 
 **Ideal lowpass impulse response** (infinite, non-causal):
-- `h_ideal[n] = sin(wc·n) / (π·n)` for n != 0, `h_ideal[0] = wc/π`
-- where `wc = π·fc/f_nyq` (normalized cutoff)
 
-**Window method**: `h[n] = h_ideal[n − M] · w[n]` where M = (numtaps−1)/2 (center), w[n] is the window function.
+$$h_{\text{ideal}}[n] = \frac{\sin(\omega_c n)}{\pi n}, \quad h_{\text{ideal}}[0] = \frac{\omega_c}{\pi}$$
 
-**DC gain normalization**: `h[n] = h[n] / Σh[n]` (lowpass/bandstop normalize at DC; highpass at Nyquist; bandpass at center frequency).
+where $\omega_c = \pi f_c / f_{\text{nyq}}$ (normalized cutoff).
+
+**Window method**: $h[n] = h_{\text{ideal}}[n - M] \cdot w[n]$ where M = (numtaps−1)/2 (center), w[n] is the window function.
+
+**DC gain normalization**: $h[n] = h[n] / \sum h[n]$ (lowpass/bandstop normalize at DC; highpass at Nyquist; bandpass at center frequency).
 
 **Specs at numtaps=101, fc=4000 Hz, fs=44100, Hamming window**: linear phase (symmetric FIR), group delay = 50 samples. Stopband rejection -43 dB (Hamming), transition bandwidth ~ 8/N · fs/2 = 1746 Hz. Mainlobe width determined by window; sidelobes by window shape. Kaiser window with beta=8 achieves -65 dB; Blackman -58 dB.
 
@@ -522,15 +571,25 @@ Parks-McClellan equiripple. Optimal minimax FIR -- narrowest transition for give
 
 ### Mathematics
 
-**Minimax criterion**: minimize `max|W(ω)·(H(ω) − D(ω))|` over all specified bands, where W(ω) is the weight function, H(ω) is the actual response, D(ω) is the desired response.
+**Minimax criterion**:
+
+$$\min \max_\omega \left| W(\omega) \cdot (H(\omega) - D(\omega)) \right|$$
+
+over all specified bands, where $W(\omega)$ is the weight function, $H(\omega)$ is the actual response, $D(\omega)$ is the desired response.
 
 **Remez exchange algorithm**: iteratively finds the set of (N/2 + 2) extremal frequencies where the weighted error reaches its maximum, then solves for the optimal polynomial coefficients at those frequencies. Converges to equiripple solution where error oscillates at equal amplitude across each band.
 
 **Chebyshev alternation theorem**: the optimal solution has at least (N/2 + 2) error extrema of alternating sign and equal magnitude — the equiripple property.
 
 **Order estimates**:
-- Bellanger: `N ≈ −2/3 · log10(10·δp·δs) / Δf`
-- Kaiser: `N ≈ (−20·log10(√(δp·δs)) − 13) / (14.6·Δf)`
+
+Bellanger:
+
+$$N \approx \frac{-\frac{2}{3}\log_{10}(10\,\delta_p\,\delta_s)}{\Delta f}$$
+
+Kaiser:
+
+$$N \approx \frac{-20\log_{10}\!\left(\sqrt{\delta_p\,\delta_s}\right) - 13}{14.6\,\Delta f}$$
 
 **Specs at numtaps=51, bands=[0,0.3,0.4,1], desired=[1,1,0,0], weight=[1,10]**: linear phase, equiripple in both passband and stopband. Transition width = 0.1·f_nyq. Stopband weighted 10x tighter than passband. Narrower transition than equivalent firwin or firls at the same length.
 
@@ -575,6 +634,8 @@ let h = firwin(numtaps, 2000, 44100, { window: kaiser(numtaps, beta) })
 
 FIR Hilbert transformer. 90-degree phase shift, unity magnitude. For analytic signal generation.
 
+$$h[n] = \begin{cases} \frac{2}{\pi n} & n \text{ odd} \\ 0 & n \text{ even} \end{cases}$$
+
 `hilbert(N, opts?)` -> Float64Array
 
 ![](plots/hilbert.svg)
@@ -599,6 +660,8 @@ let imag = convolution(signal, h)
 ## differentiator
 
 FIR derivative filter. Computes discrete derivative with noise immunity.
+
+$$h[n] = \frac{(-1)^n}{n} \cdot w[n], \quad n \neq 0$$
 
 `differentiator(N, opts?)` -> Float64Array
 
@@ -648,6 +711,8 @@ let integral = convolution(signal, h)
 
 Pulse shaping for digital communications. Satisfies Nyquist ISI criterion. Root variant for TX/RX splitting.
 
+$$h(t) = \operatorname{sinc}\!\left(\frac{t}{T}\right) \frac{\cos(\pi\beta t/T)}{1 - (2\beta t/T)^2}$$
+
 `raisedCosine(N, beta?, sps?, opts?)` -> Float64Array
 
 ![](plots/raised-cosine.svg)
@@ -674,6 +739,8 @@ let shaped = convolution(symbols, rrc)
 ## gaussianFir
 
 Gaussian pulse shaping filter (GMSK, Bluetooth). Controlled by bandwidth-time product.
+
+$$h(t) = \frac{\sqrt{2\pi}\,BT}{T} \exp\!\left(-\frac{2\pi^2 (BT)^2 t^2}{T^2}\right)$$
 
 `gaussianFir(N, bt?, sps?)` -> Float64Array
 
@@ -770,7 +837,7 @@ let out = convolution(signal, minph)
 
 ## onePole
 
-One-pole lowpass (exponential moving average). Simplest IIR filter: `y[n] = (1-a)x[n] + a*y[n-1]`.
+One-pole lowpass (exponential moving average). Simplest IIR filter: $y[n] = (1-a)\,x[n] + a\,y[n\!-\!1]$, where $a = e^{-2\pi f_c / f_s}$.
 
 `onePole(data, params)` -> data (in-place)
 
@@ -820,7 +887,7 @@ movingAverage(data, params)
 
 ## leakyIntegrator
 
-Leaky integrator: `y[n] = lambda*y[n-1] + (1-lambda)*x[n]`. Equivalent to one-pole lowpass.
+Leaky integrator: $y[n] = \lambda\,y[n\!-\!1] + (1-\lambda)\,x[n]$. Equivalent to one-pole lowpass.
 
 `leakyIntegrator(data, params)` -> data (in-place)
 
@@ -842,7 +909,7 @@ leakyIntegrator(data, params)
 
 ## dcBlocker
 
-Removes DC offset. First-order highpass: `H(z) = (1 - z^-1) / (1 - R*z^-1)`.
+Removes DC offset. First-order highpass: $H(z) = (1 - z^{-1}) / (1 - Rz^{-1})$.
 
 `dcBlocker(data, params)` -> data (in-place)
 
@@ -868,7 +935,7 @@ dcBlocker(data, params)
 
 ## comb
 
-Comb filter. Feedforward (FIR) or feedback (IIR) with adjustable delay and gain.
+Comb filter. Feedforward (FIR) or feedback (IIR) with adjustable delay and gain. Feedforward: $H(z) = 1 + g\,z^{-M}$, Feedback: $H(z) = 1/(1 - g\,z^{-M})$.
 
 `comb(data, params)` -> data (in-place)
 
@@ -898,7 +965,7 @@ comb(data, params)
 
 Allpass filter. Unity magnitude, frequency-dependent phase shift.
 
-`allpass.first(data, params)` -> data (in-place) -- First-order: `H(z) = (a + z^-1) / (1 + a*z^-1)`
+`allpass.first(data, params)` -> data (in-place) -- First-order: $H(z) = (a + z^{-1})/(1 + a\,z^{-1})$
 
 `allpass.second(data, params)` -> data (in-place) -- Second-order via biquad
 
@@ -922,7 +989,7 @@ allpass.second(data, { fc: 1000, Q: 2, fs: 44100 })
 
 ## emphasis / deemphasis
 
-Pre-emphasis: `H(z) = 1 - alpha*z^-1` (boosts high). De-emphasis: `H(z) = 1/(1 - alpha*z^-1)` (cuts high). Used in speech processing, FM broadcast.
+Pre-emphasis: $H(z) = 1 - \alpha z^{-1}$ (boosts high). De-emphasis: $H(z) = 1/(1 - \alpha z^{-1})$ (cuts high). Used in speech processing, FM broadcast.
 
 `emphasis(data, params)` -> data (in-place)
 
@@ -1065,18 +1132,20 @@ State Variable Filter. Trapezoidal integration, stable under real-time parameter
 
 ### Mathematics
 
-**Trapezoidal SVF coefficients**: `g = tan(π·fc/fs)`, `k = 1/Q`.
-- `a1 = 1/(1 + g·(g + k))`, `a2 = g·a1`, `a3 = g·a2`
+**Trapezoidal SVF coefficients**: $g = \tan(\pi f_c / f_s)$, $k = 1/Q$.
 
-**Per-sample update** (from integrator states ic1eq, ic2eq):
-- `v3 = v0 − ic2eq`
-- `v1 = a1·ic1eq + a2·v3` (bandpass)
-- `v2 = ic2eq + a2·ic1eq + a3·v3` (lowpass)
-- `ic1eq = 2·v1 − ic1eq`, `ic2eq = 2·v2 − ic2eq`
+$$a_1 = \frac{1}{1 + g(g + k)}, \quad a_2 = g\,a_1, \quad a_3 = g\,a_2$$
+
+**Per-sample update** (from integrator states $\text{ic}_{1\text{eq}}$, $\text{ic}_{2\text{eq}}$):
+
+$$v_3 = v_0 - \text{ic}_{2\text{eq}}$$
+$$v_1 = a_1 \cdot \text{ic}_{1\text{eq}} + a_2 \cdot v_3 \quad \text{(bandpass)}$$
+$$v_2 = \text{ic}_{2\text{eq}} + a_2 \cdot \text{ic}_{1\text{eq}} + a_3 \cdot v_3 \quad \text{(lowpass)}$$
+$$\text{ic}_{1\text{eq}} = 2v_1 - \text{ic}_{1\text{eq}}, \quad \text{ic}_{2\text{eq}} = 2v_2 - \text{ic}_{2\text{eq}}$$
 
 **Six simultaneous outputs** from one computation:
-- lowpass: `v2`, highpass: `v0 − k·v1 − v2`, bandpass: `v1`
-- notch: `v0 − k·v1`, peak: `v0 − k·v1 − 2·v2`, allpass: `v0 − 2·k·v1`
+- lowpass: $v_2$, highpass: $v_0 - k\,v_1 - v_2$, bandpass: $v_1$
+- notch: $v_0 - k\,v_1$, peak: $v_0 - k\,v_1 - 2v_2$, allpass: $v_0 - 2k\,v_1$
 
 **Equivalent transfer function** (lowpass): `H(z) = (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)` — identical to a bilinear-transformed biquad, but the trapezoidal integration topology allows zero-delay feedback, making it safe for per-sample parameter modulation.
 
@@ -1215,19 +1284,21 @@ Moog transistor ladder filter. 4-pole -24 dB/oct lowpass with tanh saturation an
 
 ### Mathematics
 
-**ZDF trapezoidal integrator**: `g = tan(π·fc/fs)`, `G = g/(1+g)` (one-pole gain factor).
+**ZDF trapezoidal integrator**: $g = \tan(\pi f_c / f_s)$, $G = g/(1+g)$ (one-pole gain factor).
 
 **Implicit feedback solve** (4 cascaded one-pole stages with global feedback):
-- `S = G³·s₀ + G²·s₁ + G·s₂ + s₃` (cascade state propagation)
-- `u = (input − k·S) / (1 + k·G⁴)` (implicit solve, no unit delay in feedback)
-- `u = tanh(u·drive)` (transistor saturation nonlinearity)
 
-Where `k = resonance·4` (feedback coefficient 0-4, self-oscillation at k=4).
+$$S = G^3 s_0 + G^2 s_1 + G\,s_2 + s_3 \quad \text{(cascade state propagation)}$$
+$$u = \frac{\text{input} - k\,S}{1 + k\,G^4} \quad \text{(implicit solve, no unit delay in feedback)}$$
+$$u = \tanh(u \cdot \text{drive}) \quad \text{(transistor saturation nonlinearity)}$$
+
+Where $k = \text{resonance} \cdot 4$ (feedback coefficient 0-4, self-oscillation at $k=4$).
 
 **Per-stage trapezoidal integrator** (applied 4 times in cascade):
-- `y = G·(v − s[j]) + s[j]`, `s[j] = 2·y − s[j]`
 
-**Transfer function** (linear, resonance=0): `H(z) = G⁴` through 4 cascaded first-order sections, yielding -24 dB/oct (-80 dB/decade). With feedback: resonance peak at fc, self-oscillation when k=4 (loop gain = 1).
+$$y = G(v - s_j) + s_j, \quad s_j = 2y - s_j$$
+
+**Transfer function** (linear, resonance=0): $H(z) = G^4$ through 4 cascaded first-order sections, yielding -24 dB/oct (-80 dB/decade). With feedback: resonance peak at $f_c$, self-oscillation when $k=4$ (loop gain = 1).
 
 **Stability**: Stable for resonance 0-1. The implicit (zero-delay) feedback solve prevents the instability of naive delay-in-feedback implementations. tanh saturation provides soft limiting that prevents unbounded oscillation at resonance=1.
 
@@ -1426,15 +1497,17 @@ Returns: filtered output. `params.error` contains error signal. `params.w` updat
 
 ### Mathematics
 
-**Output**: `y[n] = wᵀ·x[n] = Σ w_j·x[n−j]` for j=0..N-1 (FIR filter with adaptive weights).
+**Output**: $y[n] = \mathbf{w}^T \mathbf{x}[n]$ for j=0..N-1 (FIR filter with adaptive weights).
 
-**Error**: `e[n] = d[n] − y[n]` (desired minus output).
+**Error**: $e[n] = d[n] - y[n]$ (desired minus output).
 
-**Weight update** (stochastic gradient descent on MSE): `w[n+1] = w[n] + μ·e[n]·x[n]`
+**Weight update** (stochastic gradient descent on MSE):
 
-**Convergence condition**: `0 < μ < 2/(N·σ²_x)` where N is the filter order and σ²_x is the input signal power. Too large: diverges. Too small: slow convergence.
+$$\mathbf{w}[n+1] = \mathbf{w}[n] + \mu\,e[n]\,\mathbf{x}[n]$$
 
-**Steady-state misadjustment**: `M = μ·N·σ²_x / 2`. Tradeoff — faster convergence (larger μ) means higher residual error.
+**Convergence condition**: $0 < \mu < 2/(N\sigma_x^2)$ where N is the filter order and $\sigma_x^2$ is the input signal power. Too large: diverges. Too small: slow convergence.
+
+**Steady-state misadjustment**: $M = \mu N \sigma_x^2 / 2$. Tradeoff — faster convergence (larger $\mu$) means higher residual error.
 
 **Complexity**: O(N) multiplications per sample (2N multiply-adds: N for output, N for update).
 
@@ -1472,13 +1545,15 @@ Returns: filtered output. `params.error` contains error signal.
 
 ### Mathematics
 
-**Output**: `y[n] = wᵀ·x[n] = Σ w_j·x[n−j]` for j=0..N-1.
+**Output**: $y[n] = \mathbf{w}^T \mathbf{x}[n]$ for j=0..N-1.
 
-**Error**: `e[n] = d[n] − y[n]`.
+**Error**: $e[n] = d[n] - y[n]$.
 
-**Normalized weight update**: `w[n+1] = w[n] + μ·e[n]·x[n] / (xᵀx + ε)`
+**Normalized weight update**:
 
-where `xᵀx = Σ x²[n−j]` is the input power and ε is a small regularization constant (default 1e-8) preventing division by zero during silence.
+$$\mathbf{w}[n+1] = \mathbf{w}[n] + \frac{\mu\,e[n]\,\mathbf{x}[n]}{\mathbf{x}^T\mathbf{x} + \varepsilon}$$
+
+where $\mathbf{x}^T\mathbf{x} = \sum x^2[n-j]$ is the input power and $\varepsilon$ is a small regularization constant (default 1e-8) preventing division by zero during silence.
 
 **Effective step size**: `μ_eff = μ / (xᵀx + ε)`. Self-normalizing — step automatically shrinks for loud inputs, grows for quiet inputs. Eliminates the need to tune μ to input level.
 
@@ -1773,6 +1848,8 @@ let h = halfBand(31)
 ## cic
 
 Cascaded Integrator-Comb. Multiplier-free decimation filter. Only additions/subtractions.
+
+$$H(z) = \left(\frac{1 - z^{-RM}}{1 - z^{-1}}\right)^N$$
 
 `cic(data, R, N?)` -> Float64Array (decimated)
 
@@ -2088,6 +2165,8 @@ warpedFir(data, { coefs: new Float64Array([0.5, 0.3, 0.2]), lambda: 0.7 })
 
 Direct convolution of signal with impulse response. O(N*M).
 
+$$(f * g)[n] = \sum_k f[k]\,g[n-k]$$
+
 `convolution(signal, ir)` -> Float64Array (length = N + M - 1)
 
 | Param | Type | Default | Description |
@@ -2132,7 +2211,7 @@ let dB = mag2db(magnitude)
 
 ## mag2db
 
-Convert magnitude to decibels. `20 * log10(mag)`.
+Convert magnitude to decibels. $20\log_{10}(\text{mag})$.
 
 `mag2db(mag)` -> number or Float64Array
 
@@ -2146,7 +2225,7 @@ mag2db(magnitudeArray)  // element-wise
 
 ## groupDelay
 
-Group delay: `-dphi/domega` for each frequency bin.
+Group delay: $\tau_g(\omega) = -d\phi/d\omega$ for each frequency bin.
 
 `groupDelay(coefs, n?, fs?)` -> `{ frequencies, delay }`
 
@@ -2154,7 +2233,7 @@ Group delay: `-dphi/domega` for each frequency bin.
 
 ## phaseDelay
 
-Phase delay: `-phase(w) / w` for each frequency bin.
+Phase delay: $\tau_p(\omega) = -\phi(\omega)/\omega$ for each frequency bin.
 
 `phaseDelay(coefs, n?, fs?)` -> `{ frequencies, delay }`
 
@@ -2364,6 +2443,8 @@ All relative to 1 kHz (0 dB reference):
 ## aWeighting
 
 A-weighting. Models hearing at ~40 phon. Heavy bass cut. Standard for noise measurement. IEC 61672-1.
+
+$$H_A(s) = \frac{k_A \cdot s^4}{(s + 2\pi\!\cdot\!20.6)^2\,(s + 2\pi\!\cdot\!107.7)\,(s + 2\pi\!\cdot\!737.9)\,(s + 2\pi\!\cdot\!12194)^2}$$
 
 `aWeighting(fs?)` -> SOS[] (3 sections)
 

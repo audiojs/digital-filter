@@ -6,7 +6,7 @@
  */
 
 let {sin, cos, sqrt, pow, floor, sinh, cosh, asinh, PI} = Math
-import { polesSos } from '../transform.js'
+import { polesSos } from '../core/transform.js'
 
 /**
  * Design Chebyshev Type I filter as cascaded second-order sections.

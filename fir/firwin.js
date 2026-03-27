@@ -1,4 +1,4 @@
-import * as windows from '../window.js'
+import * as windows from '../core/window.js'
 
 /**
  * Design FIR filter using the window method.

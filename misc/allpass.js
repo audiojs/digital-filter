@@ -4,8 +4,8 @@
  * @module  digital-filter/allpass
  */
 
-import { allpass as biquadAllpass } from './biquad.js'
-import filter from './filter.js'
+import { allpass as biquadAllpass } from '../iir/biquad.js'
+import filter from '../core/filter.js'
 
 let {sin, cos, PI} = Math
 

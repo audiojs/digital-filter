@@ -5,9 +5,11 @@
   "description": "Collection of digital filters for audio & DSP",
   "exports": {
     ".": "./index.js",
-    "./*.js": "./*.js",
+    "./core/*.js": "./core/*.js",
     "./iir/*.js": "./iir/*.js",
     "./fir/*.js": "./fir/*.js",
+    "./smooth/*.js": "./smooth/*.js",
+    "./misc/*.js": "./misc/*.js",
     "./adaptive/*.js": "./adaptive/*.js",
     "./multirate/*.js": "./multirate/*.js",
     "./weighting/*.js": "./weighting/*.js",
@@ -16,7 +18,7 @@
     "./eq/*.js": "./eq/*.js"
   },
   "scripts": {
-    "test": "node --test test/index.js"
+    "test": "node test.js"
   },
   "repository": {
     "type": "git",
@@ -45,5 +47,8 @@
   "homepage": "https://github.com/scijs/digital-filter#readme",
   "dependencies": {
     "window-function": "^3.0.0"
+  },
+  "devDependencies": {
+    "tst": "^9.4.0"
   }
 }

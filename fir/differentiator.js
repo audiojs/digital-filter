@@ -5,7 +5,7 @@
  * @module  digital-filter/differentiator
  */
 
-import * as windows from '../window.js'
+import * as windows from '../core/window.js'
 
 /**
  * @param {number} N - Filter length (must be odd)

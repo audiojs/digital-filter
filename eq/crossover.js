@@ -4,7 +4,7 @@
  * @module  digital-filter/crossover
  */
 
-import linkwitzRiley from '../linkwitz-riley.js'
+import linkwitzRiley from '../iir/linkwitz-riley.js'
 
 /**
  * @param {Array} frequencies - Crossover frequencies [f1, f2, ...] (N-1 frequencies for N bands)

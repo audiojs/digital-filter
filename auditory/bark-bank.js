@@ -8,7 +8,7 @@
  * @module digital-filter/bark-bank
  */
 
-import { bandpass2 } from '../biquad.js'
+import { bandpass2 } from '../iir/biquad.js'
 
 // Standard 24 Bark critical bands (Zwicker)
 let BARK_EDGES = [
