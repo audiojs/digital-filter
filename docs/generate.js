@@ -12,7 +12,7 @@ import * as dsp from '../index.js'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
 let FS = 44100, NF = 2048  // 2048 bins → first bin at ~10.8 Hz, well below 20 Hz axis start
-mkdirSync('docs/plots', { recursive: true })
+mkdirSync('plots', { recursive: true })
 
 let GRID = '#e5e7eb', AXIS = '#d1d5db', TXT = '#6b7280'
 let C = ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e']
@@ -321,7 +321,7 @@ function plotFilter (name, sos, title) {
 	s += panel(P4, 'Samples', 'Impulse response', -irMax, irMax, 0) + linXTicks(P4, [0, 32, 64, 96, 128], 0, 128) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
 	s += linPoly(P4, ir, 0, 128, -irMax, irMax, C[3])
 
-	writeFileSync(`docs/plots/${name}.svg`, s + '</svg>\n')
+	writeFileSync(`plots/${name}.svg`, s + '</svg>\n')
 }
 
 // ── Per-filter 4-panel plot (FIR / impulse-response based) ──
@@ -383,7 +383,7 @@ function plotFir (name, h, title) {
 	s += panel(P4, 'Samples', 'Impulse response', -hMax, hMax, 0) + linXTicks(P4, autoTicks(0, h.length, 3).map(Math.round), 0, h.length) + hTicks(P4, autoTicks(-hMax, hMax, 3), -hMax, hMax)
 	s += linPoly(P4, h, 0, h.length, -hMax, hMax, C[3])
 
-	writeFileSync(`docs/plots/${name}.svg`, s + '</svg>\n')
+	writeFileSync(`plots/${name}.svg`, s + '</svg>\n')
 }
 
 function autoTicks (lo, hi, n) {
@@ -426,7 +426,7 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 		s += logPoly(RP, gd.frequencies, Array.from(gd.delay), 10, 20000, -25, 5, c, 1.3, false)
 	}
 	s += legend(fams.map(f => [f[0], f[2]]), LP)
-	writeFileSync('docs/plots/iir-comparison.svg', s + '</svg>\n')
+	writeFileSync('plots/iir-comparison.svg', s + '</svg>\n')
 }
 
 // Butterworth orders
@@ -441,7 +441,7 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 		if ([1, 2, 4, 8].includes(o)) s += linPoly(RP, dsp.stepResponse(sos, 120), 0, 120, 0, 1.3, C[[1,2,4,8].indexOf(o)], false)
 	}
 	s += legend([[1,C[0]],[2,C[1]],[4,C[2]],[8,C[3]]].map(([o,c]) => ['N='+o, c]), LP)
-	writeFileSync('docs/plots/butterworth-orders.svg', s + '</svg>\n')
+	writeFileSync('plots/butterworth-orders.svg', s + '</svg>\n')
 }
 
 // Biquad types
@@ -465,7 +465,7 @@ let RP = { x: 445, y: 12, w: 330, h: 180 }
 		s += logPoly(RP, r.frequencies, Array.from(r.phase).map(v => v * 180 / Math.PI), 10, 20000, -200, 200, c, 1.3, false)
 	}
 	s += legend(types.map(t => [t[0], t[2]]), LP)
-	writeFileSync('docs/plots/biquad-types.svg', s + '</svg>\n')
+	writeFileSync('plots/biquad-types.svg', s + '</svg>\n')
 }
 
 // ── Individual filter plots (4-panel each) ──
@@ -546,4 +546,82 @@ for (let type of ['lowpass', 'highpass', 'bandpass', 'notch']) {
 	plotFir('comb', data.slice(0, 512), 'Feedback comb, delay=100, gain=0.7')
 }
 
-console.log('SVGs generated in docs/plots/')
+// Smooth filters (impulse-response based)
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.movingAverage(data, {memory: 8})
+	plotFir('moving-average', data.slice(0, 256), 'Moving average, N=8')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.leakyIntegrator(data, {lambda: 0.95})
+	plotFir('leaky-integrator', data.slice(0, 256), 'Leaky integrator, λ=0.95')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.gaussianIir(data, {sigma: 5})
+	plotFir('gaussian-iir', data.slice(0, 256), 'Gaussian IIR, σ=5')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.dynamicSmoothing(data, {minFc: 1, maxFc: 5000, sensitivity: 1, fs: FS})
+	plotFir('dynamic-smoothing', data.slice(0, 256), 'Dynamic smoothing, fc=1–5kHz')
+}
+
+// Misc filters (impulse-response based)
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.allpass.first(data, {a: 0.5})
+	plotFir('allpass-first', data.slice(0, 256), 'First-order allpass, a=0.5')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.emphasis(data, {alpha: 0.97})
+	plotFir('pre-emphasis', data.slice(0, 256), 'Pre-emphasis, α=0.97')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.spectralTilt(data, {slope: -3, fs: FS})
+	plotFir('spectral-tilt', data.slice(0, 256), 'Spectral tilt, −3 dB/oct')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.noiseShaping(data, {bits: 16})
+	plotFir('noise-shaping', data.slice(0, 256), 'Noise shaping, 16-bit')
+}
+
+{
+	let data = new Float64Array(256); data[0] = 1
+	dsp.pinkNoise(data, {})
+	plotFir('pink-noise', data, 'Pink noise filter, impulse')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.variableBandwidth(data, {fc: 1000, Q: 0.707, fs: FS, type: 'lowpass'})
+	plotFir('variable-bandwidth', data.slice(0, 256), 'Variable bandwidth LP, fc=1kHz')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.envelope(data, {attack: 0.001, release: 0.05, fs: FS})
+	plotFir('envelope', data.slice(0, 512), 'Envelope follower, atk=1ms rel=50ms')
+}
+
+{
+	let data = new Float64Array(2048); data[0] = 1
+	dsp.slewLimiter(data, {rise: 1000, fall: 1000, fs: FS})
+	plotFir('slew-limiter', data.slice(0, 256), 'Slew limiter, rate=1000/s')
+}
+
+// FIR filters
+plotFir('gaussian-fir', dsp.gaussianFir(33, 0.3, 4), 'Gaussian FIR, N=33, BT=0.3')
+plotFir('minimum-phase', dsp.minimumPhase(dsp.firwin(65, 1000, FS)), 'Minimum-phase FIR, 65 taps, fc=1kHz')
+
+console.log('SVGs generated in plots/')
