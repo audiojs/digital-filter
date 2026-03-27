@@ -1,9 +1,6 @@
-# digital-filter [![npm](https://img.shields.io/npm/v/digital-filter.svg)](https://npmjs.org/package/digital-filter) [![test](https://github.com/scijs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/scijs/digital-filter/actions/workflows/test.yml) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
+# digital-filter [![npm](https://img.shields.io/npm/v/digital-filter.svg)](https://npmjs.org/package/digital-filter) [![test](https://github.com/audiojs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/digital-filter/actions/workflows/test.yml) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
 Digital filter design and processing.
-From biquad to Butterworth to adaptive, with the depth of scipy.signal and the simplicity of a single import.
-
-> 82 modules · 164 tests · 1 dependency ([window-function](https://github.com/scijs/window-function)) · pure ESM · **[API Reference](reference.md)**
 
 ```js
 import { butterworth, filter, freqz, mag2db } from 'digital-filter'
@@ -13,48 +10,124 @@ filter(data, { coefs: sos })                 // apply
 let dB = mag2db(freqz(sos, 512, 44100).magnitude)  // analyze
 ```
 
-## Understanding filters
+## Modules
 
-A filter takes samples in and produces samples out. The simplest useful filter — averaging the last 3 samples:
+### [`core/`](core/) — Processing, analysis, conversion
 
-```js
-output[i] = (input[i] + input[i-1] + input[i-2]) / 3
-```
+- `filter` — SOS cascade processor (DF2T)
+- `filtfilt` — Zero-phase forward-backward filtering
+- `convolution` — Direct convolution with impulse response
+- `freqz` / `mag2db` — Frequency response
+- `groupDelay` / `phaseDelay` — Delay analysis
+- `impulseResponse` / `stepResponse` — Time-domain analysis
+- `isStable` / `isMinPhase` / `isFir` / `isLinPhase` — Filter properties
+- `sos2zpk` / `sos2tf` / `tf2zpk` / `zpk2sos` — Format conversion
+- `transform` — Analog prototype → digital SOS
+- `window` — 34 window functions
 
-This smooths the signal: fast changes get reduced, slow trends survive. That is a **lowpass filter** — it passes low frequencies and reduces high ones.
+### [`iir/`](iir/) — IIR filter design
 
-Every filter has a dual nature: it does something in *time* (averaging, delaying, accumulating) that corresponds to something in *frequency* (passing, cutting, boosting).
+- `biquad` — 9 second-order types (RBJ Cookbook)
+- `svf` — State variable filter, safe for real-time modulation (Simper 2011)
+- `butterworth` — Maximally flat magnitude, no ripple (Butterworth 1930)
+- `chebyshev` — Equiripple passband, steeper cutoff
+- `chebyshev2` — Flat passband, equiripple stopband
+- `elliptic` — Sharpest transition for given order, ripple in both bands (Cauer 1958)
+- `bessel` — Maximally flat group delay, preserves waveform (Thomson 1949)
+- `legendre` — Steepest monotonic (ripple-free) rolloff (Papoulis 1958)
+- `iirdesign` — Auto-selects optimal family + order from specs
+- `linkwitzRiley` — Crossover: LP+HP sum to unity (Linkwitz 1976)
 
-**Magnitude response** plots "how much of each frequency gets through" (dB) vs frequency (Hz). This is the single most important visualization for any filter.
+### [`fir/`](fir/) — FIR filter design
 
-| dB | Ratio | Meaning |
-|---|---|---|
-| 0 dB | 1.0 | Unchanged |
-| -3 dB | 0.71 | Half power (the standard "cutoff" point) |
-| -6 dB | 0.50 | Half amplitude |
-| -20 dB | 0.10 | 10% amplitude |
-| -60 dB | 0.001 | Effectively silent |
+- `firwin` — Windowed sinc LP/HP/BP/BS
+- `firwin2` — Arbitrary magnitude response
+- `firls` — Least-squares optimal
+- `remez` — Equiripple optimal (Parks-McClellan 1972)
+- `kaiserord` — Estimate filter length from specs
+- `hilbert` — 90-degree phase shift
+- `minimumPhase` — Linear-phase → minimum-phase
+- `differentiator` — FIR derivative
+- `integrator` — Newton-Cotes quadrature
+- `raisedCosine` — ISI-free pulse shaping
+- `gaussianFir` — GMSK/Bluetooth pulse shaping
+- `matchedFilter` — Maximum SNR detection
+- `yulewalk` — IIR from arbitrary magnitude
+- `lattice` — Lattice/ladder structure
+- `warpedFir` — Frequency-warped FIR
 
-**Phase** tells you *when* each frequency arrives. If all frequencies are delayed equally, the waveform shape is preserved — **linear phase**. If not, the waveform distorts. **Group delay** measures this: constant group delay = linear phase. FIR filters can have perfect linear phase. IIR cannot.
+### [`smooth/`](smooth/) — Smoothing and denoising
 
-### IIR vs FIR
+- `onePole` — One-pole lowpass (EMA)
+- `movingAverage` — Boxcar average
+- `leakyIntegrator` — Exponential decay
+- `median` — Nonlinear, removes impulses, preserves edges
+- `savitzkyGolay` — Polynomial fit, preserves peaks
+- `gaussianIir` — Recursive Gaussian, O(1) any sigma
+- `oneEuro` — Adaptive: smooth at rest, fast when moving (Casiez 2012)
+- `dynamicSmoothing` — Self-adjusting SVF cutoff
 
-**IIR** (infinite impulse response) uses feedback — output depends on previous *outputs*. Efficient (5-20 multiplies for a sharp lowpass), low latency. Cannot achieve linear phase. Can be unstable.
+### [`adaptive/`](adaptive/) — Adaptive filters
 
-**FIR** (finite impulse response) — no feedback. Always stable, can have perfect linear phase. Needs many taps for sharp cutoff (100-1000+), higher latency.
+- `lms` — Least Mean Squares, O(N)/sample
+- `nlms` — Normalized LMS, self-normalizing — the practical default
+- `rls` — Recursive Least Squares, O(N^2), fastest convergence
+- `levinson` — Levinson-Durbin, for LPC and speech coding
 
-| | IIR | FIR |
-|---|---|---|
-| Efficiency | 5-20 multiplies | 100-1000+ |
-| Phase | Nonlinear | Linear (symmetric) |
-| Stability | Can be unstable | Always stable |
-| Latency | Low | High (N/2 samples) |
+### [`multirate/`](multirate/) — Sample rate conversion
 
-**Use IIR** for real-time audio, control systems, anything latency-sensitive. **Use FIR** for offline processing, linear phase, adaptive filtering.
+- `decimate` — Anti-alias + downsample
+- `interpolate` — Upsample + anti-image
+- `halfBand` — Half-band FIR for efficient 2x
+- `cic` — Cascaded integrator-comb, multiplier-free
+- `polyphase` — Decompose FIR into polyphase components
+- `farrow` — Lagrange fractional delay
+- `thiran` — Allpass fractional delay
+- `oversample` — Multi-stage oversampling
 
-### Biquads and SOS
+### [`weighting/`](weighting/) — Acoustic measurement
 
-The **biquad** is a filter with 5 coefficients: `H(z) = (b0 + b1·z⁻¹ + b2·z⁻²) / (1 + a1·z⁻¹ + a2·z⁻²)`. Every IIR filter is built from cascaded biquads (**second-order sections**, SOS). A 4th-order Butterworth = two biquads in series. Why not higher-order direct form? A 10th-order filter needs ~15 digits of precision — impossible with float64. Cascaded biquads work perfectly.
+- `aWeighting` — IEC 61672, human loudness ~40 phon
+- `cWeighting` — IEC 61672, nearly flat, peak SPL
+- `kWeighting` — ITU-R BS.1770, LUFS loudness metering (Spotify, YouTube, broadcast)
+- `itu468` — ITU-R BS.468, broadcast equipment noise
+- `riaa` — IEC 98, vinyl playback equalization
+
+### [`analog/`](analog/) — Virtual analog
+
+- `moogLadder` — 4-pole -24dB/oct, warm and singing (Moog 1966)
+- `diodeLadder` — TB-303 diode ladder, squelchy acid bass
+- `korg35` — MS-20 2-pole, aggressive resonance
+
+### [`auditory/`](auditory/) — Hearing models
+
+- `gammatone` — Cochlear filter, ERB bandwidth (Glasberg & Moore 1990)
+- `octaveBank` — IEC 61260 fractional-octave bank
+- `erbBank` — ERB-spaced frequencies and bandwidths
+- `barkBank` — Bark critical band filters (Zwicker 1980)
+
+### [`eq/`](eq/) — Equalization and composites
+
+- `graphicEq` — 10-band ISO octave graphic EQ
+- `parametricEq` — N-band parametric EQ
+- `crossover` — N-way Linkwitz-Riley crossover
+- `crossfeed` — Headphone spatialization
+- `formant` — Parallel resonator bank (vowel synthesis)
+- `vocoder` — Channel vocoder
+
+### [`misc/`](misc/) — Building blocks
+
+- `dcBlocker` — Remove DC offset
+- `comb` — Feedforward/feedback comb
+- `allpass` — Phase shift at unity magnitude
+- `emphasis` / `deemphasis` — Pre/de-emphasis
+- `resonator` — Constant-peak-gain resonator
+- `envelope` — Attack/release follower
+- `slewLimiter` — Rate-of-change limiter
+- `noiseShaping` — Quantization error shaping
+- `pinkNoise` — 1/f spectral slope
+- `spectralTilt` — Arbitrary dB/octave slope
+- `variableBandwidth` — Auto-recomputing biquad
 
 ## Which filter?
 
@@ -83,14 +156,14 @@ The **biquad** is a filter with 5 coefficients: `H(z) = (b0 + b1·z⁻¹ + b2·z
 | **Smoothing** | | |
 | Smooth a control signal | `onePole(data, {fc, fs})` | Simplest, no overshoot |
 | Smooth preserving edges | `savitzkyGolay(data, {window, degree})` | Polynomial fit |
-| Adaptive smooth (low jitter + latency) | `oneEuro(data, params)` | Casiez 2012 |
+| Reduce jitter in sensor/UI data | `oneEuro(data, params)` | Adaptive (Casiez 2012) |
 | Remove impulse noise (clicks) | `median(data, {size})` | Nonlinear |
 | Remove DC offset | `dcBlocker(data, {R})` | R=0.995 default |
 | **Adaptive** | | |
 | Cancel echo / noise | `nlms(input, desired, params)` | Normalized LMS |
 | Fastest convergence | `rls(input, desired, params)` | O(N^2) but fast |
 | LPC / Toeplitz solver | `levinson(R, order)` | From autocorrelation |
-| **FIR design** | | |
+| **FIR** | | |
 | Quick FIR filter | `firwin(N, fc, fs, {type})` | Window method |
 | Optimal sharp FIR | `remez(N, bands, desired)` | Parks-McClellan |
 | Arbitrary shape FIR | `firwin2(N, freqs, gains)` | Frequency sampling |
@@ -120,221 +193,75 @@ Need linear phase?
             └─ Safe default → butterworth
 ```
 
-### Common mistakes
-
-- **Using FIR when IIR is fine.** 4th-order Butterworth: 10 multiplies. Equivalent FIR: 100+. If you don't need linear phase, use IIR.
-- **Butterworth order 20 when elliptic order 4 suffices.** Use `iirdesign` to find minimum order.
-- **Using filtfilt in real-time.** It needs the entire signal (backward pass). For real-time: accept IIR phase or add FIR latency.
-- **Ignoring group delay in crossovers.** Independent Butterworth LP+HP don't sum flat. Use `linkwitzRiley`.
-- **Q too high on a biquad.** Q=0.707 is Butterworth (default). Q > 10 creates a tall resonance peak. For EQ: Q=0.5-8.
-- **Filtering same data twice.** `filter()` modifies in-place. Copy first: `let copy = Float64Array.from(data)`.
-- **Not resetting state.** Filter state persists in params. For a new signal, create new params or `delete params.state`.
-
 ## Recipes
 
 ### Parametric EQ
-
 ```js
 parametricEq(data, { fs: 44100, bands: [
-  { fc: 200, Q: 0.8, gain: 3 },               // +3 dB warmth
-  { fc: 3000, Q: 2, gain: -4 },               // -4 dB de-harsh
-  { fc: 12000, Q: 0.7, gain: 2, type: 'highshelf' }  // +2 dB air
+  { fc: 200, Q: 0.8, gain: 3 },
+  { fc: 3000, Q: 2, gain: -4 },
+  { fc: 12000, Q: 0.7, gain: 2, type: 'highshelf' }
 ]})
 ```
 
 ### Loudness metering (LUFS)
-
 ```js
-let sos = kWeighting(48000)
-filter(data, { coefs: sos })
+filter(data, { coefs: kWeighting(48000) })
 let sum = 0
 for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
 let lufs = -0.691 + 10 * Math.log10(sum / data.length)
 ```
 
 ### Hum removal
-
 ```js
-let notches = [60, 120, 180].map(f => biquad.notch(f, 30, 44100))
-for (let n of notches) filter(data, { coefs: n })
+for (let f of [60, 120, 180]) filter(data, { coefs: biquad.notch(f, 30, 44100) })
 ```
 
 ### Subtractive synth
-
 ```js
 let params = { fc: 800, resonance: 0.6, fs: 44100 }
 moogLadder(sawtoothData, params)
-params.fc = 200 + 3000 * envelopeValue  // animate cutoff
+params.fc = 200 + 3000 * envelopeValue
 moogLadder(nextBlock, params)
 ```
 
 ### Echo cancellation
-
 ```js
-let output = nlms(farEnd, microphone, { order: 512, mu: 0.5 })
-let cleaned = params.error
+nlms(farEnd, microphone, { order: 512, mu: 0.5 })
+// params.error = cleaned signal
 ```
 
 ### ECG filtering
-
 ```js
-let fs = 500
-filter(data, { coefs: butterworth(2, 0.5, fs, 'highpass') })  // baseline wander
-filter(data, { coefs: butterworth(4, 40, fs) })                 // noise
-filter(data, { coefs: biquad.notch(50, 35, fs) })               // powerline
+filter(data, { coefs: butterworth(2, 0.5, 500, 'highpass') })
+filter(data, { coefs: butterworth(4, 40, 500) })
+filter(data, { coefs: biquad.notch(50, 35, 500) })
 ```
 
 ### Karplus-Strong string
-
 ```js
-let delay = Math.round(44100 / 440)
-let data = new Float64Array(44100)
+let delay = Math.round(44100 / 440), data = new Float64Array(44100)
 for (let i = 0; i < delay; i++) data[i] = Math.random() * 2 - 1
 comb(data, { delay, gain: 0.996, type: 'feedback' })
 onePole(data, { fc: 4000, fs: 44100 })
 ```
 
-## Modules
+## Concepts
 
-### [`core/`](core/) — The engine
+A filter does something in *time* (averaging, delaying) that corresponds to something in *frequency* (passing, cutting, boosting). **Magnitude response** — how much of each frequency passes. The -3 dB point is the conventional cutoff.
 
-Process, analyze, and convert filters. Everything else builds on these.
+**IIR** — uses feedback, efficient (5-20 multiplies), low latency, nonlinear phase. **FIR** — no feedback, always stable, linear phase, needs 100-1000+ taps. Use IIR for real-time, FIR for offline/linear phase.
 
-- `filter` — SOS cascade processor (Direct Form II Transposed)
-- `filtfilt` — Zero-phase forward-backward filtering
-- `convolution` — Direct convolution with impulse response
-- `freqz` / `mag2db` — Frequency response (magnitude + phase)
-- `groupDelay` / `phaseDelay` — Delay analysis
-- `impulseResponse` / `stepResponse` — Time-domain analysis
-- `isStable` / `isMinPhase` / `isFir` / `isLinPhase` — Filter properties
-- `sos2zpk` / `sos2tf` / `tf2zpk` / `zpk2sos` — Format conversion
-- `transform` — Analog prototype → digital SOS (bilinear transform)
-- `window` — 34 window functions (re-export from [window-function](https://github.com/scijs/window-function))
+The **biquad** ($H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$) is the atomic unit. Every IIR filter is cascaded biquads (**SOS**). Direct form above order ~6 loses precision; SOS doesn't.
 
-### [`iir/`](iir/) — IIR filter design
+### Pitfalls
 
-Infinite impulse response filters from analog prototypes. Return SOS coefficient arrays.
-
-![IIR Comparison](plots/iir-comparison.svg)
-
-- `biquad` — 9 second-order types: LP, HP, BP, notch, allpass, peaking, shelves (RBJ Cookbook)
-- `svf` — Trapezoidal state variable filter — safe for real-time modulation (Simper 2011)
-- `butterworth` — Maximally flat magnitude, no ripple (1930)
-- `chebyshev` — Equiripple passband, steeper cutoff
-- `chebyshev2` — Flat passband, equiripple stopband
-- `elliptic` — Sharpest transition for given order — ripple in both bands (Cauer 1958)
-- `bessel` — Maximally flat group delay — preserves waveform shape (Thomson 1949)
-- `legendre` — Steepest monotonic (ripple-free) rolloff (Papoulis 1958)
-- `iirdesign` — Auto-selects optimal family + order from specs
-- `linkwitzRiley` — Crossover: LP+HP sum to unity (Linkwitz 1976)
-
-### [`fir/`](fir/) — FIR filter design
-
-Finite impulse response filters. Always stable, linear phase by default. Return Float64Array coefficients.
-
-- `firwin` — LP/HP/BP/BS via windowed sinc
-- `firwin2` — Arbitrary magnitude response (frequency sampling)
-- `firls` — Minimize total squared error (least-squares)
-- `remez` — Minimize peak error, equiripple (Parks-McClellan 1972)
-- `kaiserord` — Estimate filter length from specs
-- `hilbert` — 90-degree phase shift FIR (analytic signal)
-- `minimumPhase` — Convert linear-phase to minimum-phase (cepstral)
-- `differentiator` — FIR derivative (windowed)
-- `integrator` — Newton-Cotes quadrature coefficients
-- `raisedCosine` — Nyquist ISI-free pulse shaping
-- `gaussianFir` — GMSK/Bluetooth pulse shaping
-- `matchedFilter` — Maximum SNR detection (correlator)
-- `yulewalk` — IIR from arbitrary magnitude (Yule-Walker)
-- `lattice` — Lattice/ladder structure (reflection coefficients)
-- `warpedFir` — Frequency-warped FIR (perceptual resolution)
-
-### [`smooth/`](smooth/) — Smoothing and denoising
-
-From simple averages to adaptive smoothers. Choose by noise model, latency, and edge preservation.
-
-- `onePole` — One-pole lowpass (EMA), simplest IIR smoother
-- `movingAverage` — Boxcar average of last N samples, linear phase
-- `leakyIntegrator` — Exponential decay ($\lambda$-controlled)
-- `median` — Nonlinear, removes impulses, preserves edges
-- `savitzkyGolay` — Polynomial fit to sliding window, preserves peaks
-- `gaussianIir` — Recursive Gaussian, O(1) regardless of sigma
-- `oneEuro` — Adaptive cutoff: smooth at rest, fast when moving (Casiez 2012)
-- `dynamicSmoothing` — Self-adjusting SVF cutoff
-
-### [`adaptive/`](adaptive/) — Adaptive filters
-
-Filters that learn from data. Weights adjust in real time to minimize error.
-
-- `lms` — Least Mean Squares, O(N)/sample, simplest
-- `nlms` — Normalized LMS, O(N)/sample, self-normalizing — the practical default
-- `rls` — Recursive Least Squares, O(N^2)/sample, fastest convergence
-- `levinson` — Levinson-Durbin recursion, O(N^2)/block, for LPC and speech coding
-
-### [`multirate/`](multirate/) — Sample rate conversion
-
-Change sample rates, fractional delays, efficient polyphase structures.
-
-- `decimate` — Anti-alias + downsample by factor M
-- `interpolate` — Upsample + anti-image by factor L
-- `halfBand` — Half-band FIR for efficient 2x
-- `cic` — Cascaded integrator-comb, multiplier-free
-- `polyphase` — Decompose FIR into M polyphase components
-- `farrow` — Lagrange fractional delay (variable per sample)
-- `thiran` — Allpass fractional delay (maximally flat group delay)
-- `oversample` — Multi-stage oversampling with anti-alias
-
-### [`weighting/`](weighting/) — Acoustic measurement
-
-Perceptual frequency weighting curves from international standards. Return SOS arrays.
-
-- `aWeighting` — IEC 61672, human loudness perception at ~40 phon
-- `cWeighting` — IEC 61672, nearly flat, peak SPL measurement
-- `kWeighting` — ITU-R BS.1770, LUFS loudness metering (Spotify, YouTube, broadcast)
-- `itu468` — ITU-R BS.468, broadcast equipment noise, peaked at 6.3 kHz
-- `riaa` — IEC 98, vinyl playback equalization
-
-### [`analog/`](analog/) — Virtual analog
-
-Nonlinear models of classic synthesizer filters. ZDF topology with tanh saturation.
-
-- `moogLadder` — 4-pole -24dB/oct with resonance. Warm, fat, singing (Moog 1966)
-- `diodeLadder` — TB-303 diode ladder. Squelchy acid bass
-- `korg35` — MS-20 2-pole with nonlinear feedback. Aggressive resonance
-
-### [`auditory/`](auditory/) — Hearing and cochlear models
-
-Perceptual filter banks that model human hearing.
-
-- `gammatone` — Cochlear filter, ERB bandwidth (Glasberg & Moore 1990)
-- `octaveBank` — IEC 61260 fractional-octave filter bank
-- `erbBank` — ERB-spaced center frequencies and bandwidths
-- `barkBank` — Bark critical band filters (Zwicker 1980)
-
-### [`eq/`](eq/) — Equalization and composites
-
-Multi-band audio processing chains built from biquad cascades.
-
-- `graphicEq` — 10-band ISO octave graphic EQ
-- `parametricEq` — N-band parametric EQ with peaking + shelves
-- `crossover` — N-way Linkwitz-Riley crossover network
-- `crossfeed` — Headphone spatialization (L↔R lowpass mix)
-- `formant` — Parallel resonator bank (vowel synthesis)
-- `vocoder` — Channel vocoder (spectral envelope transfer)
-
-### [`misc/`](misc/) — Building blocks
-
-Single-purpose processors. Grab one when you need it.
-
-- `dcBlocker` — Remove DC offset: $H(z) = (1 - z^{-1})/(1 - Rz^{-1})$
-- `comb` — Feedforward/feedback comb (flanging, reverb, Karplus-Strong)
-- `allpass` — Phase shift at unity magnitude (phaser, dispersive delay)
-- `emphasis` / `deemphasis` — Pre/de-emphasis for speech, FM broadcast
-- `resonator` — Constant-peak-gain resonator (modal/formant synthesis)
-- `envelope` — Attack/release envelope follower (compressor sidechain)
-- `slewLimiter` — Rate-of-change limiter (portamento, click prevention)
-- `noiseShaping` — Quantization error shaping for dithering
-- `pinkNoise` — 1/f spectral slope filter (Paul Kellet method)
-- `spectralTilt` — Arbitrary dB/octave slope via shelving cascade
-- `variableBandwidth` — Biquad with auto-recomputing coefficients
+- **FIR when IIR suffices** — 4th-order Butterworth: 10 multiplies vs FIR: 100+
+- **High order when elliptic works** — elliptic 4 matches Butterworth 12
+- **filtfilt in real-time** — needs entire signal for backward pass
+- **LP+HP for crossover** — doesn't sum flat, use `linkwitzRiley`
+- **Q too high** — Q > 10 creates tall resonance, keep 0.5-8 for EQ
+- **Filtering same data twice** — `filter()` is in-place, copy first
+- **Stale state** — filter state persists in params, create new for new signal
 
 <p align=center><a href="./LICENSE">MIT</a> • <a href="https://github.com/krishnized/license/">ॐ</a></p>
