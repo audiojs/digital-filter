@@ -61,17 +61,40 @@ Nine second-order filter types – the building block for everything else. Every
 * `biquad.lowpass(fc, Q, fs)` · `highpass` · `bandpass` · `bandpass2` · `notch` · `allpass`
 * `biquad.peaking(fc, Q, fs, dBgain)` · `lowshelf` · `highshelf`
 
-Digital transfer function: $H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$. The numerator zeros set the nulls, denominator poles set the resonances. Q controls the peak width – 0.707 is Butterworth-flat, higher values produce a sharper resonance.
+<br>$H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$
+<br>Q controls peak width – 0.707 is Butterworth-flat, higher = sharper resonance.
+
+```js
+let lp = biquad.lowpass(1000, 0.707, 44100)
+filter(data, { coefs: lp })
+```
 
 <img src="plot/biquad-types.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: single-band EQ, notch, shelf, simple 2nd-order filter.
+<br>**Not for**: steeper than –12 dB/oct (use butterworth/chebyshev which cascade biquads).
+<br>**scipy**: `scipy.signal.iirfilter(1, ...)`. **MATLAB**: various Audio Toolbox functions.
+</details>
+
 ### `svf(data, params)`
 
-State variable filter. Same 2nd-order transfer function as a biquad, but the trapezoidal integration topology allows zero-delay feedback – safe for per-sample parameter modulation (LFO, envelope). Six simultaneous outputs from one computation. Simper/Cytomic (2011). Params: `fc`, `Q`, `fs`, `type`.
+State variable filter – same transfer function as a biquad, but trapezoidal integration allows zero-delay feedback. Safe for per-sample parameter modulation. Six simultaneous outputs. Simper/Cytomic (2011). Params: `fc`, `Q`, `fs`, `type`.
 
-Coefficients: $g = \tan(\pi f_c/f_s)$, $k = 1/Q$. Equivalent to bilinear-transformed biquad.
+<br>$g = \tan(\pi f_c/f_s)$, $k = 1/Q$
+
+```js
+svf(data, { fc: 1000, Q: 2, fs: 44100, type: 'lowpass' })
+```
 
 <img src="plot/svf-lowpass.svg">
+
+<details><summary>Reference</summary>
+
+**Use when**: real-time synthesis with parameter modulation (LFO, envelope, touch).
+<br>**Not for**: need SOS coefficients for analysis (use biquad), higher than 2nd order.
+</details>
 
 ### `butterworth(order, fc, fs, type?)`
 
@@ -79,75 +102,149 @@ Maximally flat magnitude – no ripple anywhere. The safe default for anti-alias
 
 [^bw]: S. Butterworth, "On the Theory of Filter Amplifiers," *Wireless Engineer*, 1930.
 
-Analog prototype: $|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ – the magnitude squared drops monotonically. At $\omega = \omega_c$ it equals 0.5 (–3 dB). Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$, uniformly spaced on a circle.
-**–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
+<br>$|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ — magnitude drops monotonically. Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$.
+<br>**–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
+
+```js
+let sos = butterworth(4, 1000, 44100)
+filter(data, { coefs: sos })
+```
 
 <img src="plot/butterworth.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: general-purpose filtering, anti-aliasing, crossovers.
+<br>**Not for**: sharpest transition (use chebyshev/elliptic), waveform preservation (use bessel).
+<br>**scipy**: `scipy.signal.butter`. **MATLAB**: `butter`.
+</details>
+
 ### `chebyshev(order, fc, fs, ripple?, type?)`
 
-Steeper cutoff than Butterworth for the same order – at the cost of passband ripple. When you need a sharper edge and can tolerate small amplitude variations.
+Steeper cutoff than Butterworth for the same order – at the cost of passband ripple.
 
-Analog prototype: $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ where $T_N$ is the Nth Chebyshev polynomial – it oscillates in the passband (causing ripple) then grows fast in the stopband (steep rolloff). $\varepsilon = \sqrt{10^{R_p/10} - 1}$ controls the ripple depth.
-**Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**
+<br>$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the Nth Chebyshev polynomial (oscillates in passband, grows fast in stopband). $\varepsilon = \sqrt{10^{R_p/10} - 1}$.
+<br>**Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**
+
+```js
+let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
+```
 
 <img src="plot/chebyshev.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: sharper cutoff than Butterworth, passband ripple tolerable.
+<br>**Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).
+<br>**scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
+</details>
+
 ### `chebyshev2(order, fc, fs, attenuation?, type?)`
 
-Flat passband, equiripple stopband. The ripple goes into the rejection region instead. Best when passband must be perfectly flat but you don't care about exact stopband shape.
+Flat passband, equiripple stopband. The ripple goes into the rejection region instead.
 
-Analog prototype: $|H(j\omega)|^2 = 1/(1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega)))$ – inverse of Type I. Zeros on the $j\omega$ axis create notches that enforce the stopband floor.
-**Flat passband · –40 dB stopband floor · –40 dB at 2× fc**
+<br>$|H(j\omega)|^2 = 1/(1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega)))$ — inverse of Type I. Zeros on $j\omega$ axis enforce stopband floor.
+<br>**Flat passband · –40 dB stopband floor · –40 dB at 2× fc**
+
+```js
+let sos = chebyshev2(4, 2000, 44100, 40)  // 40 dB rejection
+```
 
 <img src="plot/chebyshev2.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: flat passband needed with sharper rolloff than Butterworth.
+<br>**Not for**: deep stopband at high frequencies (Butterworth keeps falling; Cheby II bounces).
+<br>**scipy**: `scipy.signal.cheby2`. **MATLAB**: `cheby2`.
+</details>
+
 ### `elliptic(order, fc, fs, ripple?, attenuation?, type?)`
 
-Sharpest transition for a given order – ripple in both passband and stopband. A 4th-order elliptic matches a 7th-order Butterworth in transition width. Cauer (1958).[^cauer]
+Sharpest transition for a given order – ripple in both passband and stopband. A 4th-order elliptic matches a 7th-order Butterworth. Cauer (1958).[^cauer]
 
 [^cauer]: W. Cauer, *Synthesis of Linear Communication Networks*, 1958.
 
-Analog prototype: $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 R_N^2(\omega/\omega_c))$ where $R_N$ is a rational Chebyshev (Jacobi elliptic) function – optimal distribution of error between passband and stopband.
-**Default 1 dB ripple, 40 dB attenuation · –40 dB at 2× fc · 10.6% overshoot**
+<br>$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 R_N^2(\omega/\omega_c))$ — $R_N$ is a rational Chebyshev (Jacobi elliptic) function.
+<br>**Default 1 dB ripple, 40 dB attenuation · –40 dB at 2× fc · 10.6% overshoot**
+
+```js
+let sos = elliptic(4, 1000, 44100, 1, 40)
+```
 
 <img src="plot/elliptic.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: minimum order / sharpest transition is critical.
+<br>**Not for**: passband flatness or waveform shape (worst phase response of all families).
+<br>**scipy**: `scipy.signal.ellip`. **MATLAB**: `ellip`.
+</details>
+
 ### `bessel(order, fc, fs, type?)`
 
-Maximally flat group delay – preserves waveform shape with near-zero overshoot. The choice for biomedical signals (ECG, EEG), control systems, and anywhere ringing distorts the measurement. Thomson (1949).[^thomson]
+Maximally flat group delay – preserves waveform shape with near-zero overshoot. For biomedical signals (ECG, EEG), control systems, anywhere ringing distorts the measurement. Thomson (1949).[^thomson]
 
 [^thomson]: W.E. Thomson, "Delay Networks Having Maximally Flat Frequency Characteristics," *Proc. IEE*, 1949.
 
-Analog prototype: $H(s) = \theta_N(0)/\theta_N(s/\omega_c)$ where $\theta_N$ is the reverse Bessel polynomial. Poles cluster near the negative real axis, producing the flattest possible group delay.
-**–3 dB at fc · –14 dB at 2× fc (gentlest rolloff) · 0.9% overshoot · 28 samples settling**
+<br>$H(s) = \theta_N(0)/\theta_N(s/\omega_c)$ — $\theta_N$ is the reverse Bessel polynomial. Poles cluster near negative real axis.
+<br>**–3 dB at fc · –14 dB at 2× fc (gentlest rolloff) · 0.9% overshoot · 28 samples settling**
+
+```js
+let sos = bessel(4, 1000, 44100)
+```
 
 <img src="plot/bessel.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: waveform preservation (ECG, transients, control systems).
+<br>**Not for**: sharp frequency cutoff (gentlest rolloff of all families).
+<br>**scipy**: `scipy.signal.bessel`. **MATLAB**: `besself` (analog only).
+</details>
+
 ### `legendre(order, fc, fs, type?)`
 
-Steepest monotonic (ripple-free) rolloff. The sweet spot between Butterworth (gentle) and Chebyshev (sharp but rippled). Papoulis (1958), Bond (2004).[^papoulis]
+Steepest monotonic (ripple-free) rolloff. Between Butterworth and Chebyshev. Papoulis (1958), Bond (2004).[^papoulis]
 
 [^papoulis]: A. Papoulis, "Optimum Filters with Monotonic Response," *Proc. IRE*, 1958.
 
-Analog prototype: $|H(j\omega)|^2 = 1 - P_N(1 - 2(\omega/\omega_c)^2)$ where $P_N$ is an optimized Legendre polynomial that maximizes the rolloff slope while keeping it monotonic.
-**–3 dB at fc · –31 dB at 2× fc · no ripple · 11.3% overshoot**
+<br>$|H(j\omega)|^2 = 1 - P_N(1 - 2(\omega/\omega_c)^2)$ — $P_N$ maximizes rolloff slope while staying monotonic.
+<br>**–3 dB at fc · –31 dB at 2× fc · no ripple · 11.3% overshoot**
+
+```js
+let sos = legendre(4, 1000, 44100)
+```
 
 <img src="plot/legendre.svg">
 
+<details><summary>Reference</summary>
+
+**Use when**: sharpest cutoff without any ripple.
+<br>**Not for**: ripple tolerable (chebyshev is steeper), waveform shape (use bessel).
+</details>
+
 ### `linkwitzRiley(order, fc, fs)`
 
-Crossover: LP + HP sum to perfectly flat magnitude. The standard for loudspeaker crossovers and multi-band processing. Two cascaded Butterworth filters. Linkwitz & Riley (1976).[^lr] Returns `{ low, high }`. Order must be even (2, 4, 6, 8).
+Crossover: LP + HP sum to perfectly flat magnitude. Two cascaded Butterworth filters. Linkwitz & Riley (1976).[^lr] Returns `{ low, high }`. Order must be even (2, 4, 6, 8).
 
 [^lr]: S.H. Linkwitz, "Active Crossover Networks for Noncoincident Drivers," *JAES*, 1976.
 
-**–6 dB at fc (both bands) · bands sum to 0 dB at all frequencies**
+<br>**–6 dB at fc (both bands) · bands sum to 0 dB at all frequencies**
+
+```js
+let { low, high } = linkwitzRiley(4, 2000, 44100)
+```
 
 <img src="plot/linkwitz-riley-low.svg">
 
 ### `iirdesign(fpass, fstop, rp?, rs?, fs?)`
 
-Give it your specs (passband edge, stopband edge, max ripple, min rejection) and it picks the best family and minimum order automatically. Returns `{ sos, order, type }`.
+Give it your specs and it picks the best family and minimum order automatically. Returns `{ sos, order, type }`.
+
+```js
+let { sos, order, type } = iirdesign(1000, 1500, 1, 40, 44100)
+```
 
 ### IIR comparison
 
