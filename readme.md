@@ -119,18 +119,18 @@ filter(data, { coefs: sos })
 
 Steeper cutoff than Butterworth for the same order – at the cost of passband ripple.
 
-$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the Nth Chebyshev polynomial (oscillates in passband, grows fast in stopband). $\varepsilon = \sqrt{10^{R_p/10} - 1}$.
-<br>**Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**
-
-```js
-let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
-```
-
+$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the Nth Chebyshev polynomial (oscillates in passband, grows fast in stopband). $\varepsilon = \sqrt{10^{R_p/10} - 1}$.<br>
+**Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**<br>
 **Use when**: sharper cutoff than Butterworth, passband ripple tolerable.<br>
 **Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).<br>
 **scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
 
 <img src="plot/chebyshev.svg">
+
+```js
+let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
+```
+
 
 ### `chebyshev2(order, fc, fs, attenuation?, type?)`
 
