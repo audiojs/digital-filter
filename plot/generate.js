@@ -167,6 +167,6 @@ write('biquad-types', plotCompare([
 	['lowshelf', dsp.biquad.lowshelf(1000, .707, FS, 6)],
 	['highshelf', dsp.biquad.highshelf(1000, .707, FS, 6)],
 	['allpass', dsp.biquad.allpass(1000, 1, FS)],
-], 'Biquad types, fc=1kHz', { irLength: 64, irMax: 0.6, gdMin: -10, gdMax: 5 }))
+], 'Biquad types, fc=1kHz', { irLength: 64 }))
 
 console.log('SVGs generated in plot/')

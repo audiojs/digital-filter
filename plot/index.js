@@ -30,7 +30,7 @@ export let theme = {
 	grid: '#e5e7eb',
 	axis: '#d1d5db',
 	text: '#6b7280',
-	colors: ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
+	colors: ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'],  // tw blue-500, red-500, green-500, amber-500, violet-500, cyan-500, orange-500, pink-500
 	fill: true,
 	fs: 44100,
 	bins: 2048,
@@ -236,22 +236,6 @@ function linPoly (p, data, xMin, xMax, yMin, yMax, clr, fill) {
 	return clip ? `  <g${clip}>\n${s}  </g>\n` : s
 }
 
-// Simple clamped polyline (no segment breaking) for comparison overlays
-function logPolyClamped (p, freqs, vals, fMin, fMax, yMin, yMax, clr, w) {
-	let clip = p._clipId ? ` clip-path="url(#${p._clipId})"` : ''
-	let lr = Math.log10(fMax / fMin), pts = []
-	for (let i = 0; i < freqs.length; i++) {
-		let f = freqs[i]
-		if (f < fMin || f > fMax) continue
-		let x = p.x + Math.log10(f / fMin) / lr * p.w
-		let v = Math.max(yMin, Math.min(yMax, vals[i]))
-		let y = p.y + p.h - (v - yMin) / (yMax - yMin) * p.h
-		if (isFinite(x) && isFinite(y)) pts.push(`${x.toFixed(1)},${y.toFixed(1)}`)
-	}
-	if (pts.length < 2) return ''
-	let s = `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="${w}" stroke-linejoin="round"/>\n`
-	return clip ? `  <g${clip}>\n${s}  </g>\n` : s
-}
 
 function dbGrid (p) {
 	let yMin = -80, yMax = 20, s = ''
@@ -318,14 +302,18 @@ function parseFc (title) {
 }
 
 // Robust range using percentiles (ignores spikes)
-function robustRange (arr, p = 0.02) {
+function robustRange (arr) {
 	let vals = []
 	for (let i = 0; i < arr.length; i++) if (isFinite(arr[i])) vals.push(arr[i])
 	if (!vals.length) return [-1, 1]
 	vals.sort((a, b) => a - b)
-	let lo = vals[Math.floor(vals.length * p)]
-	let hi = vals[Math.ceil(vals.length * (1 - p)) - 1]
-	let pad = Math.max((hi - lo) * 0.15, 1)
+	let n = vals.length
+	let q1 = vals[Math.floor(n * 0.25)]
+	let q3 = vals[Math.floor(n * 0.75)]
+	let iqr = q3 - q1
+	let lo = Math.max(vals[0], q1 - 1.5 * iqr)
+	let hi = Math.min(vals[n - 1], q3 + 1.5 * iqr)
+	let pad = Math.max((hi - lo) * 0.1, 1)
 	return [lo - pad, hi + pad]
 }
 
@@ -454,8 +442,9 @@ export function plotFir (h, title, opts = {}) {
 export function plotCompare (filters, title, opts = {}) {
 	let fs = opts.fs || theme.fs, NF = opts.bins || theme.bins
 
-	function isFir (data) {
-		return !(Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'b0' in data[0])
+	function isSos (data) {
+		if (data && typeof data === 'object' && 'b0' in data) return true  // single SOS
+		return Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'b0' in data[0]
 	}
 
 	function firFreqz (h) {
@@ -481,13 +470,14 @@ export function plotCompare (filters, title, opts = {}) {
 	// Pre-compute all responses for range detection
 	let defaultIrLen = opts.irLength || 128
 	let computed = filters.map(([, data]) => {
-		if (isFir(data)) {
+		if (!isSos(data)) {
 			let r = firFreqz(data)
 			return { r, ir: data, gdFreqs: r.frequencies, gdDelay: r.delay }
 		}
-		let r = freqz(data, NF, fs)
-		let gd = groupDelay(data, NF, fs)
-		return { r, ir: impulseResponse(data, defaultIrLen), gdFreqs: gd.frequencies, gdDelay: gd.delay }
+		let sos = Array.isArray(data) ? data : [data]
+		let r = freqz(sos, NF, fs)
+		let gd = groupDelay(sos, NF, fs)
+		return { r, ir: impulseResponse(sos, defaultIrLen), gdFreqs: gd.frequencies, gdDelay: gd.delay }
 	})
 
 	// Auto-range: irMax and irLen from actual data
@@ -523,10 +513,9 @@ export function plotCompare (filters, title, opts = {}) {
 		let { r, ir, gdFreqs, gdDelay } = computed[i]
 		let db = Array.from(mag2db(r.magnitude))
 		let phase = Array.from(r.phase).map(v => v * 180 / Math.PI)
-		// Comparison: clamp to range (no segment breaking) – clip-path handles overflow
-		s += logPolyClamped(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3)
-		s += logPolyClamped(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3)
-		s += logPolyClamped(P3, gdFreqs, Array.from(gdDelay), 10, 20000, gdLo, gdHi, c, 1.3)
+		s += logPoly(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3, false)
+		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
+		s += logPoly(P3, gdFreqs, Array.from(gdDelay), 10, 20000, gdLo, gdHi, c, 1.3, false)
 		s += linPoly(P4, ir, 0, irLen, -irMax, irMax, c)
 	}
 
