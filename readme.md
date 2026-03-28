@@ -281,59 +281,136 @@ Smoothing and denoising. All operate in-place: `fn(data, params) → data`.
 
 ### `onePole(data, params)`
 
-Exponential moving average – the simplest IIR smoother. One multiply per sample, no overshoot. Difference equation: $y[n] = (1-a)\,x[n] + a\,y[n-1]$ where $a = e^{-2\pi f_c/f_s}$. Transfer function: $H(z) = (1-a)/(1-az^{-1})$. Params: `fc`, `fs`.
-**–6 dB/oct · 1 multiply · IIR (infinite settling)**
+Exponential moving average – the simplest IIR smoother. One multiply per sample, no overshoot. Params: `fc`, `fs`.
+**–6 dB/oct · 1 multiply · IIR**
+
+```js
+onePole(data, { fc: 100, fs: 44100 })
+```
 
 <img src="plot/one-pole.svg">
 
+<details><summary>Reference</summary>
+
+$y[n] = (1-a)\,x[n] + a\,y[n-1]$, $a = e^{-2\pi f_c/f_s}$, $H(z) = (1-a)/(1-az^{-1})$
+
+**Use when**: smoothing control signals, sensor data, parameter changes. **Not for**: sharp cutoff (use butterworth), preserving peaks (use savitzkyGolay).
+**scipy**: `scipy.signal.lfilter([1-a], [1, -a])`. **MATLAB**: `filter(1-a, [1 -a], x)`.
+</details>
+
 ### `movingAverage(data, params)`
 
-Boxcar average of last N samples. $h[n] = 1/N$ for $n = 0..N-1$, $H(z) = (1 - z^{-N})/(N(1 - z^{-1}))$. Excellent for removing periodic noise when N matches the period. Params: `memory`.
-**Linear phase · FIR · N multiplies · nulls at multiples of fs/N**
+Boxcar average of last N samples. Excellent for removing periodic noise when N matches the period. Params: `memory`.
+**Linear phase · FIR · nulls at multiples of fs/N**
+
+```js
+movingAverage(data, { memory: 8 })
+```
 
 <img src="plot/moving-average.svg">
 
+<details><summary>Reference</summary>
+
+$h[n] = 1/N$ for $n = 0..N-1$, $H(z) = (1 - z^{-N})/(N(1 - z^{-1}))$
+
+**Use when**: periodic noise removal, simple averaging. **Not for**: preserving peaks (use savitzkyGolay), frequency-selective filtering.
+</details>
+
 ### `leakyIntegrator(data, params)`
 
-Exponential decay accumulator. $y[n] = \lambda\,y[n-1] + (1-\lambda)\,x[n]$. Same as onePole but parameterized by decay factor $\lambda$ (0–1) instead of cutoff frequency. Params: `lambda`.
+Exponential decay accumulator. Same as onePole but parameterized by decay factor instead of cutoff. Params: `lambda` (0–1).
 **1 multiply · IIR**
+
+```js
+leakyIntegrator(data, { lambda: 0.95 })
+```
 
 <img src="plot/leaky-integrator.svg">
 
-### `median(data, params)`
+<details><summary>Reference</summary>
 
-Nonlinear – replaces each sample with the median of its neighborhood. Removes impulse noise (clicks, pops, outliers) while preserving edges and steps. Used in click removal, sensor outlier rejection, image denoising. Params: `size`.
-**Nonlinear · no formula · preserves edges · O(N log N) per sample**
+$y[n] = \lambda\,y[n-1] + (1-\lambda)\,x[n]$
+
+**Use when**: running average, DC estimation, simple smoothing by decay factor.
+</details>
 
 ### `savitzkyGolay(data, params)`
 
-Polynomial fit to sliding window – smooths noise while preserving peak height, width, and shape. The standard in spectroscopy, chromatography, and any measurement where peak distortion matters. Also computes smooth derivatives. Savitzky & Golay (1964).[^sg] Params: `windowSize`, `degree`, `derivative`.
+Polynomial fit to sliding window – smooths noise while preserving peak height, width, and shape. Also computes smooth derivatives. Savitzky & Golay (1964).[^sg] Params: `windowSize`, `degree`, `derivative`.
 **FIR · linear phase · preserves moments up to degree**
 
 [^sg]: A. Savitzky, M.J.E. Golay, "Smoothing and Differentiation of Data," *Analytical Chemistry*, 1964.
 
+```js
+savitzkyGolay(data, { windowSize: 11, degree: 3 })
+savitzkyGolay(data, { windowSize: 11, degree: 3, derivative: 1 })  // smooth 1st derivative
+```
+
 <img src="plot/savitzky-golay.svg">
+
+<details><summary>Reference</summary>
+
+**Use when**: spectroscopy, chromatography, any measurement where peak distortion matters. **Not for**: frequency-selective filtering, causal/online processing.
+**scipy**: `scipy.signal.savgol_filter`. **MATLAB**: `sgolayfilt`.
+</details>
 
 ### `gaussianIir(data, params)`
 
-Recursive Gaussian approximation (Young-van Vliet). O(1) cost regardless of kernel size – when sigma=100, FIR needs 600+ taps; this uses 6 multiplies. Forward-backward pass for zero phase. Params: `sigma`.
+Recursive Gaussian approximation (Young-van Vliet). O(1) cost regardless of kernel size – when sigma=100, FIR needs 600+ taps; this uses 6 multiplies. Forward-backward for zero phase. Params: `sigma`.
 **IIR · zero phase (offline) · O(1) per sample**
+
+```js
+gaussianIir(data, { sigma: 10 })
+```
 
 <img src="plot/gaussian-iir.svg">
 
-### `oneEuro(data, params)`
+<details><summary>Reference</summary>
 
-Adaptive lowpass – cutoff increases with signal speed. Smooth at rest, responsive when moving. Used for mouse/touch/gaze input, sensor fusion. Casiez et al. (2012).[^euro] Params: `minCutoff`, `beta`, `dCutoff`, `fs`.
-**Adaptive · 1st-order IIR with time-varying cutoff**
-
-[^euro]: G. Casiez et al., "1€ Filter," *CHI*, 2012.
+**Use when**: large-kernel Gaussian smoothing. **Not for**: exact Gaussian (this is an approximation), causal filtering.
+</details>
 
 ### `dynamicSmoothing(data, params)`
 
 Self-adjusting SVF – cutoff adapts to signal speed. Like oneEuro but at audio rate, for smoothing parameter changes without zipper noise. Params: `minFc`, `maxFc`, `sensitivity`, `fs`.
-**Adaptive · 2nd-order SVF with time-varying cutoff**
+**Adaptive · 2nd-order SVF**
+
+```js
+dynamicSmoothing(data, { minFc: 1, maxFc: 5000, sensitivity: 1, fs: 44100 })
+```
 
 <img src="plot/dynamic-smoothing.svg">
+
+### `median(data, params)`
+
+Nonlinear – replaces each sample with the median of its neighborhood. Removes impulse noise (clicks, pops, outliers) while preserving edges and steps. Params: `size`.
+**Nonlinear · preserves edges · O(N log N) per sample**
+
+```js
+median(data, { size: 5 })
+```
+
+<details><summary>Reference</summary>
+
+**Use when**: impulse noise (clicks, pops, sensor outliers), edge-preserving denoising. **Not for**: frequency-selective filtering (no defined frequency response).
+**scipy**: `scipy.signal.medfilt`. **MATLAB**: `medfilt1`.
+</details>
+
+### `oneEuro(data, params)`
+
+Adaptive lowpass – cutoff increases with signal speed. Smooth at rest, responsive when moving. Casiez et al. (2012).[^euro] Params: `minCutoff`, `beta`, `dCutoff`, `fs`.
+**Adaptive · 1st-order IIR with time-varying cutoff**
+
+[^euro]: G. Casiez et al., "1€ Filter," *CHI*, 2012.
+
+```js
+oneEuro(data, { minCutoff: 1, beta: 0.007, fs: 60 })
+```
+
+<details><summary>Reference</summary>
+
+**Use when**: mouse/touch/gaze input, sensor fusion, any UI with jitter. **Not for**: audio-rate processing (use dynamicSmoothing).
+</details>
 
 
 ## Adaptive
