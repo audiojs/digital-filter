@@ -53,12 +53,6 @@ let _defs = ''
 
 function svgOpen () { _gradId = 0; _defs = ''; return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="font-family:system-ui,-apple-system,sans-serif">\n` }
 
-function svgClose (s) {
-	if (!_defs) return '</svg>\n'
-	// Inject defs right after the opening <svg> tag
-	return `<defs>${_defs}  </defs>\n</svg>\n`
-}
-
 function svgWrap (s) {
 	if (!_defs) return s + '</svg>\n'
 	// Insert defs after first newline (after <svg ...>)
@@ -69,6 +63,9 @@ function svgWrap (s) {
 function panel (p, xLabel, yLabel, yMin, yMax, zeroAt) {
 	let axisY = (zeroAt != null && yMin != null) ?
 		(p.y + p.h - (zeroAt - yMin) / (yMax - yMin) * p.h) : (p.y + p.h)
+	let clipId = 'clip' + (++_gradId)
+	p._clipId = clipId
+	_defs += `\n    <clipPath id="${clipId}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}"/></clipPath>\n`
 	return `  <line x1="${p.x}" y1="${p.y}" x2="${p.x}" y2="${p.y+p.h}" stroke="${theme.axis}"/>\n` +
 		`  <line x1="${p.x}" y1="${axisY.toFixed(1)}" x2="${p.x+p.w}" y2="${axisY.toFixed(1)}" stroke="${theme.axis}"/>\n` +
 		`  <text x="${p.x+p.w/2}" y="${p.y+p.h+26}" text-anchor="middle" font-size="9" fill="${theme.text}">${xLabel}</text>\n` +
@@ -117,39 +114,90 @@ function linXTicks (p, ticks, xMin, xMax) {
 }
 
 function logPoly (p, freqs, vals, fMin, fMax, yMin, yMax, clr, w, fill, fillBase) {
-	let lr = Math.log10(fMax / fMin), pts = []
+	let clip = p._clipId ? ` clip-path="url(#${p._clipId})"` : ''
+	let lr = Math.log10(fMax / fMin)
+
+	// fillPts: all points clamped to range (continuous, for gradient fill)
+	// segments: line segments that break when values leave [yMin, yMax]
+	let fillPts = [], segments = [[]]
+	let wasOut = false
 	for (let i = 0; i < freqs.length; i++) {
 		let f = freqs[i]
 		if (f < fMin || f > fMax) continue
+		let v = vals[i]
 		let x = p.x + Math.log10(f / fMin) / lr * p.w
-		let v = Math.max(yMin, Math.min(yMax, vals[i]))
-		let y = p.y + p.h - (v - yMin) / (yMax - yMin) * p.h
-		if (isFinite(x) && isFinite(y)) pts.push(`${x.toFixed(1)},${y.toFixed(1)}`)
+		if (!isFinite(x) || !isFinite(v)) { wasOut = true; if (segments[segments.length-1].length) segments.push([]); continue }
+
+		let clamped = Math.max(yMin, Math.min(yMax, v))
+		let y = p.y + p.h - (clamped - yMin) / (yMax - yMin) * p.h
+		let pt = `${x.toFixed(1)},${y.toFixed(1)}`
+
+		// Fill always gets the clamped point
+		fillPts.push(pt)
+
+		// Line segments break at boundaries
+		let out = v < yMin || v > yMax
+		if (out) {
+			if (!wasOut && segments[segments.length-1].length) {
+				segments[segments.length-1].push(pt) // clamped endpoint
+				segments.push([])
+			}
+			wasOut = true
+		} else {
+			if (wasOut && segments[segments.length-1].length === 0 && i > 0) {
+				// Re-entering: add previous clamped point as segment start
+				let pf = freqs[i-1]
+				if (pf >= fMin && pf <= fMax) {
+					let px = p.x + Math.log10(pf / fMin) / lr * p.w
+					let pv = Math.max(yMin, Math.min(yMax, vals[i-1]))
+					let py = p.y + p.h - (pv - yMin) / (yMax - yMin) * p.h
+					segments[segments.length-1].push(`${px.toFixed(1)},${py.toFixed(1)}`)
+				}
+			}
+			segments[segments.length-1].push(pt)
+			wasOut = false
+		}
 	}
-	if (pts.length < 2) return ''
+
+	if (fillPts.length < 2) return ''
 	let s = ''
+
+	// Fill uses all clamped points (continuous)
 	if (fill && fillBase) {
 		let baseY = fillBase === 'down' ? (p.y + p.h) : fillBase === 'zero' ?
 			(p.y + p.h - (0 - yMin) / (yMax - yMin) * p.h) : (p.y + p.h)
-		let id = 'g' + (++_gradId)
-		// Find curve extent (both above and below baseline) for gradient span
 		let minY = baseY, maxY = baseY
-		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y; if (y > maxY) maxY = y }
-		// Gradient spans from furthest extent toward baseline
-		let gy1 = Math.min(minY, baseY), gy2 = Math.max(maxY, baseY)
-		if (Math.abs(gy2 - gy1) < 2) { gy1 = p.y; gy2 = p.y + p.h } // fallback if flat
-		_defs += `\n    <linearGradient id="${id}" x1="0" y1="${gy1.toFixed(0)}" x2="0" y2="${gy2.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
-			`<stop offset="0%" stop-color="${clr}" stop-opacity="0.15"/>` +
-			`<stop offset="50%" stop-color="${clr}" stop-opacity="0.08"/>` +
-			`<stop offset="100%" stop-color="${clr}" stop-opacity="0.01"/>` +
-			`</linearGradient>\n`
-		s += `  <polygon points="${pts[0].split(',')[0]},${baseY.toFixed(1)} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+		for (let pt of fillPts) { let y = +pt.split(',')[1]; if (y < minY) minY = y; if (y > maxY) maxY = y }
+		let aboveExt = baseY - minY, belowExt = maxY - baseY
+		if (aboveExt >= 1) {
+			let id = 'g' + (++_gradId)
+			_defs += `\n    <linearGradient id="${id}" x1="0" y1="${minY.toFixed(0)}" x2="0" y2="${baseY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+				`<stop offset="0%" stop-color="${clr}" stop-opacity="0.15"/>` +
+				`<stop offset="100%" stop-color="${clr}" stop-opacity="0.01"/>` +
+				`</linearGradient>\n`
+			let abovePts = fillPts.map(pt => { let [x, y] = pt.split(','); return `${x},${Math.min(+y, baseY).toFixed(1)}` })
+			s += `  <polygon points="${abovePts[0].split(',')[0]},${baseY.toFixed(1)} ${abovePts.join(' ')} ${abovePts[abovePts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+		}
+		if (belowExt >= 1) {
+			let id = 'g' + (++_gradId)
+			_defs += `\n    <linearGradient id="${id}" x1="0" y1="${baseY.toFixed(0)}" x2="0" y2="${maxY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+				`<stop offset="0%" stop-color="${clr}" stop-opacity="0.01"/>` +
+				`<stop offset="100%" stop-color="${clr}" stop-opacity="0.15"/>` +
+				`</linearGradient>\n`
+			let belowPts = fillPts.map(pt => { let [x, y] = pt.split(','); return `${x},${Math.max(+y, baseY).toFixed(1)}` })
+			s += `  <polygon points="${belowPts[0].split(',')[0]},${baseY.toFixed(1)} ${belowPts.join(' ')} ${belowPts[belowPts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+		}
 	}
-	s += `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="${w}" stroke-linejoin="round"/>\n`
-	return s
+
+	// Draw each segment as a separate polyline (breaks at out-of-range values)
+	for (let seg of segments) {
+		if (seg.length >= 2) s += `  <polyline points="${seg.join(' ')}" fill="none" stroke="${clr}" stroke-width="${w}" stroke-linejoin="round"/>\n`
+	}
+	return clip ? `  <g${clip}>\n${s}  </g>\n` : s
 }
 
 function linPoly (p, data, xMin, xMax, yMin, yMax, clr, fill) {
+	let clip = p._clipId ? ` clip-path="url(#${p._clipId})"` : ''
 	let pts = []
 	let N = typeof data.length !== 'undefined' ? data.length : 0
 	for (let i = 0; i < N; i++) {
@@ -162,28 +210,48 @@ function linPoly (p, data, xMin, xMax, yMin, yMax, clr, fill) {
 	let s = ''
 	if (fill) {
 		let baseY = p.y + p.h - (0 - yMin) / (yMax - yMin) * p.h
-		let id = 'g' + (++_gradId)
-		let minY = p.y + p.h
-		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y }
-		_defs += `\n    <linearGradient id="${id}" x1="0" y1="${minY.toFixed(0)}" x2="0" y2="${baseY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
-			`<stop offset="0%" stop-color="${clr}" stop-opacity="0.18"/>` +
-			`<stop offset="100%" stop-color="${clr}" stop-opacity="0.02"/>` +
-			`</linearGradient>\n`
-		s += `  <polygon points="${pts[0].split(',')[0]},${baseY.toFixed(1)} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+		let minY = baseY, maxY = baseY
+		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y; if (y > maxY) maxY = y }
+		let aboveExt = baseY - minY, belowExt = maxY - baseY
+		if (aboveExt >= 1) {
+			let id = 'g' + (++_gradId)
+			_defs += `\n    <linearGradient id="${id}" x1="0" y1="${minY.toFixed(0)}" x2="0" y2="${baseY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+				`<stop offset="0%" stop-color="${clr}" stop-opacity="0.15"/>` +
+				`<stop offset="100%" stop-color="${clr}" stop-opacity="0.01"/>` +
+				`</linearGradient>\n`
+			let abovePts = pts.map(pt => { let [x, y] = pt.split(','); return `${x},${Math.min(+y, baseY).toFixed(1)}` })
+			s += `  <polygon points="${abovePts[0].split(',')[0]},${baseY.toFixed(1)} ${abovePts.join(' ')} ${abovePts[abovePts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+		}
+		if (belowExt >= 1) {
+			let id = 'g' + (++_gradId)
+			_defs += `\n    <linearGradient id="${id}" x1="0" y1="${baseY.toFixed(0)}" x2="0" y2="${maxY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+				`<stop offset="0%" stop-color="${clr}" stop-opacity="0.01"/>` +
+				`<stop offset="100%" stop-color="${clr}" stop-opacity="0.15"/>` +
+				`</linearGradient>\n`
+			let belowPts = pts.map(pt => { let [x, y] = pt.split(','); return `${x},${Math.max(+y, baseY).toFixed(1)}` })
+			s += `  <polygon points="${belowPts[0].split(',')[0]},${baseY.toFixed(1)} ${belowPts.join(' ')} ${belowPts[belowPts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+		}
 	}
 	s += `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="1.2" stroke-linejoin="round"/>\n`
-	return s
+	return clip ? `  <g${clip}>\n${s}  </g>\n` : s
 }
 
 function dbGrid (p) {
 	let yMin = -80, yMax = 20, s = ''
 	let toY = v => (p.y + p.h - (v - yMin) / (yMax - yMin) * p.h).toFixed(1)
-	for (let v of [-60, -40, -20, 20]) {
+	// Grid lines (with labels)
+	for (let v of [-80, -60, -40, -20, 20]) {
 		let y = toY(v)
 		s += `  <line x1="${p.x}" y1="${y}" x2="${p.x+p.w}" y2="${y}" stroke="${theme.grid}" stroke-width="0.5"/>\n`
 	}
-	for (let v of [-60, -40, -20, 0, 20]) {
-		s += `  <text x="${p.x-4}" y="${(+toY(v)+3).toFixed(1)}" text-anchor="end" font-size="8" fill="${theme.text}">${v}</text>\n`
+	// Lines without labels
+	for (let v of [-10, 10]) {
+		let y = toY(v)
+		s += `  <line x1="${p.x}" y1="${y}" x2="${p.x+p.w}" y2="${y}" stroke="${theme.grid}" stroke-width="0.5"/>\n`
+	}
+	let fmt = v => v > 0 ? '+' + v : '' + v
+	for (let v of [-80, -60, -40, -20, 0, 20]) {
+		s += `  <text x="${p.x-4}" y="${(+toY(v)+3).toFixed(1)}" text-anchor="end" font-size="8" fill="${theme.text}">${fmt(v)}</text>\n`
 	}
 	return s
 }
@@ -195,10 +263,11 @@ function phaseGrid (p) {
 		let y = toY(v)
 		s += `  <line x1="${p.x}" y1="${y}" x2="${p.x+p.w}" y2="${y}" stroke="${theme.grid}" stroke-width="0.5"/>\n`
 	}
+	let fmt = v => v > 0 ? '+' + v : '' + v
 	for (let v of [180, 0, -180]) {
 		let y = toY(v)
 		if (v !== 0) s += `  <line x1="${p.x}" y1="${y}" x2="${p.x+p.w}" y2="${y}" stroke="${theme.grid}" stroke-width="0.5"/>\n`
-		s += `  <text x="${p.x-4}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="${theme.text}">${v}</text>\n`
+		s += `  <text x="${p.x-4}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="${theme.text}">${fmt(v)}</text>\n`
 	}
 	return s
 }
@@ -219,7 +288,7 @@ export function legend (items, pos) {
 	let s = '', x = pos?.x ?? P1.x, y = pos?.y ?? (P2.y - 5)
 	for (let [name, clr] of items) {
 		s += `  <line x1="${x}" y1="${y-3}" x2="${x+12}" y2="${y-3}" stroke="${clr}" stroke-width="2"/>\n`
-		s += `  <text x="${x+15}" y="${y.toFixed(1)}" font-size="9" fill="${theme.text}">${name}</text>\n`
+		s += `  <text x="${x+15}" y="${y.toFixed(1)}" font-size="11" fill="${theme.text}">${name}</text>\n`
 		x += 15 + name.length * 5.5 + 10
 	}
 	return s
@@ -395,6 +464,6 @@ export function plotCompare (filters, title, opts = {}) {
 		s += linPoly(P4, ir, 0, irLen, -irMax, irMax, c)
 	}
 
-	s += legend(filters.map((f, i) => [f[0], f[2] || theme.colors[i % theme.colors.length]]), P1)
+	s += legend(filters.map((f, i) => [f[0], f[2] || theme.colors[i % theme.colors.length]]))
 	return svgWrap(s)
 }

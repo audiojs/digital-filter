@@ -61,7 +61,7 @@ write('gaussian-fir', plotFir(dsp.gaussianFir(33, 0.3, 4), 'Gaussian FIR, N=33, 
 write('minimum-phase', plotFir(dsp.minimumPhase(dsp.firwin(65, 1000, FS)), 'Minimum-phase FIR, 65 taps, fc=1kHz'))
 write('firwin2', plotFir(dsp.firwin2(201, [0, 0.1, 0.2, 0.4, 0.5, 1], [0, 0, 1, 1, 0, 0]), 'firwin2 bandpass, 201 taps'))
 write('matched-filter', plotFir(dsp.matchedFilter(dsp.raisedCosine(33, 0.35, 4)), 'Matched filter (raised cosine template)'))
-write('integrator', plotFir(dsp.integrator('simpson'), "Integrator (Simpson's rule)"))
+{ let h = dsp.integrator('simpson'), p = new Float64Array(32); p.set(h); write('integrator', plotFir(p, "Integrator (Simpson's rule)")) }
 write('savitzky-golay', plotFir((() => { let d = new Float64Array(31); d[15] = 1; dsp.savitzkyGolay(d, {windowSize: 11, degree: 3}); return d })(), 'Savitzky-Golay, window=11, degree=3'))
 
 {
