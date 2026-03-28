@@ -123,13 +123,13 @@ $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the
 
 **Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**
 
-**Use when**: sharper cutoff than Butterworth, passband ripple tolerable.<br>
-**Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).<br>
-**scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
-
 ```js
 let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
 ```
+
+**Use when**: sharper cutoff than Butterworth, passband ripple tolerable.<br>
+**Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).<br>
+**scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
 
 <img src="plot/chebyshev.svg">
 
