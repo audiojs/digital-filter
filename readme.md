@@ -33,17 +33,17 @@ filter(block2, params)
 
 ## Intro
 
-**What is a filter?** Takes an array of samples, outputs an array of samples. `output[i] = (input[i] + input[i-1] + input[i-2]) / 3` smooths out fast changes – that's a lowpass.
+**Filter.** Takes an array of samples, outputs an array of samples. `output[i] = (input[i] + input[i-1] + input[i-2]) / 3` smooths out fast changes – that's a lowpass.
 
-**What is frequency response?** Every filter passes some frequencies and cuts others. The plots show how much each frequency is kept (magnitude, in dB) and how much it's delayed (phase). 0 dB = unchanged, –3 dB = half power.
+**Frequency response.** Every filter passes some frequencies and cuts others. The plots show how much each frequency is kept (magnitude, in dB) and how much it's delayed (phase). 0 dB = unchanged, –3 dB = half power.
 
-**What is IIR vs FIR?** IIR uses feedback – few multiplies, low latency, but can't do linear phase and can blow up. FIR has no feedback – always stable, linear phase possible, but needs 100–1000+ taps for a sharp cutoff.
+**IIR vs FIR.** IIR uses feedback – few multiplies, low latency, but can't do linear phase and can blow up. FIR has no feedback – always stable, linear phase possible, but needs 100–1000+ taps for a sharp cutoff.
 
-**What is SOS?** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions return SOS arrays to avoid float64 precision loss.
+**SOS.** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions return SOS arrays to avoid float64 precision loss.
 
-**How to read the plots?** Four panels. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz), flat = no distortion. Bottom-right: impulse response. Dashed line = $f_c$.
+**Plots.** Four panels. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz), flat = no distortion. Bottom-right: impulse response. Dashed line = $f_c$.
 
-**How to read the formulas?** $|H(j\omega)|^2$: analog prototype magnitude. $H(z)$: digital transfer function. $h[n]$: impulse response / FIR coefficients.
+**Formulas.** $|H(j\omega)|^2$: analog prototype magnitude. $H(z)$: digital transfer function. $h[n]$: impulse response / FIR coefficients.
 
 
 ## IIR
@@ -677,10 +677,12 @@ for (let lag = 0; lag < 13; lag++)
     R[lag] += frame[i] * frame[i + lag]
 
 let { a, error, k } = levinson(R, 12)
-// a = prediction coefficients (a[0]=1), k = reflection coefficients for lattice
+// a = prediction coefficients, k = reflection coefficients for lattice
 ```
 
-**Use when**: LPC analysis, speech coding (CELP, LPC-10), AR spectral estimation, lattice filter coefficients.<br>
+<img src="plot/levinson.svg">
+
+**Use when**: LPC analysis, speech coding (CELP, LPC-10), AR spectral estimation.<br>
 **Not for**: real-time sample-by-sample adaptation (use nlms/rls).
 
 
@@ -794,45 +796,96 @@ let up = oversample(data, 4)
 
 ## Core
 
-The engine – apply coefficients to data, analyze filter responses, convert between formats. Everything else builds on these.
+Apply coefficients, analyze responses, convert formats.
 
 ### `filter(data, params)`
 
-The main processor – applies SOS coefficients to data. Direct Form II Transposed, in-place. State persists in `params.state` between calls for seamless block processing. Params: `coefs`.
+Applies SOS coefficients to data in-place. Direct Form II Transposed. State persists between calls. Params: `coefs`.
 
-$$y[n] = b_0 x[n] + b_1 x[n\!-\!1] + b_2 x[n\!-\!2] - a_1 y[n\!-\!1] - a_2 y[n\!-\!2]$$
+$y[n] = b_0 x[n] + b_1 x[n-1] + b_2 x[n-2] - a_1 y[n-1] - a_2 y[n-2]$
+
+```js
+let sos = butterworth(4, 1000, 44100)
+let params = { coefs: sos }
+filter(block1, params)   // state preserved
+filter(block2, params)   // seamless
+```
 
 ### `filtfilt(data, params)`
 
-Zero-phase filtering – applies filter forward then backward, eliminating all phase distortion. Doubles effective order. Offline only (needs entire signal). The gold standard for measurement and analysis. Params: `coefs`.
+Zero-phase forward-backward filtering. Doubles effective order, eliminates phase distortion. Offline only. Params: `coefs`.
+
+```js
+filtfilt(data, { coefs: butterworth(4, 1000, 44100) })
+```
 
 ### `convolution(signal, ir)`
 
-Direct convolution. $(f * g)[n] = \sum_k f[k]\,g[n\!-\!k]$. Returns `Float64Array` of length N + M – 1.
+Direct convolution. Returns `Float64Array` of length N + M – 1.
+
+$(f * g)[n] = \sum_k f[k]\,g[n-k]$
+
+```js
+let out = convolution(signal, firCoefs)
+```
 
 ### `freqz(coefs, n?, fs?)` · `mag2db(mag)`
 
-Frequency response of SOS filter. Returns `{ frequencies, magnitude, phase }`. `mag2db`: $20\log_{10}(\text{mag})$.
+Frequency response of SOS filter. Returns `{ frequencies, magnitude, phase }`.
+
+```js
+let { frequencies, magnitude, phase } = freqz(sos, 512, 44100)
+let dB = mag2db(magnitude)  // 20·log10(mag)
+```
 
 ### `groupDelay(coefs, n?, fs?)` · `phaseDelay(coefs, n?, fs?)`
 
-Group delay $\tau_g = -d\phi/d\omega$ and phase delay $\tau_p = -\phi/\omega$. Returns `{ frequencies, delay }`.
+$\tau_g = -d\phi/d\omega$ (group delay), $\tau_p = -\phi/\omega$ (phase delay). Returns `{ frequencies, delay }`.
+
+```js
+let { frequencies, delay } = groupDelay(sos, 512, 44100)
+```
 
 ### `impulseResponse(coefs, N?)` · `stepResponse(coefs, N?)`
 
 Time-domain analysis. Returns `Float64Array`.
 
+```js
+let ir = impulseResponse(sos, 256)
+let step = stepResponse(sos, 256)
+```
+
 ### `isStable(sos)` · `isMinPhase(sos)` · `isFir(sos)` · `isLinPhase(h)`
 
-Filter property tests. Stable = poles inside unit circle. MinPhase = zeros inside. FIR = no feedback. LinPhase = symmetric coefficients.
+Filter property tests.
+
+```js
+isStable(sos)     // all poles inside unit circle?
+isMinPhase(sos)   // all zeros inside unit circle?
+isFir(sos)        // a1=a2=0 (no feedback)?
+isLinPhase(h)     // symmetric/antisymmetric coefficients?
+```
 
 ### `sos2zpk(sos)` · `sos2tf(sos)` · `tf2zpk(b, a)` · `zpk2sos(zpk)`
 
 Format conversion between SOS, zeros/poles/gain, and transfer function polynomials.
 
+```js
+let { zeros, poles, gain } = sos2zpk(sos)
+let { b, a } = sos2tf(sos)
+let zpk = tf2zpk(b, a)
+let sos2 = zpk2sos(zpk)
+```
+
 ### `transform`
 
-Analog prototype → digital SOS pipeline. `transform.polesSos(poles, fc, fs, type)`, `transform.poleZerosSos(poles, zeros, fc, fs, type)`, `transform.prewarp(f, fs)`.
+Analog prototype → digital SOS pipeline. Used internally by IIR design functions.
+
+```js
+transform.polesSos(poles, fc, fs, 'lowpass')
+transform.poleZerosSos(poles, zeros, fc, fs, 'bandpass')
+transform.prewarp(fc, fs)  // bilinear frequency prewarping
+```
 
 
 ## FAQ

@@ -66,12 +66,9 @@ write('savitzky-golay', plotFir((() => { let d = new Float64Array(31); d[15] = 1
 
 {
 	let {b, a} = dsp.yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
-	let x = new Float64Array(2048); x[0] = 1; let y = new Float64Array(2048)
-	for (let n = 0; n < 2048; n++) {
-		for (let k = 0; k < b.length; k++) if (n-k >= 0) y[n] += b[k] * x[n-k]
-		for (let k = 1; k < a.length; k++) if (n-k >= 0) y[n] -= a[k] * y[n-k]
-	}
-	write('yulewalk', plotFir(y.slice(0, 256), 'Yule-Walker IIR, order 8'))
+	let zpk = dsp.tf2zpk(Array.from(b), Array.from(a))
+	let sos = dsp.zpk2sos(zpk)
+	write('yulewalk', plotFilter(sos, 'Yule-Walker IIR, order 8'))
 }
 
 // ── Smooth ──
@@ -124,6 +121,24 @@ write('oversample', plotFir((() => { let d = new Float64Array(64); d[0] = 1; ret
 
 	let rp = {order: 8, lambda: 0.99, delta: 100}; dsp.rls(input, desired, rp)
 	write('rls', plotFir(rp.error.slice(0, 512), 'RLS convergence, λ=0.99'))
+}
+
+// Levinson – show the LPC synthesis filter (1/A(z)) impulse response
+{
+	// Generate a simple colored-noise signal and compute autocorrelation
+	let N = 1024, order = 12
+	let sig = new Float64Array(N)
+	for (let i = 0; i < N; i++) sig[i] = Math.random() * 2 - 1
+	dsp.onePole(sig, { fc: 2000, fs: FS })  // color it
+	let R = new Float64Array(order + 1)
+	for (let lag = 0; lag <= order; lag++)
+		for (let i = 0; i < N - lag; i++) R[lag] += sig[i] * sig[i + lag]
+	let { a } = dsp.levinson(R, order)
+	// Convert prediction coefficients to SOS for plotting
+	let aArr = Array.from(a)
+	let zpk = dsp.tf2zpk([1], aArr)
+	let sos = dsp.zpk2sos(zpk)
+	write('levinson', plotFilter(sos, 'Levinson LPC, order 12'))
 }
 
 // ── Comparison plots ──

@@ -3,6 +3,7 @@ export * as biquad from './iir/biquad.js'
 export { default as filter } from './core/filter.js'
 export { default as freqz, mag2db } from './core/freqz.js'
 export * as transform from './core/transform.js'
+export { default as matchedZ } from './core/matched-z.js'
 export { default as filtfilt } from './core/filtfilt.js'
 export { default as convolution } from './core/convolution.js'
 

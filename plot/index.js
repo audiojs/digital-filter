@@ -236,6 +236,23 @@ function linPoly (p, data, xMin, xMax, yMin, yMax, clr, fill) {
 	return clip ? `  <g${clip}>\n${s}  </g>\n` : s
 }
 
+// Simple clamped polyline (no segment breaking) for comparison overlays
+function logPolyClamped (p, freqs, vals, fMin, fMax, yMin, yMax, clr, w) {
+	let clip = p._clipId ? ` clip-path="url(#${p._clipId})"` : ''
+	let lr = Math.log10(fMax / fMin), pts = []
+	for (let i = 0; i < freqs.length; i++) {
+		let f = freqs[i]
+		if (f < fMin || f > fMax) continue
+		let x = p.x + Math.log10(f / fMin) / lr * p.w
+		let v = Math.max(yMin, Math.min(yMax, vals[i]))
+		let y = p.y + p.h - (v - yMin) / (yMax - yMin) * p.h
+		if (isFinite(x) && isFinite(y)) pts.push(`${x.toFixed(1)},${y.toFixed(1)}`)
+	}
+	if (pts.length < 2) return ''
+	let s = `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="${w}" stroke-linejoin="round"/>\n`
+	return clip ? `  <g${clip}>\n${s}  </g>\n` : s
+}
+
 function dbGrid (p) {
 	let yMin = -80, yMax = 20, s = ''
 	let toY = v => (p.y + p.h - (v - yMin) / (yMax - yMin) * p.h).toFixed(1)
@@ -506,9 +523,10 @@ export function plotCompare (filters, title, opts = {}) {
 		let { r, ir, gdFreqs, gdDelay } = computed[i]
 		let db = Array.from(mag2db(r.magnitude))
 		let phase = Array.from(r.phase).map(v => v * 180 / Math.PI)
-		s += logPoly(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3, false)
-		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
-		s += logPoly(P3, gdFreqs, Array.from(gdDelay), 10, 20000, gdLo, gdHi, c, 1.3, false)
+		// Comparison: clamp to range (no segment breaking) – clip-path handles overflow
+		s += logPolyClamped(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3)
+		s += logPolyClamped(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3)
+		s += logPolyClamped(P3, gdFreqs, Array.from(gdDelay), 10, 20000, gdLo, gdHi, c, 1.3)
 		s += linPoly(P4, ir, 0, irLen, -irMax, irMax, c)
 	}
 
