@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 392" style="font-family:system-ui,-apple-system,sans-serif">
   <defs>
-    <linearGradient id="g1" x1="0" y1="75" x2="0" y2="171" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4a90d9" stop-opacity="0.18"/><stop offset="100%" stop-color="#4a90d9" stop-opacity="0.02"/></linearGradient>
+    <linearGradient id="g1" x1="0" y1="75" x2="0" y2="171" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4a90d9" stop-opacity="0.15"/><stop offset="50%" stop-color="#4a90d9" stop-opacity="0.08"/><stop offset="100%" stop-color="#4a90d9" stop-opacity="0.01"/></linearGradient>
 
-    <linearGradient id="g2" x1="0" y1="94" x2="0" y2="94" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#e74c3c" stop-opacity="0.18"/><stop offset="100%" stop-color="#e74c3c" stop-opacity="0.02"/></linearGradient>
+    <linearGradient id="g2" x1="0" y1="94" x2="0" y2="116" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#e74c3c" stop-opacity="0.15"/><stop offset="50%" stop-color="#e74c3c" stop-opacity="0.08"/><stop offset="100%" stop-color="#e74c3c" stop-opacity="0.01"/></linearGradient>
 
-    <linearGradient id="g3" x1="0" y1="272" x2="0" y2="299" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2ecc71" stop-opacity="0.18"/><stop offset="100%" stop-color="#2ecc71" stop-opacity="0.02"/></linearGradient>
+    <linearGradient id="g3" x1="0" y1="272" x2="0" y2="371" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2ecc71" stop-opacity="0.15"/><stop offset="50%" stop-color="#2ecc71" stop-opacity="0.08"/><stop offset="100%" stop-color="#2ecc71" stop-opacity="0.01"/></linearGradient>
 
     <linearGradient id="g4" x1="0" y1="221" x2="0" y2="299" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#f39c12" stop-opacity="0.18"/><stop offset="100%" stop-color="#f39c12" stop-opacity="0.02"/></linearGradient>
   </defs>

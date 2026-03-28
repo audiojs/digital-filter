@@ -257,10 +257,6 @@ IIR approximation of an arbitrary magnitude response via Yule-Walker (autocorrel
 
 <img src="plot/yulewalk.svg">
 
-### `kaiserord(deltaF, attenuation)`
-
-Estimate FIR filter length and Kaiser $\beta$ from specifications. Give it transition width (fraction of Nyquist) and desired attenuation (dB), get `{ numtaps, beta }`. Feed into `firwin`.
-
 ### `integrator(rule?)`
 
 Newton-Cotes quadrature coefficients. Convolve with signal to integrate. Rules: `rectangular` [1], `trapezoidal` [0.5, 0.5], `simpson` [1/6, 4/6, 1/6], `simpson38` [1/8, 3/8, 3/8, 1/8].
@@ -274,6 +270,10 @@ Lattice/ladder IIR using reflection coefficients (PARCOR). Each stage is guarant
 ### `warpedFir(data, params)`
 
 Frequency-warped FIR – allpass delay elements instead of unit delays concentrate resolution at low frequencies. Used in perceptual audio coding and efficient EQ. Params: `coefs`, `lambda` (~0.7 for 44.1 kHz).
+
+### `kaiserord(deltaF, attenuation)`
+
+Estimate FIR filter length and Kaiser $\beta$ from specifications. Give it transition width (fraction of Nyquist) and desired attenuation (dB), get `{ numtaps, beta }`. Feed into `firwin`.
 
 
 ## Smooth

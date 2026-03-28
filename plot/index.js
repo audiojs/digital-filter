@@ -132,12 +132,16 @@ function logPoly (p, freqs, vals, fMin, fMax, yMin, yMax, clr, w, fill, fillBase
 		let baseY = fillBase === 'down' ? (p.y + p.h) : fillBase === 'zero' ?
 			(p.y + p.h - (0 - yMin) / (yMax - yMin) * p.h) : (p.y + p.h)
 		let id = 'g' + (++_gradId)
-		// Find the curve's topmost y (lowest pixel value) for gradient start
-		let minY = p.y + p.h
-		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y }
-		_defs += `\n    <linearGradient id="${id}" x1="0" y1="${minY.toFixed(0)}" x2="0" y2="${baseY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
-			`<stop offset="0%" stop-color="${clr}" stop-opacity="0.18"/>` +
-			`<stop offset="100%" stop-color="${clr}" stop-opacity="0.02"/>` +
+		// Find curve extent (both above and below baseline) for gradient span
+		let minY = baseY, maxY = baseY
+		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y; if (y > maxY) maxY = y }
+		// Gradient spans from furthest extent toward baseline
+		let gy1 = Math.min(minY, baseY), gy2 = Math.max(maxY, baseY)
+		if (Math.abs(gy2 - gy1) < 2) { gy1 = p.y; gy2 = p.y + p.h } // fallback if flat
+		_defs += `\n    <linearGradient id="${id}" x1="0" y1="${gy1.toFixed(0)}" x2="0" y2="${gy2.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+			`<stop offset="0%" stop-color="${clr}" stop-opacity="0.15"/>` +
+			`<stop offset="50%" stop-color="${clr}" stop-opacity="0.08"/>` +
+			`<stop offset="100%" stop-color="${clr}" stop-opacity="0.01"/>` +
 			`</linearGradient>\n`
 		s += `  <polygon points="${pts[0].split(',')[0]},${baseY.toFixed(1)} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
 	}
@@ -211,11 +215,12 @@ function fcLine (p, fc, fMin = 10, fMax = 20000) {
  * @param {object} [pos] - { x, y } starting position. Defaults to title line (top-left of P1).
  */
 export function legend (items, pos) {
-	let s = '', x = pos?.x ?? P1.x, y = pos?.y ?? (P1.y - 5)
+	// Default: same line as title (y aligns with title baseline at P2.y-5)
+	let s = '', x = pos?.x ?? P1.x, y = pos?.y ?? (P2.y - 5)
 	for (let [name, clr] of items) {
-		s += `  <line x1="${x}" y1="${y}" x2="${x+12}" y2="${y}" stroke="${clr}" stroke-width="2"/>\n`
-		s += `  <text x="${x+15}" y="${(y+3).toFixed(1)}" font-size="8" fill="${theme.text}">${name}</text>\n`
-		x += 15 + name.length * 5.2 + 10
+		s += `  <line x1="${x}" y1="${y-3}" x2="${x+12}" y2="${y-3}" stroke="${clr}" stroke-width="2"/>\n`
+		s += `  <text x="${x+15}" y="${y.toFixed(1)}" font-size="9" fill="${theme.text}">${name}</text>\n`
+		x += 15 + name.length * 5.5 + 10
 	}
 	return s
 }
