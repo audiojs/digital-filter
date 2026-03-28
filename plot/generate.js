@@ -80,6 +80,10 @@ write('moving-average', plotFir(impulse(dsp.movingAverage, {memory: 8}), 'Moving
 write('leaky-integrator', plotFir(impulse(dsp.leakyIntegrator, {lambda: 0.95}), 'Leaky integrator, λ=0.95'))
 write('gaussian-iir', plotFir(impulse(dsp.gaussianIir, {sigma: 5}), 'Gaussian IIR, σ=5'))
 write('dynamic-smoothing', plotFir(impulse(dsp.dynamicSmoothing, {minFc: 1, maxFc: 5000, sensitivity: 1, fs: FS}), 'Dynamic smoothing, fc=1–5kHz'))
+write('median', plotFir(impulse(dsp.median, {size: 5}), 'Median filter, size=5'))
+write('one-euro', plotFir(impulse(dsp.oneEuro, {minCutoff: 1, beta: 0.007, dCutoff: 1, fs: FS}), '1€ filter, minCutoff=1, β=0.007'))
+write('lattice', plotFir(impulse(dsp.lattice, {k: [0.5, -0.3, 0.2, -0.1]}), 'Lattice, k=[0.5, −0.3, 0.2, −0.1]'))
+write('warped-fir', plotFir(impulse(dsp.warpedFir, {coefs: new Float64Array([0.5, 0.3, 0.15, 0.05]), lambda: 0.7}), 'Warped FIR, λ=0.7'))
 
 // ── Multirate ──
 

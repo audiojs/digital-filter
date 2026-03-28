@@ -426,15 +426,70 @@ export function plotFir (h, title, opts = {}) {
 }
 
 /**
- * Generate 4-panel SVG comparing multiple SOS filters overlaid.
- * @param {Array} filters - Array of [name, sos] or [name, sos, color]
+ * Generate 4-panel SVG comparing multiple SOS filters or FIR impulse responses overlaid.
+ * @param {Array} filters - Array of [name, sos|fir] or [name, sos|fir, color]
+ *   sos: [{b0,b1,b2,a1,a2}, ...] — IIR biquad cascade
+ *   fir: Float64Array|number[]  — impulse response
  * @param {string} [title] - Plot title
- * @param {object} [opts] - Options: { fs, bins, irLength }
+ * @param {object} [opts] - Options: { fs, bins, irLength, irMax, gdMin, gdMax }
  * @returns {string} SVG markup
  */
 export function plotCompare (filters, title, opts = {}) {
 	let fs = opts.fs || theme.fs, NF = opts.bins || theme.bins
-	let irLen = opts.irLength || 128
+
+	function isFir (data) {
+		return !(Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'b0' in data[0])
+	}
+
+	function firFreqz (h) {
+		let frequencies = new Float64Array(NF), magnitude = new Float64Array(NF), phase = new Float64Array(NF)
+		for (let k = 0; k < NF; k++) {
+			frequencies[k] = k * fs / (2 * NF)
+			let re = 0, im = 0, w = Math.PI * k / NF
+			for (let n = 0; n < h.length; n++) { re += h[n] * Math.cos(w * n); im -= h[n] * Math.sin(w * n) }
+			magnitude[k] = Math.sqrt(re * re + im * im)
+			phase[k] = Math.atan2(im, re)
+		}
+		let delay = new Float64Array(NF)
+		let phDeg = Array.from(phase).map(v => v * 180 / Math.PI)
+		for (let k = 1; k < NF - 1; k++) {
+			let dp = phDeg[k + 1] - phDeg[k - 1]
+			if (dp > 180) dp -= 360; if (dp < -180) dp += 360
+			delay[k] = -dp / (2 * Math.PI / NF * 180 / Math.PI)
+		}
+		delay[0] = delay[1]
+		return { frequencies, magnitude, phase, delay }
+	}
+
+	// Pre-compute all responses for range detection
+	let defaultIrLen = opts.irLength || 128
+	let computed = filters.map(([, data]) => {
+		if (isFir(data)) {
+			let r = firFreqz(data)
+			return { r, ir: data, gdFreqs: r.frequencies, gdDelay: r.delay }
+		}
+		let r = freqz(data, NF, fs)
+		let gd = groupDelay(data, NF, fs)
+		return { r, ir: impulseResponse(data, defaultIrLen), gdFreqs: gd.frequencies, gdDelay: gd.delay }
+	})
+
+	// Auto-range: irMax and irLen from actual data
+	let irLen = opts.irLength ?? Math.max(...computed.map(({ ir }) => ir.length))
+	let irMax = opts.irMax ?? 0
+	if (!opts.irMax) {
+		for (let { ir } of computed) for (let i = 0; i < ir.length; i++) { let v = Math.abs(ir[i]); if (v > irMax) irMax = v }
+		irMax = Math.max(irMax * 1.15, 1e-10)
+	}
+
+	// Auto-range: group delay from actual data (unless overridden)
+	let gdLo = opts.gdMin ?? null, gdHi = opts.gdMax ?? null
+	if (gdLo == null || gdHi == null) {
+		let allGd = []
+		for (let { gdDelay } of computed) for (let v of gdDelay) if (isFinite(v)) allGd.push(v)
+		let [lo, hi] = allGd.length ? robustRange(allGd) : [-25, 5]
+		if (gdLo == null) gdLo = lo
+		if (gdHi == null) gdHi = hi
+	}
 
 	let s = svgOpen()
 	if (title) s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${theme.text}">${title}</text>\n`
@@ -442,24 +497,18 @@ export function plotCompare (filters, title, opts = {}) {
 	let fc = parseFc(title)
 	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000) + dbGrid(P1) + fcLine(P1, fc)
 	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
-
-	let gdLo = opts.gdMin ?? -25, gdHi = opts.gdMax ?? 5
 	s += panel(P3, 'Hz', 'Group delay', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(gdLo, gdHi, 4), gdLo, gdHi) + fcLine(P3, fc)
-
-	let irMax = opts.irMax ?? 0.35
 	s += panel(P4, 'Samples', 'Impulse', -irMax, irMax, 0) + linXTicks(P4, autoTicks(0, irLen, 3).map(Math.round), 0, irLen) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
 
 	for (let i = 0; i < filters.length; i++) {
-		let [name, sos, c] = filters[i]
+		let [,, c] = filters[i]
 		c = c || theme.colors[i % theme.colors.length]
-		let r = freqz(sos, NF, fs)
+		let { r, ir, gdFreqs, gdDelay } = computed[i]
 		let db = Array.from(mag2db(r.magnitude))
 		let phase = Array.from(r.phase).map(v => v * 180 / Math.PI)
-		let gd = groupDelay(sos, NF, fs)
-		let ir = impulseResponse(sos, irLen)
 		s += logPoly(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3, false)
 		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
-		s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, gdLo, gdHi, c, 1.3, false)
+		s += logPoly(P3, gdFreqs, Array.from(gdDelay), 10, 20000, gdLo, gdHi, c, 1.3, false)
 		s += linPoly(P4, ir, 0, irLen, -irMax, irMax, c)
 	}
 
