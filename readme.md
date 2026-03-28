@@ -72,8 +72,7 @@ filter(data, { coefs: lp })
 
 **Use when**: single-band EQ, notch, shelf, simple 2nd-order filter.<br>
 **Not for**: steeper than –12 dB/oct (use butterworth/chebyshev which cascade biquads).<br>
-**scipy**: `scipy.signal.iirfilter(1, ...)`.<br>
-**MATLAB**: various Audio Toolbox functions.
+**scipy**: `scipy.signal.iirfilter(1, ...)`. **MATLAB**: various Audio Toolbox functions.
 
 <img src="plot/biquad-types.svg">
 
@@ -110,8 +109,7 @@ filter(data, { coefs: sos })
 
 **Use when**: general-purpose filtering, anti-aliasing, crossovers.<br>
 **Not for**: sharpest transition (use [chebyshev](#chebyshev2order-fc-fs-attenuation-type)/[elliptic](#ellipticorder-fc-fs-ripple-attenuation-type)), waveform preservation (use [bessel](#besselorder-fc-fs-type)).<br>
-**scipy**: `scipy.signal.butter`.<br>
-**MATLAB**: `butter`.
+**scipy**: `scipy.signal.butter`. **MATLAB**: `butter`.
 
 <img src="plot/butterworth.svg">
 
@@ -130,8 +128,7 @@ let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
 
 **Use when**: sharper cutoff than Butterworth, passband ripple tolerable.<br>
 **Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).<br>
-**scipy**: `scipy.signal.cheby1`.<br>
-**MATLAB**: `cheby1`.
+**scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
 
 <img src="plot/chebyshev.svg">
 
@@ -150,8 +147,7 @@ let sos = chebyshev2(4, 2000, 44100, 40)  // 40 dB rejection
 
 **Use when**: flat passband needed with sharper rolloff than Butterworth.<br>
 **Not for**: deep stopband at high frequencies (Butterworth keeps falling; Cheby II bounces).<br>
-**scipy**: `scipy.signal.cheby2`.<br>
-**MATLAB**: `cheby2`.
+**scipy**: `scipy.signal.cheby2`. **MATLAB**: `cheby2`.
 
 <img src="plot/chebyshev2.svg">
 
@@ -171,8 +167,7 @@ let sos = elliptic(4, 1000, 44100, 1, 40)
 
 **Use when**: minimum order / sharpest transition is critical.<br>
 **Not for**: passband flatness or waveform shape (worst phase response of all families).<br>
-**scipy**: `scipy.signal.ellip`.<br>
-**MATLAB**: `ellip`.
+**scipy**: `scipy.signal.ellip`. **MATLAB**: `ellip`.
 
 <img src="plot/elliptic.svg">
 
@@ -192,8 +187,7 @@ let sos = bessel(4, 1000, 44100)
 
 **Use when**: waveform preservation (ECG, transients, control systems).<br>
 **Not for**: sharp frequency cutoff (gentlest rolloff of all families).<br>
-**scipy**: `scipy.signal.bessel`.<br>
-**MATLAB**: `besself` (analog only).
+**scipy**: `scipy.signal.bessel`. **MATLAB**: `besself` (analog only).
 
 <img src="plot/bessel.svg">
 
@@ -276,8 +270,7 @@ let h = firwin(63, 1000, 44100)
 
 **Use when**: 80% of FIR tasks – quick, predictable LP/HP/BP/BS.<br>
 **Not for**: tight specs (use remez), arbitrary shapes (use firwin2).<br>
-**scipy**: `scipy.signal.firwin`.<br>
-**MATLAB**: `fir1`.
+**scipy**: `scipy.signal.firwin`. **MATLAB**: `fir1`.
 
 <img src="plot/firwin-lp.svg">
 
@@ -293,8 +286,7 @@ let h = firls(63, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
 
 **Use when**: average error matters more than worst-case, audio interpolation.<br>
 **Not for**: tight stopband specs (use remez).<br>
-**scipy**: `scipy.signal.firls`.<br>
-**MATLAB**: `firls`.
+**scipy**: `scipy.signal.firls`. **MATLAB**: `firls`.
 
 <img src="plot/firls.svg">
 
@@ -314,8 +306,7 @@ let h = remez(63, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
 
 **Use when**: tight specs, guaranteed worst-case rejection.<br>
 **Not for**: sidelobes must decay (use firwin with window), average error (use firls).<br>
-**scipy**: `scipy.signal.remez`.<br>
-**MATLAB**: `firpm`.
+**scipy**: `scipy.signal.remez`. **MATLAB**: `firpm`.
 
 <img src="plot/remez.svg">
 
@@ -330,8 +321,7 @@ let h = firwin2(201, [0, 0.1, 0.2, 0.4, 0.5, 1], [0, 0, 1, 1, 0, 0])
 ```
 
 **Use when**: custom EQ curves, matching measured responses.<br>
-**scipy**: `scipy.signal.firwin2`.<br>
-**MATLAB**: `fir2`.
+**scipy**: `scipy.signal.firwin2`. **MATLAB**: `fir2`.
 
 <img src="plot/firwin2.svg">
 
@@ -430,8 +420,7 @@ IIR approximation of an arbitrary magnitude response via Yule-Walker method. Ret
 let { b, a } = yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
 ```
 
-**Use when**: IIR match to target curve.<br>
-**MATLAB**: `yulewalk`.
+**Use when**: IIR match to target curve. **MATLAB**: `yulewalk`.
 
 <img src="plot/yulewalk.svg">
 
@@ -507,8 +496,7 @@ onePole(data, { fc: 100, fs: 44100 })
 
 **Use when**: smoothing control signals, sensor data, parameter changes.<br>
 **Not for**: sharp cutoff (use butterworth), preserving peaks (use savitzkyGolay).<br>
-**scipy**: `scipy.signal.lfilter([1-a], [1, -a])`.<br>
-**MATLAB**: `filter(1-a, [1 -a], x)`.
+**scipy**: `scipy.signal.lfilter([1-a], [1, -a])`. **MATLAB**: `filter(1-a, [1 -a], x)`.
 
 <img src="plot/one-pole.svg">
 
@@ -559,8 +547,7 @@ savitzkyGolay(data, { windowSize: 11, degree: 3 })
 
 **Use when**: spectroscopy, chromatography, peak-sensitive measurement.<br>
 **Not for**: frequency-selective filtering, causal/online processing.<br>
-**scipy**: `scipy.signal.savgol_filter`.<br>
-**MATLAB**: `sgolayfilt`.
+**scipy**: `scipy.signal.savgol_filter`. **MATLAB**: `sgolayfilt`.
 
 <img src="plot/savitzky-golay.svg">
 
@@ -605,8 +592,7 @@ median(data, { size: 5 })
 
 **Use when**: clicks, pops, sensor outliers, edge-preserving denoising.<br>
 **Not for**: frequency-selective filtering (no defined frequency response).<br>
-**scipy**: `scipy.signal.medfilt`.<br>
-**MATLAB**: `medfilt1`.
+**scipy**: `scipy.signal.medfilt`. **MATLAB**: `medfilt1`.
 
 <img src="plot/median.svg">
 
@@ -720,8 +706,7 @@ let down = decimate(data, 4)
 ```
 
 **Use when**: reducing sample rate, downsampling for analysis.<br>
-**scipy**: `scipy.signal.decimate`.<br>
-**MATLAB**: `decimate`.
+**scipy**: `scipy.signal.decimate`. **MATLAB**: `decimate`.
 
 <img src="plot/decimate.svg">
 
@@ -734,8 +719,7 @@ let up = interpolate(data, 4)
 ```
 
 **Use when**: increasing sample rate, upsampling before nonlinear processing.<br>
-**scipy**: `scipy.signal.resample_poly`.<br>
-**MATLAB**: `interp`.
+**scipy**: `scipy.signal.resample_poly`. **MATLAB**: `interp`.
 
 <img src="plot/interpolate.svg">
 
