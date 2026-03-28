@@ -10,10 +10,13 @@
     "./fir/*.js": "./fir/*.js",
     "./smooth/*.js": "./smooth/*.js",
     "./adaptive/*.js": "./adaptive/*.js",
-    "./multirate/*.js": "./multirate/*.js"
+    "./multirate/*.js": "./multirate/*.js",
+    "./plot": "./plot/index.js",
+    "./plot/*": "./plot/*"
   },
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "plot": "node plot/generate.js"
   },
   "repository": {
     "type": "git",
