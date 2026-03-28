@@ -61,7 +61,7 @@ Nine second-order filter types – the building block for everything else. Every
 * `biquad.lowpass(fc, Q, fs)` · `highpass` · `bandpass` · `bandpass2` · `notch` · `allpass`
 * `biquad.peaking(fc, Q, fs, dBgain)` · `lowshelf` · `highshelf`
 
-<br>$H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$
+$H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$
 <br>Q controls peak width – 0.707 is Butterworth-flat, higher = sharper resonance.
 
 ```js
@@ -82,7 +82,7 @@ filter(data, { coefs: lp })
 
 State variable filter – same transfer function as a biquad, but trapezoidal integration allows zero-delay feedback. Safe for per-sample parameter modulation. Six simultaneous outputs. Simper/Cytomic (2011). Params: `fc`, `Q`, `fs`, `type`.
 
-<br>$g = \tan(\pi f_c/f_s)$, $k = 1/Q$
+$g = \tan(\pi f_c/f_s)$, $k = 1/Q$
 
 ```js
 svf(data, { fc: 1000, Q: 2, fs: 44100, type: 'lowpass' })
@@ -102,7 +102,7 @@ Maximally flat magnitude – no ripple anywhere. The safe default for anti-alias
 
 [^bw]: S. Butterworth, "On the Theory of Filter Amplifiers," *Wireless Engineer*, 1930.
 
-<br>$|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ — magnitude drops monotonically. Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$.
+$|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ — magnitude drops monotonically. Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$.
 <br>**–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
 
 ```js
@@ -123,7 +123,7 @@ filter(data, { coefs: sos })
 
 Steeper cutoff than Butterworth for the same order – at the cost of passband ripple.
 
-<br>$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the Nth Chebyshev polynomial (oscillates in passband, grows fast in stopband). $\varepsilon = \sqrt{10^{R_p/10} - 1}$.
+$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the Nth Chebyshev polynomial (oscillates in passband, grows fast in stopband). $\varepsilon = \sqrt{10^{R_p/10} - 1}$.
 <br>**Default 1 dB ripple · –34 dB at 2× fc · 8.7% overshoot · 256 samples settling**
 
 ```js
@@ -143,7 +143,7 @@ let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
 
 Flat passband, equiripple stopband. The ripple goes into the rejection region instead.
 
-<br>$|H(j\omega)|^2 = 1/(1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega)))$ — inverse of Type I. Zeros on $j\omega$ axis enforce stopband floor.
+$|H(j\omega)|^2 = 1/(1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega)))$ — inverse of Type I. Zeros on $j\omega$ axis enforce stopband floor.
 <br>**Flat passband · –40 dB stopband floor · –40 dB at 2× fc**
 
 ```js
@@ -165,7 +165,7 @@ Sharpest transition for a given order – ripple in both passband and stopband. 
 
 [^cauer]: W. Cauer, *Synthesis of Linear Communication Networks*, 1958.
 
-<br>$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 R_N^2(\omega/\omega_c))$ — $R_N$ is a rational Chebyshev (Jacobi elliptic) function.
+$|H(j\omega)|^2 = 1/(1 + \varepsilon^2 R_N^2(\omega/\omega_c))$ — $R_N$ is a rational Chebyshev (Jacobi elliptic) function.
 <br>**Default 1 dB ripple, 40 dB attenuation · –40 dB at 2× fc · 10.6% overshoot**
 
 ```js
@@ -187,7 +187,7 @@ Maximally flat group delay – preserves waveform shape with near-zero overshoot
 
 [^thomson]: W.E. Thomson, "Delay Networks Having Maximally Flat Frequency Characteristics," *Proc. IEE*, 1949.
 
-<br>$H(s) = \theta_N(0)/\theta_N(s/\omega_c)$ — $\theta_N$ is the reverse Bessel polynomial. Poles cluster near negative real axis.
+$H(s) = \theta_N(0)/\theta_N(s/\omega_c)$ — $\theta_N$ is the reverse Bessel polynomial. Poles cluster near negative real axis.
 <br>**–3 dB at fc · –14 dB at 2× fc (gentlest rolloff) · 0.9% overshoot · 28 samples settling**
 
 ```js
@@ -209,7 +209,7 @@ Steepest monotonic (ripple-free) rolloff. Between Butterworth and Chebyshev. Pap
 
 [^papoulis]: A. Papoulis, "Optimum Filters with Monotonic Response," *Proc. IRE*, 1958.
 
-<br>$|H(j\omega)|^2 = 1 - P_N(1 - 2(\omega/\omega_c)^2)$ — $P_N$ maximizes rolloff slope while staying monotonic.
+$|H(j\omega)|^2 = 1 - P_N(1 - 2(\omega/\omega_c)^2)$ — $P_N$ maximizes rolloff slope while staying monotonic.
 <br>**–3 dB at fc · –31 dB at 2× fc · no ripple · 11.3% overshoot**
 
 ```js
