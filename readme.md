@@ -74,7 +74,8 @@ filter(data, { coefs: lp })
 
 **Use when**: single-band EQ, notch, shelf, simple 2nd-order filter.
 <br>**Not for**: steeper than –12 dB/oct (use butterworth/chebyshev which cascade biquads).
-<br>**scipy**: `scipy.signal.iirfilter(1, ...)`. **MATLAB**: various Audio Toolbox functions.
+<br>**scipy**: `scipy.signal.iirfilter(1, ...)`.
+<br>**MATLAB**: various Audio Toolbox functions.
 
 ### `svf(data, params)`
 
@@ -88,11 +89,8 @@ svf(data, { fc: 1000, Q: 2, fs: 44100, type: 'lowpass' })
 
 <img src="plot/svf-lowpass.svg">
 
-<details><summary>Reference</summary>
-
-**Use when**: real-time synthesis with parameter modulation (LFO, envelope, touch).
-<br>**Not for**: need SOS coefficients for analysis (use biquad), higher than 2nd order.
-</details>
+**Use when**: real-time synthesis with parameter modulation (LFO, envelope, touch).<br>
+**Not for**: need SOS coefficients for analysis (use biquad), higher than 2nd order.
 
 ### `butterworth(order, fc, fs, type?)`
 
@@ -101,7 +99,8 @@ Maximally flat magnitude – no ripple anywhere. The safe default for anti-alias
 [^bw]: S. Butterworth, "On the Theory of Filter Amplifiers," *Wireless Engineer*, 1930.
 
 $|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ — magnitude drops monotonically. Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$.
-<br>**–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
+
+**–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
 
 ```js
 let sos = butterworth(4, 1000, 44100)
@@ -110,12 +109,10 @@ filter(data, { coefs: sos })
 
 <img src="plot/butterworth.svg">
 
-<details><summary>Reference</summary>
-
-**Use when**: general-purpose filtering, anti-aliasing, crossovers.
-<br>**Not for**: sharpest transition (use chebyshev/elliptic), waveform preservation (use bessel).
-<br>**scipy**: `scipy.signal.butter`. **MATLAB**: `butter`.
-</details>
+**Use when**: general-purpose filtering, anti-aliasing, crossovers.<br>
+**Not for**: sharpest transition (use chebyshev/elliptic), waveform preservation (use bessel).<br>
+**scipy**: `scipy.signal.butter`.<br>
+**MATLAB**: `butter`.
 
 ### `chebyshev(order, fc, fs, ripple?, type?)`
 
