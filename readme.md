@@ -126,14 +126,11 @@ $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 T_N^2(\omega/\omega_c))$ — $T_N$ is the
 let sos = chebyshev(4, 1000, 44100, 1)  // 1 dB ripple
 ```
 
+**Use when**: sharper cutoff than Butterworth, passband ripple tolerable.<br>
+**Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).<br>
+**scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
+
 <img src="plot/chebyshev.svg">
-
-<details><summary>Reference</summary>
-
-**Use when**: sharper cutoff than Butterworth, passband ripple tolerable.
-<br>**Not for**: passband flatness (use butterworth/legendre), waveform shape (use bessel).
-<br>**scipy**: `scipy.signal.cheby1`. **MATLAB**: `cheby1`.
-</details>
 
 ### `chebyshev2(order, fc, fs, attenuation?, type?)`
 
@@ -146,14 +143,11 @@ $|H(j\omega)|^2 = 1/(1 + 1/(\varepsilon^2 T_N^2(\omega_c/\omega)))$ — inverse 
 let sos = chebyshev2(4, 2000, 44100, 40)  // 40 dB rejection
 ```
 
+**Use when**: flat passband needed with sharper rolloff than Butterworth.<br>
+**Not for**: deep stopband at high frequencies (Butterworth keeps falling; Cheby II bounces).<br>
+**scipy**: `scipy.signal.cheby2`. **MATLAB**: `cheby2`.
+
 <img src="plot/chebyshev2.svg">
-
-<details><summary>Reference</summary>
-
-**Use when**: flat passband needed with sharper rolloff than Butterworth.
-<br>**Not for**: deep stopband at high frequencies (Butterworth keeps falling; Cheby II bounces).
-<br>**scipy**: `scipy.signal.cheby2`. **MATLAB**: `cheby2`.
-</details>
 
 ### `elliptic(order, fc, fs, ripple?, attenuation?, type?)`
 
@@ -168,14 +162,11 @@ $|H(j\omega)|^2 = 1/(1 + \varepsilon^2 R_N^2(\omega/\omega_c))$ — $R_N$ is a r
 let sos = elliptic(4, 1000, 44100, 1, 40)
 ```
 
+**Use when**: minimum order / sharpest transition is critical.<br>
+**Not for**: passband flatness or waveform shape (worst phase response of all families).<br>
+**scipy**: `scipy.signal.ellip`. **MATLAB**: `ellip`.
+
 <img src="plot/elliptic.svg">
-
-<details><summary>Reference</summary>
-
-**Use when**: minimum order / sharpest transition is critical.
-<br>**Not for**: passband flatness or waveform shape (worst phase response of all families).
-<br>**scipy**: `scipy.signal.ellip`. **MATLAB**: `ellip`.
-</details>
 
 ### `bessel(order, fc, fs, type?)`
 
@@ -190,14 +181,11 @@ $H(s) = \theta_N(0)/\theta_N(s/\omega_c)$ — $\theta_N$ is the reverse Bessel p
 let sos = bessel(4, 1000, 44100)
 ```
 
+**Use when**: waveform preservation (ECG, transients, control systems).<br>
+**Not for**: sharp frequency cutoff (gentlest rolloff of all families).<br>
+**scipy**: `scipy.signal.bessel`. **MATLAB**: `besself` (analog only).
+
 <img src="plot/bessel.svg">
-
-<details><summary>Reference</summary>
-
-**Use when**: waveform preservation (ECG, transients, control systems).
-<br>**Not for**: sharp frequency cutoff (gentlest rolloff of all families).
-<br>**scipy**: `scipy.signal.bessel`. **MATLAB**: `besself` (analog only).
-</details>
 
 ### `legendre(order, fc, fs, type?)`
 
@@ -212,13 +200,10 @@ $|H(j\omega)|^2 = 1 - P_N(1 - 2(\omega/\omega_c)^2)$ — $P_N$ maximizes rolloff
 let sos = legendre(4, 1000, 44100)
 ```
 
+**Use when**: sharpest cutoff without any ripple.<br>
+**Not for**: ripple tolerable (chebyshev is steeper), waveform shape (use bessel).
+
 <img src="plot/legendre.svg">
-
-<details><summary>Reference</summary>
-
-**Use when**: sharpest cutoff without any ripple.
-<br>**Not for**: ripple tolerable (chebyshev is steeper), waveform shape (use bessel).
-</details>
 
 ### `linkwitzRiley(order, fc, fs)`
 

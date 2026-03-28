@@ -30,7 +30,7 @@ export let theme = {
 	grid: '#e5e7eb',
 	axis: '#d1d5db',
 	text: '#6b7280',
-	colors: ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'],  // tw blue-500, red-500, green-500, amber-500, violet-500, cyan-500, orange-500, pink-500
+	colors: ['#3b82f6', '#ef4444', '#22c55e', '#eab308', '#f97316', '#a855f7', '#06b6d4', '#64748b'],  // tw blue, red, green, yellow, orange, purple, cyan, slate 500
 	fill: true,
 	fs: 44100,
 	bins: 2048,
@@ -237,6 +237,18 @@ function linPoly (p, data, xMin, xMax, yMin, yMax, clr, fill) {
 }
 
 
+function irRefLines (p, yMin, yMax) {
+	let s = ''
+	for (let v of [1, -1]) {
+		if (v >= yMin && v <= yMax) {
+			let y = (p.y + p.h - (v - yMin) / (yMax - yMin) * p.h).toFixed(1)
+			s += `  <line x1="${p.x}" y1="${y}" x2="${p.x+p.w}" y2="${y}" stroke="${theme.grid}" stroke-width="0.5" stroke-dasharray="3 2"/>\n`
+			s += `  <text x="${p.x-4}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="7" fill="${theme.text}">${v > 0 ? '+' : ''}${v}</text>\n`
+		}
+	}
+	return s
+}
+
 function dbGrid (p) {
 	let yMin = -80, yMax = 20, s = ''
 	let toY = v => (p.y + p.h - (v - yMin) / (yMax - yMin) * p.h).toFixed(1)
@@ -301,21 +313,6 @@ function parseFc (title) {
 	return +m[1] * (m[2].toLowerCase() === 'k' ? 1000 : 1)
 }
 
-// Robust range using percentiles (ignores spikes)
-function robustRange (arr) {
-	let vals = []
-	for (let i = 0; i < arr.length; i++) if (isFinite(arr[i])) vals.push(arr[i])
-	if (!vals.length) return [-1, 1]
-	vals.sort((a, b) => a - b)
-	let n = vals.length
-	let q1 = vals[Math.floor(n * 0.25)]
-	let q3 = vals[Math.floor(n * 0.75)]
-	let iqr = q3 - q1
-	let lo = Math.max(vals[0], q1 - 1.5 * iqr)
-	let hi = Math.min(vals[n - 1], q3 + 1.5 * iqr)
-	let pad = Math.max((hi - lo) * 0.1, 1)
-	return [lo - pad, hi + pad]
-}
 
 function autoTicks (lo, hi, n) {
 	let range = hi - lo
@@ -349,12 +346,6 @@ export function plotFilter (sos, title, opts = {}) {
 	let gd = groupDelay(sos, NF, fs)
 	let ir = impulseResponse(sos, 128)
 
-	let irMax = 0
-	for (let i = 0; i < ir.length; i++) if (Math.abs(ir[i]) > irMax) irMax = Math.abs(ir[i])
-	if (irMax < 1e-10) irMax = 1
-
-	let [gdLo, gdHi] = robustRange(gd.delay)
-
 	let fc = parseFc(title)
 	let s = svgOpen()
 	if (title) s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${theme.text}">${title}</text>\n`
@@ -365,11 +356,13 @@ export function plotFilter (sos, title, opts = {}) {
 	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
 	s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, clr[1], 1.5, doFill, 'zero')
 
-	s += panel(P3, 'Hz', 'Group delay', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(gdLo, gdHi, 4), gdLo, gdHi) + fcLine(P3, fc)
+	let gdLo = -100, gdHi = 100
+	s += panel(P3, 'Hz', 'Delay (smp)', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, [-100, -50, 0, 50, 100], gdLo, gdHi) + fcLine(P3, fc)
 	s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, gdLo, gdHi, clr[2], 1.5, doFill, 'zero')
 
-	s += panel(P4, 'Samples', 'Impulse', -irMax, irMax, 0) + linXTicks(P4, [0, 32, 64, 96, 128], 0, 128) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
-	s += linPoly(P4, ir, 0, 128, -irMax, irMax, clr[3], doFill)
+	let irLo = -1.2, irHi = 1.2
+	s += panel(P4, 'Samples', 'Impulse', irLo, irHi, 0) + linXTicks(P4, [0, 32, 64, 96, 128], 0, 128) + hTicks(P4, [-1, 0, 1], irLo, irHi) + irRefLines(P4, irLo, irHi)
+	s += linPoly(P4, ir, 0, 128, irLo, irHi, clr[3], doFill)
 
 	return svgWrap(s)
 }
@@ -405,12 +398,6 @@ export function plotFir (h, title, opts = {}) {
 	}
 	gdVals[0] = gdVals[1]
 
-	let hMax = 0
-	for (let i = 0; i < h.length; i++) if (Math.abs(h[i]) > hMax) hMax = Math.abs(h[i])
-	if (hMax < 1e-10) hMax = 1
-
-	let [gdLo, gdHi] = robustRange(gdVals)
-
 	let fc = parseFc(title)
 	let s = svgOpen()
 	if (title) s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${theme.text}">${title}</text>\n`
@@ -421,11 +408,13 @@ export function plotFir (h, title, opts = {}) {
 	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
 	s += logPoly(P2, freqs, Array.from(phase), 10, 20000, -180, 180, clr[1], 1.5, doFill, 'zero')
 
-	s += panel(P3, 'Hz', 'Group delay', gdLo, gdHi, 0) + logXTicks(P3, [100, 1000, 10000], 10, 20000) + hTicks(P3, autoTicks(gdLo, gdHi, 4), gdLo, gdHi) + fcLine(P3, fc)
+	let gdLo = -100, gdHi = 100
+	s += panel(P3, 'Hz', 'Delay (smp)', gdLo, gdHi, 0) + logXTicks(P3, [100, 1000, 10000], 10, 20000) + hTicks(P3, [-100, -50, 0, 50, 100], gdLo, gdHi) + fcLine(P3, fc)
 	s += logPoly(P3, gdFreqs, Array.from(gdVals), 10, 20000, gdLo, gdHi, clr[2], 1.5, doFill, 'zero')
 
-	s += panel(P4, 'Samples', 'Impulse', -hMax, hMax, 0) + linXTicks(P4, autoTicks(0, h.length, 3).map(Math.round), 0, h.length) + hTicks(P4, autoTicks(-hMax, hMax, 3), -hMax, hMax)
-	s += linPoly(P4, h, 0, h.length, -hMax, hMax, clr[3], doFill)
+	let irLo = -1.2, irHi = 1.2
+	s += panel(P4, 'Samples', 'Impulse', irLo, irHi, 0) + linXTicks(P4, autoTicks(0, h.length, 3).map(Math.round), 0, h.length) + hTicks(P4, [-1, 0, 1], irLo, irHi) + irRefLines(P4, irLo, irHi)
+	s += linPoly(P4, h, 0, h.length, irLo, irHi, clr[3], doFill)
 
 	return svgWrap(s)
 }
@@ -480,23 +469,10 @@ export function plotCompare (filters, title, opts = {}) {
 		return { r, ir: impulseResponse(sos, defaultIrLen), gdFreqs: gd.frequencies, gdDelay: gd.delay }
 	})
 
-	// Auto-range: irMax and irLen from actual data
 	let irLen = opts.irLength ?? Math.max(...computed.map(({ ir }) => ir.length))
-	let irMax = opts.irMax ?? 0
-	if (!opts.irMax) {
-		for (let { ir } of computed) for (let i = 0; i < ir.length; i++) { let v = Math.abs(ir[i]); if (v > irMax) irMax = v }
-		irMax = Math.max(irMax * 1.15, 1e-10)
-	}
 
-	// Auto-range: group delay from actual data (unless overridden)
-	let gdLo = opts.gdMin ?? null, gdHi = opts.gdMax ?? null
-	if (gdLo == null || gdHi == null) {
-		let allGd = []
-		for (let { gdDelay } of computed) for (let v of gdDelay) if (isFinite(v)) allGd.push(v)
-		let [lo, hi] = allGd.length ? robustRange(allGd) : [-25, 5]
-		if (gdLo == null) gdLo = lo
-		if (gdHi == null) gdHi = hi
-	}
+	let gdLo = opts.gdMin ?? -100, gdHi = opts.gdMax ?? 100
+	let irLo = -1.2, irHi = 1.2
 
 	let s = svgOpen()
 	if (title) s += `  <text x="${P2.x+P2.w}" y="${P2.y-5}" text-anchor="end" font-size="11" font-weight="600" fill="${theme.text}">${title}</text>\n`
@@ -504,8 +480,8 @@ export function plotCompare (filters, title, opts = {}) {
 	let fc = parseFc(title)
 	s += panel(P1, 'Hz', 'dB', -80, 20, 0) + logXTicks(P1, fTicks, 10, 20000) + dbGrid(P1) + fcLine(P1, fc)
 	s += panel(P2, 'Hz', 'Phase (deg)', -180, 180, 0) + logXTicks(P2, fTicks, 10, 20000) + phaseGrid(P2) + fcLine(P2, fc)
-	s += panel(P3, 'Hz', 'Group delay', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, autoTicks(gdLo, gdHi, 4), gdLo, gdHi) + fcLine(P3, fc)
-	s += panel(P4, 'Samples', 'Impulse', -irMax, irMax, 0) + linXTicks(P4, autoTicks(0, irLen, 3).map(Math.round), 0, irLen) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
+	s += panel(P3, 'Hz', 'Delay (smp)', gdLo, gdHi, 0) + logXTicks(P3, fTicks, 10, 20000) + hTicks(P3, [-100, -50, 0, 50, 100], gdLo, gdHi) + fcLine(P3, fc)
+	s += panel(P4, 'Samples', 'Impulse', irLo, irHi, 0) + linXTicks(P4, autoTicks(0, irLen, 3).map(Math.round), 0, irLen) + hTicks(P4, [-1, 0, 1], irLo, irHi) + irRefLines(P4, irLo, irHi)
 
 	for (let i = 0; i < filters.length; i++) {
 		let [,, c] = filters[i]
@@ -516,7 +492,7 @@ export function plotCompare (filters, title, opts = {}) {
 		s += logPoly(P1, r.frequencies, db, 10, 20000, -80, 20, c, 1.3, false)
 		s += logPoly(P2, r.frequencies, phase, 10, 20000, -180, 180, c, 1.3, false)
 		s += logPoly(P3, gdFreqs, Array.from(gdDelay), 10, 20000, gdLo, gdHi, c, 1.3, false)
-		s += linPoly(P4, ir, 0, irLen, -irMax, irMax, c)
+		s += linPoly(P4, ir, 0, irLen, irLo, irHi, c)
 	}
 
 	s += legend(filters.map((f, i) => [f[0], f[2] || theme.colors[i % theme.colors.length]]))
