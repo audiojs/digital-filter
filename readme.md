@@ -98,7 +98,8 @@ Maximally flat magnitude – no ripple anywhere. The safe default for anti-alias
 
 [^bw]: S. Butterworth, "On the Theory of Filter Amplifiers," *Wireless Engineer*, 1930.
 
-$|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ — magnitude drops monotonically. Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$.
+$|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$<br>
+Poles at $s_k = \omega_c \cdot e^{j\pi(2k+N+1)/(2N)}$.
 
 **–3 dB at fc · –6N dB/oct slope · 10.9% overshoot at order 4 · 73 samples settling**
 
