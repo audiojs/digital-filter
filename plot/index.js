@@ -300,6 +300,18 @@ function parseFc (title) {
 	return +m[1] * (m[2].toLowerCase() === 'k' ? 1000 : 1)
 }
 
+// Robust range using percentiles (ignores spikes)
+function robustRange (arr, p = 0.02) {
+	let vals = []
+	for (let i = 0; i < arr.length; i++) if (isFinite(arr[i])) vals.push(arr[i])
+	if (!vals.length) return [-1, 1]
+	vals.sort((a, b) => a - b)
+	let lo = vals[Math.floor(vals.length * p)]
+	let hi = vals[Math.ceil(vals.length * (1 - p)) - 1]
+	let pad = Math.max((hi - lo) * 0.15, 1)
+	return [lo - pad, hi + pad]
+}
+
 function autoTicks (lo, hi, n) {
 	let range = hi - lo
 	if (range === 0) return [lo]
@@ -336,13 +348,7 @@ export function plotFilter (sos, title, opts = {}) {
 	for (let i = 0; i < ir.length; i++) if (Math.abs(ir[i]) > irMax) irMax = Math.abs(ir[i])
 	if (irMax < 1e-10) irMax = 1
 
-	let gdMin = Infinity, gdMax = -Infinity
-	for (let i = 1; i < gd.delay.length; i++) {
-		if (isFinite(gd.delay[i])) { if (gd.delay[i] < gdMin) gdMin = gd.delay[i]; if (gd.delay[i] > gdMax) gdMax = gd.delay[i] }
-	}
-	if (!isFinite(gdMin)) { gdMin = -1; gdMax = 1 }
-	let gdSpan = Math.max(Math.abs(gdMax), Math.abs(gdMin), 1) * 1.3
-	let gdLo = -gdSpan, gdHi = gdSpan
+	let [gdLo, gdHi] = robustRange(gd.delay)
 
 	let fc = parseFc(title)
 	let s = svgOpen()
@@ -398,14 +404,7 @@ export function plotFir (h, title, opts = {}) {
 	for (let i = 0; i < h.length; i++) if (Math.abs(h[i]) > hMax) hMax = Math.abs(h[i])
 	if (hMax < 1e-10) hMax = 1
 
-	let gdMin = Infinity, gdMax = -Infinity
-	for (let k = 1; k < NF * 0.8; k++) {
-		if (isFinite(gdVals[k])) { if (gdVals[k] < gdMin) gdMin = gdVals[k]; if (gdVals[k] > gdMax) gdMax = gdVals[k] }
-	}
-	if (!isFinite(gdMin)) { gdMin = 0; gdMax = h.length }
-
-	let gdSpan = Math.max(Math.abs(gdMin), Math.abs(gdMax), 1) * 1.3
-	let gdLo = -gdSpan, gdHi = gdSpan
+	let [gdLo, gdHi] = robustRange(gdVals)
 
 	let fc = parseFc(title)
 	let s = svgOpen()

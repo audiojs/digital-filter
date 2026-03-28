@@ -51,7 +51,10 @@ let clean = params.error
 
 ## Reading the plots
 
-Each filter shows four panels. **Magnitude** (top-left) – how much of each frequency passes through, in dB. 0 dB = unchanged, –3 dB = half power (the conventional cutoff), –40 dB = 1%. **Phase** (top-right) – how much each frequency is delayed in degrees. Constant slope = linear phase = waveform preserved. **Group delay** (bottom-left) – the derivative of phase; shows delay variation across frequency in samples. Flat = no distortion. **Impulse response** (bottom-right) – the filter's output when fed a single 1-sample pulse; its "fingerprint."
+Each filter shows four panels.
+**Magnitude** (top-left) – how much of each frequency passes through, in dB. 0 dB = unchanged, –3 dB = half power (the conventional cutoff), –40 dB = 1%.
+**Phase** (top-right) – how much each frequency is delayed in degrees. Constant slope = linear phase = waveform preserved. **Group delay** (bottom-left) – the derivative of phase; shows delay variation across frequency in samples. Flat = no distortion.
+**Impulse response** (bottom-right) – the filter's output when fed a single 1-sample pulse; its "fingerprint."
 
 The formulas describe the filter's frequency response. $|H(j\omega)|^2$ is the squared magnitude as a function of analog frequency $\omega$ – it defines the shape of the passband/stopband. $H(z)$ is the digital transfer function – what the code computes per sample. $h[n]$ is the impulse response – the FIR coefficients directly.
 
