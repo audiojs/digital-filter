@@ -32,7 +32,7 @@ export let theme = {
 	text: '#6b7280',
 	colors: ['#4a90d9', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'],
 	fill: true,
-	sampleRate: 44100,
+	fs: 44100,
 	bins: 2048,
 }
 
@@ -48,7 +48,23 @@ let fTicks = [10, 100, 1000, 10000]
 
 // ── SVG primitives ──
 
-function svgOpen () { return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="font-family:system-ui,-apple-system,sans-serif">\n` }
+let _gradId = 0
+let _defs = ''
+
+function svgOpen () { _gradId = 0; _defs = ''; return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="font-family:system-ui,-apple-system,sans-serif">\n` }
+
+function svgClose (s) {
+	if (!_defs) return '</svg>\n'
+	// Inject defs right after the opening <svg> tag
+	return `<defs>${_defs}  </defs>\n</svg>\n`
+}
+
+function svgWrap (s) {
+	if (!_defs) return s + '</svg>\n'
+	// Insert defs after first newline (after <svg ...>)
+	let i = s.indexOf('\n') + 1
+	return s.slice(0, i) + `  <defs>${_defs}  </defs>\n` + s.slice(i) + '</svg>\n'
+}
 
 function panel (p, xLabel, yLabel, yMin, yMax, zeroAt) {
 	let axisY = (zeroAt != null && yMin != null) ?
@@ -115,13 +131,21 @@ function logPoly (p, freqs, vals, fMin, fMax, yMin, yMax, clr, w, fill, fillBase
 	if (fill && fillBase) {
 		let baseY = fillBase === 'down' ? (p.y + p.h) : fillBase === 'zero' ?
 			(p.y + p.h - (0 - yMin) / (yMax - yMin) * p.h) : (p.y + p.h)
-		s += `  <polygon points="${pts[0].split(',')[0]},${baseY.toFixed(1)} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="${clr}" opacity="0.12"/>\n`
+		let id = 'g' + (++_gradId)
+		// Find the curve's topmost y (lowest pixel value) for gradient start
+		let minY = p.y + p.h
+		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y }
+		_defs += `\n    <linearGradient id="${id}" x1="0" y1="${minY.toFixed(0)}" x2="0" y2="${baseY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+			`<stop offset="0%" stop-color="${clr}" stop-opacity="0.18"/>` +
+			`<stop offset="100%" stop-color="${clr}" stop-opacity="0.02"/>` +
+			`</linearGradient>\n`
+		s += `  <polygon points="${pts[0].split(',')[0]},${baseY.toFixed(1)} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
 	}
 	s += `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="${w}" stroke-linejoin="round"/>\n`
 	return s
 }
 
-function linPoly (p, data, xMin, xMax, yMin, yMax, clr) {
+function linPoly (p, data, xMin, xMax, yMin, yMax, clr, fill) {
 	let pts = []
 	let N = typeof data.length !== 'undefined' ? data.length : 0
 	for (let i = 0; i < N; i++) {
@@ -131,7 +155,20 @@ function linPoly (p, data, xMin, xMax, yMin, yMax, clr) {
 		pts.push(`${x.toFixed(1)},${y.toFixed(1)}`)
 	}
 	if (pts.length < 2) return ''
-	return `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="1.2" stroke-linejoin="round"/>\n`
+	let s = ''
+	if (fill) {
+		let baseY = p.y + p.h - (0 - yMin) / (yMax - yMin) * p.h
+		let id = 'g' + (++_gradId)
+		let minY = p.y + p.h
+		for (let pt of pts) { let y = +pt.split(',')[1]; if (y < minY) minY = y }
+		_defs += `\n    <linearGradient id="${id}" x1="0" y1="${minY.toFixed(0)}" x2="0" y2="${baseY.toFixed(0)}" gradientUnits="userSpaceOnUse">` +
+			`<stop offset="0%" stop-color="${clr}" stop-opacity="0.18"/>` +
+			`<stop offset="100%" stop-color="${clr}" stop-opacity="0.02"/>` +
+			`</linearGradient>\n`
+		s += `  <polygon points="${pts[0].split(',')[0]},${baseY.toFixed(1)} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${baseY.toFixed(1)}" fill="url(#${id})"/>\n`
+	}
+	s += `  <polyline points="${pts.join(' ')}" fill="none" stroke="${clr}" stroke-width="1.2" stroke-linejoin="round"/>\n`
+	return s
 }
 
 function dbGrid (p) {
@@ -168,12 +205,17 @@ function fcLine (p, fc, fMin = 10, fMax = 20000) {
 	return `  <line x1="${x}" y1="${p.y}" x2="${x}" y2="${p.y+p.h}" stroke="${theme.axis}" stroke-width="1" stroke-dasharray="4 3"/>\n`
 }
 
-export function legend (items, p) {
-	let s = '', x = p.x + 8, y = p.y + 12
+/**
+ * Render inline legend.
+ * @param {Array} items - [[name, color], ...]
+ * @param {object} [pos] - { x, y } starting position. Defaults to title line (top-left of P1).
+ */
+export function legend (items, pos) {
+	let s = '', x = pos?.x ?? P1.x, y = pos?.y ?? (P1.y - 5)
 	for (let [name, clr] of items) {
-		s += `  <line x1="${x}" y1="${y}" x2="${x+14}" y2="${y}" stroke="${clr}" stroke-width="2"/>\n`
-		s += `  <text x="${x+18}" y="${(y+3).toFixed(1)}" font-size="8" fill="${theme.text}">${name}</text>\n`
-		y += 13
+		s += `  <line x1="${x}" y1="${y}" x2="${x+12}" y2="${y}" stroke="${clr}" stroke-width="2"/>\n`
+		s += `  <text x="${x+15}" y="${(y+3).toFixed(1)}" font-size="8" fill="${theme.text}">${name}</text>\n`
+		x += 15 + name.length * 5.2 + 10
 	}
 	return s
 }
@@ -202,11 +244,11 @@ function autoTicks (lo, hi, n) {
  * Generate 4-panel SVG for an SOS (biquad cascade) filter.
  * @param {Array} sos - SOS coefficient array [{b0,b1,b2,a1,a2}, ...]
  * @param {string} [title] - Plot title
- * @param {object} [opts] - Options: { sampleRate, bins, color, fill }
+ * @param {object} [opts] - Options: { fs, bins, color, fill }
  * @returns {string} SVG markup
  */
 export function plotFilter (sos, title, opts = {}) {
-	let fs = opts.sampleRate || theme.sampleRate, NF = opts.bins || theme.bins
+	let fs = opts.fs || theme.fs, NF = opts.bins || theme.bins
 	let clr = opts.color || theme.colors
 	let doFill = opts.fill ?? theme.fill
 
@@ -242,20 +284,20 @@ export function plotFilter (sos, title, opts = {}) {
 	s += logPoly(P3, gd.frequencies, Array.from(gd.delay), 10, 20000, gdLo, gdHi, clr[2], 1.5, doFill, 'zero')
 
 	s += panel(P4, 'Samples', 'Impulse', -irMax, irMax, 0) + linXTicks(P4, [0, 32, 64, 96, 128], 0, 128) + hTicks(P4, autoTicks(-irMax, irMax, 3), -irMax, irMax)
-	s += linPoly(P4, ir, 0, 128, -irMax, irMax, clr[3])
+	s += linPoly(P4, ir, 0, 128, -irMax, irMax, clr[3], doFill)
 
-	return s + '</svg>\n'
+	return svgWrap(s)
 }
 
 /**
  * Generate 4-panel SVG for an impulse response (FIR or processed buffer).
  * @param {Float64Array|Array} h - Impulse response samples
  * @param {string} [title] - Plot title
- * @param {object} [opts] - Options: { sampleRate, bins, color, fill }
+ * @param {object} [opts] - Options: { fs, bins, color, fill }
  * @returns {string} SVG markup
  */
 export function plotFir (h, title, opts = {}) {
-	let fs = opts.sampleRate || theme.sampleRate, NF = opts.bins || theme.bins
+	let fs = opts.fs || theme.fs, NF = opts.bins || theme.bins
 	let clr = opts.color || theme.colors
 	let doFill = opts.fill ?? theme.fill
 
@@ -305,9 +347,9 @@ export function plotFir (h, title, opts = {}) {
 	s += logPoly(P3, gdFreqs, Array.from(gdVals), 10, 20000, gdLo, gdHi, clr[2], 1.5, doFill, 'zero')
 
 	s += panel(P4, 'Samples', 'Impulse', -hMax, hMax, 0) + linXTicks(P4, autoTicks(0, h.length, 3).map(Math.round), 0, h.length) + hTicks(P4, autoTicks(-hMax, hMax, 3), -hMax, hMax)
-	s += linPoly(P4, h, 0, h.length, -hMax, hMax, clr[3])
+	s += linPoly(P4, h, 0, h.length, -hMax, hMax, clr[3], doFill)
 
-	return s + '</svg>\n'
+	return svgWrap(s)
 }
 
 /**
@@ -318,7 +360,7 @@ export function plotFir (h, title, opts = {}) {
  * @returns {string} SVG markup
  */
 export function plotCompare (filters, title, opts = {}) {
-	let fs = opts.sampleRate || theme.sampleRate, NF = opts.bins || theme.bins
+	let fs = opts.fs || theme.fs, NF = opts.bins || theme.bins
 	let irLen = opts.irLength || 128
 
 	let s = svgOpen()
@@ -349,5 +391,5 @@ export function plotCompare (filters, title, opts = {}) {
 	}
 
 	s += legend(filters.map((f, i) => [f[0], f[2] || theme.colors[i % theme.colors.length]]), P1)
-	return s + '</svg>\n'
+	return svgWrap(s)
 }

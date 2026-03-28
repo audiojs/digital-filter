@@ -1,11 +1,13 @@
 # digital-filter [![test](https://github.com/audiojs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/digital-filter/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/digital-filter)](https://www.npmjs.com/package/digital-filter) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Digital filter design and processing –
-[IIR](#iir) (Butterworth, Chebyshev, Elliptic, Bessel),
-[FIR](#fir) (window, least-squares, equiripple),
+Digital filter design and processing.
+Features
+[IIR](#iir),
+[FIR](#fir),
 [smoothing](#smooth),
 [adaptive](#adaptive),
-[multirate](#multirate).
+[multirate](#multirate)
+filters.
 
 ## Install
 
@@ -14,18 +16,38 @@ npm install digital-filter
 ```
 
 ```js
-import { butterworth, filter, freqz, mag2db } from 'digital-filter'
+import { onePole } from 'digital-filter'
 
-let sos = butterworth(4, 1000, 44100)
-filter(data, { coefs: sos })
-let dB = mag2db(freqz(sos, 512, 44100).magnitude)
+// Smooth a signal with a 100 Hz lowpass
+onePole(data, { fc: 100, fs: 44100 })
 ```
 
-Or import individual modules directly:
+Process blocks with persistent state:
 
 ```js
-import butterworth from 'digital-filter/iir/butterworth.js'
-import firwin from 'digital-filter/fir/firwin.js'
+let params = { fc: 100, fs: 44100 }
+onePole(block1, params)   // state preserved
+onePole(block2, params)   // seamless continuation
+```
+
+Design a filter, then apply it:
+
+```js
+import { butterworth, filter } from 'digital-filter'
+
+let sos = butterworth(4, 1000, 44100)    // 4th-order lowpass at 1 kHz
+filter(data, { coefs: sos })             // apply to data in-place
+```
+
+Individual imports:
+
+```js
+import nlms from 'digital-filter/adaptive/nlms.js'
+
+// Cancel echo: feed far-end and microphone, get clean signal
+let params = { order: 512, mu: 0.5 }
+nlms(farEnd, microphone, params)
+let clean = params.error
 ```
 
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
@@ -588,14 +610,14 @@ writeFileSync('comparison.svg', plotCompare([
 **`plotFir(h, title?, opts?)`** – impulse response array → 4-panel SVG.
 **`plotCompare(filters, title?, opts?)`** – multiple SOS overlaid → 4-panel SVG. `filters`: array of `[name, sos]` or `[name, sos, color]`.
 
-Options: `{ sampleRate, bins, color, fill }`. Defaults from `theme`.
+Options: `{ fs, bins, color, fill }`. Defaults from `theme`.
 
 **`theme`** – mutable object controlling defaults:
 
 ```js
 theme.colors = ['#4a90d9', '#e74c3c', '#2ecc71', ...]  // per-panel or per-series
 theme.fill = true      // fill under curves
-theme.sampleRate = 44100
+theme.fs = 44100
 theme.bins = 2048      // FFT bins
 theme.grid = '#e5e7eb' // grid line color
 theme.axis = '#d1d5db' // axis color
