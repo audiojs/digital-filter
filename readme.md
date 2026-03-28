@@ -61,8 +61,9 @@ Nine second-order filter types – the building block for everything else. Every
 * `biquad.lowpass(fc, Q, fs)` · `highpass` · `bandpass` · `bandpass2` · `notch` · `allpass`
 * `biquad.peaking(fc, Q, fs, dBgain)` · `lowshelf` · `highshelf`
 
+<sup>Q controls peak width – 0.707 is Butterworth-flat, higher = sharper resonance.</sup>
+
 $H(z) = (b_0 + b_1 z^{-1} + b_2 z^{-2}) / (1 + a_1 z^{-1} + a_2 z^{-2})$
-<br>Q controls peak width – 0.707 is Butterworth-flat, higher = sharper resonance.
 
 ```js
 let lp = biquad.lowpass(1000, 0.707, 44100)
@@ -71,12 +72,9 @@ filter(data, { coefs: lp })
 
 <img src="plot/biquad-types.svg">
 
-<details><summary>Reference</summary>
-
 **Use when**: single-band EQ, notch, shelf, simple 2nd-order filter.
 <br>**Not for**: steeper than –12 dB/oct (use butterworth/chebyshev which cascade biquads).
 <br>**scipy**: `scipy.signal.iirfilter(1, ...)`. **MATLAB**: various Audio Toolbox functions.
-</details>
 
 ### `svf(data, params)`
 
