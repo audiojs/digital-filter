@@ -1,6 +1,6 @@
 # digital-filter [![test](https://github.com/audiojs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/digital-filter/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/digital-filter)](https://www.npmjs.com/package/digital-filter) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Digital filter design and processing.
+Digital filter design and processing.<br>
 Features
 [IIR](#iir),
 [FIR](#fir),
@@ -20,28 +20,23 @@ import { onePole } from 'digital-filter'
 
 // Smooth a signal with a 100 Hz lowpass
 onePole(data, { fc: 100, fs: 44100 })
-```
 
-Process blocks with persistent state:
-
-```js
+// Process blocks with persistent state:
 let params = { fc: 100, fs: 44100 }
 onePole(block1, params)   // state preserved
 onePole(block2, params)   // seamless continuation
 ```
 
-Design a filter, then apply it:
-
 ```js
+// Design a filter, then apply it:
 import { butterworth, filter } from 'digital-filter'
 
 let sos = butterworth(4, 1000, 44100)    // 4th-order lowpass at 1 kHz
 filter(data, { coefs: sos })             // apply to data in-place
 ```
 
-Individual imports:
-
 ```js
+// Individual imports:
 import nlms from 'digital-filter/adaptive/nlms.js'
 
 // Cancel echo: feed far-end and microphone, get clean signal
@@ -50,6 +45,7 @@ nlms(farEnd, microphone, params)
 let clean = params.error
 ```
 
+> [!NOTE]
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
 
 
