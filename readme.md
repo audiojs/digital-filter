@@ -28,18 +28,10 @@ onePole(block2, params)   // seamless continuation
 ```
 
 ```js
-// Design a filter, then apply it:
-import { butterworth, filter } from 'digital-filter'
-
-let sos = butterworth(4, 1000, 44100)    // 4th-order lowpass at 1 kHz
-filter(data, { coefs: sos })             // apply to data in-place
-```
-
-```js
 // Individual imports:
 import nlms from 'digital-filter/adaptive/nlms.js'
 
-// Cancel echo: feed far-end and microphone, get clean signal
+// Cancel echo: feed far-end and microphone arrays, get clean signal
 let params = { order: 512, mu: 0.5 }
 nlms(farEnd, microphone, params)
 let clean = params.error
@@ -49,16 +41,33 @@ let clean = params.error
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
 
 
-## Reading the plots
+## Intro
 
-Each filter shows four panels.
-**Magnitude** (top-left) – how much of each frequency passes through, in dB. 0 dB = unchanged, –3 dB = half power (the conventional cutoff), –40 dB = 1%.
-**Phase** (top-right) – how much each frequency is delayed in degrees. Constant slope = linear phase = waveform preserved. **Group delay** (bottom-left) – the derivative of phase; shows delay variation across frequency in samples. Flat = no distortion.
-**Impulse response** (bottom-right) – the filter's output when fed a single 1-sample pulse; its "fingerprint."
+**What is a filter?** Takes an array of samples, outputs an array of samples. `output[i] = (input[i] + input[i-1] + input[i-2]) / 3` is a filter – it smooths out fast changes. That's a lowpass.
 
-The formulas describe the filter's frequency response. $|H(j\omega)|^2$ is the squared magnitude as a function of analog frequency $\omega$ – it defines the shape of the passband/stopband. $H(z)$ is the digital transfer function – what the code computes per sample. $h[n]$ is the impulse response – the FIR coefficients directly.
+**What is frequency response?** Every filter passes some frequencies and cuts others. The plots show how much each frequency is kept (magnitude, in dB) and how much it's delayed (phase, in degrees). 0dB = unchanged, –3dB = half power.
 
-The dashed vertical line marks the cutoff frequency $f_c$.
+**What is IIR vs FIR?** IIR uses feedback (output depends on previous output). Few multiplies, low latency, but can't do linear phase and can blow up. FIR has no feedback – always stable, linear phase possible, but needs many taps (100–1000+) for a sharp cutoff, which can tax on performance.
+
+**What is SOS?** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions in this library return SOS arrays. This avoids the precision loss that happens with high-order polynomials in float64.
+
+**How to read the plots?** Four panels per filter. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz) – flat means no distortion. Bottom-right: impulse response. Dashed line = cutoff $f_c$.
+
+**How to design and apply a filter?** Design functions return coefficients (SOS array or Float64Array). Pass them to `filter()` to process data in-place. State persists in `params` between calls for block processing.
+
+```js
+let sos = butterworth(4, 1000, 44100)    // design: 4th-order lowpass at 1 kHz
+filter(data, { coefs: sos })             // apply: modifies data in-place
+
+// seamless processing
+let params = { coefs: butterworth(4, 1000, 44100) }
+filter(block1, params)                   // state preserved
+filter(block2, params)                   // seamless continuation
+```
+
+**How to read the plots?** Four panels per filter. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz) – flat means no distortion. Bottom-right: impulse response. Dashed line = cutoff $f_c$.
+
+**How to read the formulas?** $|H(j\omega)|^2$: how the analog prototype shapes magnitude. $H(z)$: what the code computes per sample. $h[n]$: the impulse response / FIR coefficients.
 
 
 ## IIR
@@ -546,21 +555,15 @@ Analog prototype → digital SOS pipeline. `transform.polesSos(poles, fc, fs, ty
 
 ## FAQ
 
-**What is a filter?** A system that takes samples in and produces samples out. It does something in time (averaging, delaying) that corresponds to something in frequency (passing, cutting, boosting). The **magnitude response** shows how much of each frequency passes through.
+**What does the dB scale mean?** $\text{dB} = 20\log_{10}(\text{ratio})$. 0 dB = unchanged, –3 dB = half power, –6 dB = half amplitude, –20 dB = 10%, –60 dB = 0.1%.
 
-**What is the dB scale?** Logarithmic ratio. $\text{dB} = 20\log_{10}(\text{ratio})$. 0 dB = unchanged, –3 dB = half power (the conventional cutoff), –6 dB = half amplitude, –20 dB = 10%, –60 dB = 0.1%.
+**When does phase matter?** When waveform shape must be preserved: crossovers (drivers must sum correctly), biomedical (ECG/EEG morphology), communications (intersymbol interference). For EQ, phase is usually inaudible.
 
-**What are phase and group delay?** Magnitude tells you *how much* passes, phase tells you *when* it arrives. If all frequencies are delayed equally the waveform is preserved (**linear phase**). **Group delay** measures the delay per frequency. Constant group delay = linear phase. FIR can have linear phase; IIR cannot.
+**What is the bilinear transform?** Maps analog prototypes to digital: $s = (2/T)(z-1)/(z+1)$. All IIR design functions prewarp automatically – the cutoff you specify is the cutoff you get.
 
-**IIR vs FIR?** IIR uses feedback – efficient (5–20 multiplies), low latency, nonlinear phase, can be unstable. FIR has no feedback – always stable, linear phase possible, needs 100–1000+ taps. Use IIR for real-time, FIR for offline or when linear phase is required.
+**When can a filter become unstable?** When poles move outside the unit circle. Causes: coefficient quantization (use SOS, not direct form), Q approaching 0, feedback gain too high. Check with `isStable(sos)`. FIR is always stable.
 
-**What are biquads and SOS?** The biquad is a 2nd-order filter with 5 coefficients. Every higher-order IIR is a cascade of biquads (**second-order sections**). Direct form above order ~6 loses precision with float64; SOS doesn't. This library returns SOS arrays by default.
-
-**What is the bilinear transform?** Maps analog filter prototypes to digital: $s = (2/T)(z-1)/(z+1)$. All IIR design functions prewarp automatically – the cutoff you specify is the cutoff you get.
-
-**When is a filter unstable?** When poles move outside the unit circle. Causes: coefficient quantization (use SOS, not direct form), careless parameter changes (Q → 0), feedback gain too high. Check with `isStable(sos)`. FIR is always stable.
-
-**What is aliasing?** A digital system at sample rate $f_s$ can represent frequencies up to $f_s/2$ (Nyquist). Frequencies above Nyquist fold back as artifacts. `decimate` and `interpolate` handle anti-aliasing automatically.
+**What is aliasing?** Frequencies above $f_s/2$ (Nyquist) fold back as artifacts. `decimate` and `interpolate` handle anti-aliasing automatically.
 
 
 ## Choosing a filter
@@ -638,15 +641,6 @@ let htx = raisedCosine(101, 0.35, 8, { root: true })
 let shaped = convolution(symbols, htx)
 ```
 
-### Block processing
-
-All stateful filters persist state between calls:
-
-```js
-let params = { coefs: butterworth(4, 1000, 44100) }
-filter(block1, params)  // state persists
-filter(block2, params)  // seamless
-```
 
 
 ## Pitfalls
