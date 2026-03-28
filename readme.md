@@ -223,7 +223,8 @@ let { low, high } = linkwitzRiley(4, 2000, 44100)
 ```
 
 **Use when**: crossover networks, multiband processing.<br>
-**Not for**: single-band filtering (use butterworth).
+**Not for**: single LP or HP (use butterworth directly), more than 2 bands (use crossover from audio-filter).<br>
+**MATLAB**: `fdesign.crossover` (Audio Toolbox).
 
 <img src="plot/linkwitz-riley-low.svg">
 
@@ -236,7 +237,8 @@ let { sos, order, type } = iirdesign(1000, 1500, 1, 40, 44100)
 ```
 
 **Use when**: you know specs (passband, stopband, ripple, attenuation) but not the family.<br>
-**Not for**: when you already know which family to use.
+**Not for**: specific family needed (use butterworth/chebyshev/etc directly).<br>
+**scipy**: `scipy.signal.iirdesign`. **MATLAB**: `designfilt`.
 
 ### IIR comparison
 
@@ -278,6 +280,8 @@ let h = firwin(63, 1000, 44100)
 
 Least-squares optimal – minimizes total squared error. Smoother transitions than remez.
 
+$\min \int |W(\omega)(H(\omega) - D(\omega))|^2 d\omega$
+
 **Linear phase · smooth transition · no equiripple**
 
 ```js
@@ -314,6 +318,8 @@ let h = remez(63, [0, 0.3, 0.4, 1], [1, 1, 0, 0])
 
 Arbitrary magnitude response via frequency sampling. Specify gain at any frequency points.
 
+$H(\omega_k) = G_k$
+
 **Linear phase · any shape**
 
 ```js
@@ -339,7 +345,8 @@ let h = hilbert(65)
 
 **Use when**: analytic signal, envelope, instantaneous frequency.<br>
 **Not for**: wideband to DC (Hilbert is zero at DC/Nyquist).<br>
-**scipy**: `scipy.signal.hilbert` (different – applies to signal, not design).
+**scipy**: `scipy.signal.hilbert` (different – applies to signal, not design).<br>
+**MATLAB**: `hilbert` (same caveat).
 
 <img src="plot/hilbert.svg">
 
@@ -364,13 +371,16 @@ let h = differentiator(31)
 
 Pulse shaping for digital communications (QAM, PSK, OFDM). Zero ISI at symbol centers. `root: true` for matched TX/RX pair.
 
+$h(t) = \text{sinc}(t/T) \cdot \cos(\pi\beta t/T)/(1-(2\beta t/T)^2)$
+
 $\beta$ controls excess bandwidth: 0 = minimum (long ringing), 0.35 = standard, 1 = widest.
 
 ```js
 let h = raisedCosine(101, 0.35, 8, { root: true })
 ```
 
-**Use when**: QAM/PSK pulse shaping, SDR baseband.
+**Use when**: QAM/PSK pulse shaping, SDR baseband.<br>
+**MATLAB**: `rcosdesign`.
 
 <img src="plot/raised-cosine.svg">
 
@@ -378,12 +388,15 @@ let h = raisedCosine(101, 0.35, 8, { root: true })
 
 Gaussian pulse shaping – the standard for GMSK (GSM) and Bluetooth. More spectrally compact than raised cosine at the cost of some ISI.
 
+$h(t) = \exp(-2\pi^2(BT)^2 t^2/T^2)$
+
 ```js
 let h = gaussianFir(33, 0.3, 4)
 ```
 
 **Use when**: GMSK/Bluetooth modulation.<br>
-**Not for**: ISI-free pulses (use raisedCosine).
+**Not for**: ISI-free pulses (use raisedCosine).<br>
+**MATLAB**: `gaussdesign`.
 
 <img src="plot/gaussian-fir.svg">
 
@@ -391,12 +404,15 @@ let h = gaussianFir(33, 0.3, 4)
 
 Optimal detector for a known waveform in white noise – time-reversed, energy-normalized template. Maximizes SNR at detection point.
 
+$h[n] = s[N-1-n] / \|s\|$
+
 ```js
 let h = matchedFilter(template)
 let corr = convolution(received, h)
 ```
 
-**Use when**: radar, sonar, preamble/sync detection.
+**Use when**: radar, sonar, preamble/sync detection.<br>
+**Not for**: colored noise (pre-whiten first), unknown template (use adaptive).
 
 <img src="plot/matched-filter.svg">
 
@@ -404,17 +420,22 @@ let corr = convolution(received, h)
 
 Convert linear-phase FIR to minimum-phase via cepstral method. Same magnitude, ~half the delay.
 
+$h_{min} = \text{IFFT}(\exp(\text{hilbert}(\log|H|)))$
+
 ```js
 let hMin = minimumPhase(firwin(101, 4000, 44100))
 ```
 
-**Use when**: FIR latency too high, linear phase not required.
+**Use when**: FIR latency too high, linear phase not required.<br>
+**scipy**: `scipy.signal.minimum_phase`.
 
 <img src="plot/minimum-phase.svg">
 
 ### `yulewalk(order, frequencies, magnitudes)`
 
 IIR approximation of an arbitrary magnitude response via Yule-Walker method. Returns `{ b, a }`.
+
+$R \cdot a = r$ (Yule-Walker equations from target autocorrelation).
 
 ```js
 let { b, a } = yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
@@ -427,6 +448,8 @@ let { b, a } = yulewalk(8, [0, 0.2, 0.3, 0.5, 1], [1, 1, 0, 0, 0])
 ### `integrator(rule?)`
 
 Newton-Cotes quadrature coefficients. Rules: `rectangular` [1], `trapezoidal` [0.5, 0.5], `simpson` [1/6, 4/6, 1/6], `simpson38` [1/8, 3/8, 3/8, 1/8].
+
+Simpson: $h = [1/6, 4/6, 1/6]$
 
 ```js
 let h = integrator('simpson')
@@ -447,7 +470,8 @@ lattice(data, { k })  // apply as synthesis filter
 ```
 
 **Use when**: LPC synthesis, speech coding, high-precision filtering where numerical stability matters.<br>
-**Not for**: general filtering (use filter with SOS).
+**Not for**: general filtering (use filter with SOS).<br>
+**MATLAB**: `latcfilt`.
 
 <img src="plot/lattice.svg">
 
@@ -476,7 +500,17 @@ let { numtaps, beta } = kaiserord(0.1, 60)
 let h = firwin(numtaps, 4000, 44100, { window: kaiser(numtaps, beta) })
 ```
 
-**Use when**: estimating FIR order before designing with firwin.
+**Use when**: estimating FIR order before designing with firwin.<br>
+**scipy**: `scipy.signal.kaiserord`. **MATLAB**: `kaiserord`.
+
+### FIR comparison
+
+| Method | Optimality | Best for | Weakness |
+|---|---|---|---|
+| `firwin` | Good enough | Quick prototyping, 80% of tasks | Not optimal for tight specs |
+| `firls` | Least-squares | Smooth specs, audio | Wider transition than remez |
+| `remez` | Minimax | Sharpest transitions, tight specs | Convergence issues at high order |
+| `firwin2` | Frequency sampling | Arbitrary shapes, EQ curves | Not formally optimal |
 
 ## Smooth
 
@@ -513,7 +547,8 @@ movingAverage(data, { memory: 8 })
 ```
 
 **Use when**: periodic noise removal, simple averaging.<br>
-**Not for**: preserving peaks (use savitzkyGolay).
+**Not for**: preserving peaks (use savitzkyGolay).<br>
+**MATLAB**: `movmean`.
 
 <img src="plot/moving-average.svg">
 
@@ -539,6 +574,8 @@ Polynomial fit to sliding window – preserves peak height, width, and shape. Al
 
 [^sg]: A. Savitzky, M.J.E. Golay, "Smoothing and Differentiation of Data," *Analytical Chemistry*, 1964.
 
+Fits polynomial of degree $d$ to window of $2m+1$ samples by least-squares.
+
 **FIR · linear phase · preserves moments up to degree**
 
 ```js
@@ -555,6 +592,8 @@ savitzkyGolay(data, { windowSize: 11, degree: 3 })
 
 Recursive Gaussian (Young-van Vliet). O(1) cost regardless of sigma. Forward-backward for zero phase. Params: `sigma`.
 
+Approximates $h(t) = \exp(-t^2/(2\sigma^2))$ using 3rd-order recursive filter.
+
 **IIR · zero phase (offline) · O(1) per sample**
 
 ```js
@@ -570,13 +609,16 @@ gaussianIir(data, { sigma: 10 })
 
 Self-adjusting SVF – cutoff adapts to signal speed. For smoothing parameter changes without zipper noise. Params: `minFc`, `maxFc`, `sensitivity`, `fs`.
 
+$f_c(n) = f_{min} + (f_{max} - f_{min}) \cdot |x[n] - x[n-1]|^s$
+
 **Adaptive · 2nd-order SVF**
 
 ```js
 dynamicSmoothing(data, { minFc: 1, maxFc: 5000, sensitivity: 1, fs: 44100 })
 ```
 
-**Use when**: audio parameter smoothing at audio rate.
+**Use when**: audio parameter smoothing at audio rate.<br>
+**Not for**: non-audio rate (use oneEuro).
 
 <img src="plot/dynamic-smoothing.svg">
 
@@ -602,6 +644,8 @@ Adaptive lowpass – cutoff increases with signal speed. Smooth at rest, respons
 
 [^euro]: G. Casiez et al., "1€ Filter," *CHI*, 2012.
 
+$f_c(n) = f_{min} + \beta \cdot |\dot{x}[n]|$
+
 **Adaptive · 1st-order IIR with time-varying cutoff**
 
 ```js
@@ -613,6 +657,18 @@ oneEuro(data, { minCutoff: 1, beta: 0.007, fs: 60 })
 
 <img src="plot/one-euro.svg">
 
+### Smooth comparison
+
+| Filter | Type | Phase | Edge preservation | Adaptive | Best for |
+|---|---|---|---|---|---|
+| `onePole` | IIR | Nonlinear | No | No | Simplest smoothing |
+| `movingAverage` | FIR | Linear | No | No | Periodic noise, simple |
+| `leakyIntegrator` | IIR | Nonlinear | No | No | Decay-factor control |
+| `median` | Nonlinear | — | Yes | No | Impulse noise, outliers |
+| `savitzkyGolay` | FIR | Linear | Yes (peaks) | No | Peak-preserving measurement |
+| `gaussianIir` | IIR | Zero (offline) | No | No | Large-kernel smoothing |
+| `oneEuro` | IIR | Nonlinear | No | Yes | UI jitter, sensor fusion |
+| `dynamicSmoothing` | IIR | Nonlinear | No | Yes | Audio parameter smoothing |
 
 ## Adaptive
 
@@ -633,7 +689,8 @@ lms(input, desired, { order: 128, mu: 0.01 })
 ```
 
 **Use when**: educational, simple implementation.<br>
-**Not for**: practice – almost always use nlms instead.
+**Not for**: practice – almost always use nlms instead.<br>
+**MATLAB**: `dsp.LMSFilter`.
 
 <img src="plot/lms.svg">
 
@@ -651,13 +708,16 @@ nlms(farEnd, microphone, { order: 512, mu: 0.5 })
 ```
 
 **Use when**: echo cancellation, noise cancellation, system identification. Start here.<br>
-**Not for**: fastest convergence (use rls).
+**Not for**: fastest convergence (use rls).<br>
+**MATLAB**: `dsp.LMSFilter` (normalized mode).
 
 <img src="plot/nlms.svg">
 
 ### `rls(input, desired, params)`
 
 Recursive Least Squares – fastest convergence (~2N samples) via inverse correlation matrix. Params: `order`, `lambda`, `delta`.
+
+$\mathbf{w}[n] = \mathbf{w}[n-1] + \mathbf{k}[n] \cdot e[n]$ where $\mathbf{k} = P\mathbf{x}/(\lambda + \mathbf{x}^T P\mathbf{x})$
 
 **O(N²)/sample · fast convergence · fragile if lambda wrong · use for N ≤ 64**
 
@@ -666,13 +726,16 @@ rls(input, desired, { order: 32, lambda: 0.99, delta: 100 })
 ```
 
 **Use when**: fast-changing systems, short filters.<br>
-**Not for**: N > 128 (O(N²) too expensive), robustness matters (use nlms).
+**Not for**: N > 128 (O(N²) too expensive), robustness matters (use nlms).<br>
+**MATLAB**: `dsp.RLSFilter`.
 
 <img src="plot/rls.svg">
 
 ### `levinson(R, order?)`
 
 Levinson-Durbin recursion – takes autocorrelation values, returns LPC prediction coefficients. The standard way to compute linear prediction for speech, spectral estimation, and lattice filter coefficients. Returns `{ a, error, k }` (prediction coefficients, prediction error power, reflection coefficients).
+
+Solves $R\mathbf{a} = \mathbf{r}$ recursively (Toeplitz structure gives O(N²) instead of O(N³)).
 
 **O(N²)/block · batch (not real-time)**
 
@@ -688,10 +751,19 @@ let { a, error, k } = levinson(R, 12)
 ```
 
 **Use when**: LPC analysis, speech coding (CELP, LPC-10), AR spectral estimation.<br>
-**Not for**: real-time sample-by-sample adaptation (use nlms/rls).
+**Not for**: real-time sample-by-sample adaptation (use nlms/rls).<br>
+**MATLAB**: `levinson`.
 
 <img src="plot/levinson.svg">
 
+### Adaptive comparison
+
+| Algorithm | Complexity | Convergence | Tracking | Stability | Best for |
+|---|---|---|---|---|---|
+| `lms` | O(N)/sample | Slow | Slow | Very robust | Educational |
+| `nlms` | O(N)/sample | Medium | Medium | Robust | Real-world default |
+| `rls` | O(N²)/sample | Fast (~2N) | Fast | Fragile | Short filters, fast-changing |
+| `levinson` | O(N²)/block | Instant (batch) | N/A | Stable | LPC, speech coding |
 
 ## Multirate
 
@@ -700,6 +772,8 @@ Change sample rates without aliasing. Anti-alias before decimating, anti-image a
 ### `decimate(data, factor, opts?)`
 
 Anti-alias FIR lowpass + downsample by factor M. Returns shorter `Float64Array`.
+
+$y[m] = (h * x)[mM]$
 
 ```js
 let down = decimate(data, 4)
@@ -714,6 +788,8 @@ let down = decimate(data, 4)
 
 Upsample by factor L + anti-image FIR lowpass. Returns longer `Float64Array`.
 
+$y[n] = (h * x_\uparrow)[n]$
+
 ```js
 let up = interpolate(data, 4)
 ```
@@ -727,11 +803,14 @@ let up = interpolate(data, 4)
 
 Half-band FIR – nearly half the coefficients are zero, halving multiply count. The building block for efficient 2× rate changes.
 
+$h[n] = 0$ for even $n \neq 0$, $h[0] = 0.5$
+
 ```js
 let h = halfBand(31)
 ```
 
-**Use when**: efficient 2× decimation/interpolation. Cascade for 4×, 8×.
+**Use when**: efficient 2× decimation/interpolation. Cascade for 4×, 8×.<br>
+**Not for**: non-2x rate changes.
 
 <img src="plot/half-band.svg">
 
@@ -747,13 +826,17 @@ $H(z) = ((1 - z^{-RM})/(1 - z^{-1}))^N$
 let down = cic(data, 8, 3)
 ```
 
-**Use when**: high decimation ratios (10×–1000×), hardware/FPGA, SDR.
+**Use when**: high decimation ratios (10×–1000×), hardware/FPGA, SDR.<br>
+**Not for**: precision (sinc-shaped passband droop needs compensation).<br>
+**MATLAB**: `dsp.CICDecimator`.
 
 <img src="plot/cic.svg">
 
 ### `polyphase(h, M)`
 
 Decompose FIR into M polyphase components. Compute only the output samples you keep. Returns `Array<Float64Array>`.
+
+$H(z) = \sum_{k=0}^{M-1} z^{-k} E_k(z^M)$
 
 ```js
 let phases = polyphase(firCoefs, 4)
@@ -766,6 +849,8 @@ let phases = polyphase(firCoefs, 4)
 ### `farrow(data, params)`
 
 Fractional delay via polynomial interpolation. Delay can change every sample. Params: `delay`, `order`.
+
+$y(d) = \sum_{k=0}^{N} c_k(n) \cdot d^k$
 
 ```js
 farrow(data, { delay: 3.7, order: 3 })
@@ -780,6 +865,8 @@ farrow(data, { delay: 3.7, order: 3 })
 
 Allpass fractional delay – unity magnitude, maximally flat group delay. Returns `{ b, a }`.
 
+$a_k = (-1)^k \binom{N}{k} \prod_{n=0}^{N} (D-N+n)/(D-N+k+n)$
+
 ```js
 let { b, a } = thiran(3.7)
 ```
@@ -793,11 +880,14 @@ let { b, a } = thiran(3.7)
 
 Multi-stage upsampling with anti-alias FIR. Oversample before nonlinear processing, then decimate back.
 
+Cascade of interpolation stages with anti-alias FIR at each.
+
 ```js
 let up = oversample(data, 4)
 ```
 
-**Use when**: oversampling before distortion/waveshaping/saturation.
+**Use when**: oversampling before distortion/waveshaping/saturation.<br>
+**Not for**: integer rate changes (use decimate/interpolate).
 
 <img src="plot/oversample.svg">
 

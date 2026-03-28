@@ -2,7 +2,7 @@
   "name": "digital-filter",
   "version": "2.0.0",
   "type": "module",
-  "description": "Collection of digital filters for audio & DSP",
+  "description": "Digital filter design & processing: IIR, FIR, smoothing, adaptive, multirate",
   "exports": {
     ".": "./index.js",
     "./core/*.js": "./core/*.js",
@@ -14,13 +14,23 @@
     "./plot": "./plot/index.js",
     "./plot/*": "./plot/*"
   },
+  "files": [
+    "index.js",
+    "core/",
+    "iir/",
+    "fir/",
+    "smooth/",
+    "adaptive/",
+    "multirate/",
+    "plot/"
+  ],
   "scripts": {
     "test": "node test.js",
     "plot": "node plot/generate.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/scijs/digital-filter.git"
+    "url": "git+https://github.com/audiojs/digital-filter.git"
   },
   "keywords": [
     "dsp",
@@ -35,14 +45,24 @@
     "audio",
     "signal-processing",
     "equalizer",
-    "filter-design"
+    "filter-design",
+    "lowpass",
+    "highpass",
+    "bandpass",
+    "notch",
+    "smoothing",
+    "adaptive",
+    "multirate"
   ],
-  "author": "Dima Yv <dfcreative@gmail.com>",
+  "author": "Dmitry Iv. <dfcreative@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/scijs/digital-filter/issues"
+    "url": "https://github.com/audiojs/digital-filter/issues"
   },
-  "homepage": "https://github.com/scijs/digital-filter#readme",
+  "homepage": "https://github.com/audiojs/digital-filter#readme",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "window-function": "^3.0.0"
   },
