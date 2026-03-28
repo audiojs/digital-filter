@@ -16,58 +16,34 @@ npm install digital-filter
 ```
 
 ```js
-import { onePole } from 'digital-filter'
+import { butterworth, filter, onePole } from 'digital-filter'
+// import butterworth from 'digital-filter/iir/butterworth.js'
 
-// Smooth a signal with a 100 Hz lowpass
-onePole(data, { fc: 100, fs: 44100 })
+onePole(data, { fc: 100, fs: 44100 })           // smooth in-place
 
-// Process blocks with persistent state:
-let params = { fc: 100, fs: 44100 }
-onePole(block1, params)   // state preserved
-onePole(block2, params)   // seamless continuation
+let sos = butterworth(4, 1000, 44100)            // design a 4th-order lowpass
+filter(data, { coefs: sos })                     // apply in-place
+
+let params = { coefs: sos }
+filter(block1, params)                           // state persists between blocks
+filter(block2, params)
 ```
 
-```js
-// Individual imports:
-import nlms from 'digital-filter/adaptive/nlms.js'
-
-// Cancel echo: feed far-end and microphone arrays, get clean signal
-let params = { order: 512, mu: 0.5 }
-nlms(farEnd, microphone, params)
-let clean = params.error
-```
-
-> [!NOTE]
 > For audio-domain filters (weighting, EQ, synth, measurement) see [audio-filter](https://github.com/audiojs/audio-filter).
-
 
 ## Intro
 
-**What is a filter?** Takes an array of samples, outputs an array of samples. `output[i] = (input[i] + input[i-1] + input[i-2]) / 3` is a filter – it smooths out fast changes. That's a lowpass.
+**What is a filter?** Takes an array of samples, outputs an array of samples. `output[i] = (input[i] + input[i-1] + input[i-2]) / 3` smooths out fast changes – that's a lowpass.
 
-**What is frequency response?** Every filter passes some frequencies and cuts others. The plots show how much each frequency is kept (magnitude, in dB) and how much it's delayed (phase, in degrees). 0dB = unchanged, –3dB = half power.
+**What is frequency response?** Every filter passes some frequencies and cuts others. The plots show how much each frequency is kept (magnitude, in dB) and how much it's delayed (phase). 0 dB = unchanged, –3 dB = half power.
 
-**What is IIR vs FIR?** IIR uses feedback (output depends on previous output). Few multiplies, low latency, but can't do linear phase and can blow up. FIR has no feedback – always stable, linear phase possible, but needs many taps (100–1000+) for a sharp cutoff, which can tax on performance.
+**What is IIR vs FIR?** IIR uses feedback – few multiplies, low latency, but can't do linear phase and can blow up. FIR has no feedback – always stable, linear phase possible, but needs 100–1000+ taps for a sharp cutoff.
 
-**What is SOS?** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions in this library return SOS arrays. This avoids the precision loss that happens with high-order polynomials in float64.
+**What is SOS?** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions return SOS arrays to avoid float64 precision loss.
 
-**How to read the plots?** Four panels per filter. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz) – flat means no distortion. Bottom-right: impulse response. Dashed line = cutoff $f_c$.
+**How to read the plots?** Four panels. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz), flat = no distortion. Bottom-right: impulse response. Dashed line = $f_c$.
 
-**How to design and apply a filter?** Design functions return coefficients (SOS array or Float64Array). Pass them to `filter()` to process data in-place. State persists in `params` between calls for block processing.
-
-```js
-let sos = butterworth(4, 1000, 44100)    // design: 4th-order lowpass at 1 kHz
-filter(data, { coefs: sos })             // apply: modifies data in-place
-
-// seamless processing
-let params = { coefs: butterworth(4, 1000, 44100) }
-filter(block1, params)                   // state preserved
-filter(block2, params)                   // seamless continuation
-```
-
-**How to read the plots?** Four panels per filter. Top-left: magnitude (dB vs Hz). Top-right: phase (degrees vs Hz). Bottom-left: group delay (samples vs Hz) – flat means no distortion. Bottom-right: impulse response. Dashed line = cutoff $f_c$.
-
-**How to read the formulas?** $|H(j\omega)|^2$: how the analog prototype shapes magnitude. $H(z)$: what the code computes per sample. $h[n]$: the impulse response / FIR coefficients.
+**How to read the formulas?** $|H(j\omega)|^2$: analog prototype magnitude. $H(z)$: digital transfer function. $h[n]$: impulse response / FIR coefficients.
 
 
 ## IIR
