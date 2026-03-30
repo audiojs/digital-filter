@@ -1,13 +1,30 @@
 # digital-filter [![test](https://github.com/audiojs/digital-filter/actions/workflows/test.yml/badge.svg)](https://github.com/audiojs/digital-filter/actions/workflows/test.yml) [![npm](https://img.shields.io/npm/v/digital-filter)](https://www.npmjs.com/package/digital-filter) [![MIT](https://img.shields.io/badge/MIT-%E0%A5%90-white)](https://github.com/krishnized/license)
 
-Digital filter design and processing.<br>
-Features
-[IIR](#iir),
-[FIR](#fir),
-[smoothing](#smooth),
-[adaptive](#adaptive),
-[multirate](#multirate)
-filters.
+Digital filter design and processing.
+
+<table><tr><td valign="top">
+
+**[IIR](#iir)**<br>
+<sub>[biquad](#biquad) · [svf](#svfdata-params) · [butterworth](#butterworthorder-fc-fs-type) · [chebyshev](#chebyshevorder-fc-fs-ripple-type) · [chebyshev2](#chebyshev2order-fc-fs-attenuation-type) · [elliptic](#ellipticorder-fc-fs-ripple-attenuation-type) · [bessel](#besselorder-fc-fs-type) · [legendre](#legendreorder-fc-fs-type) · [linkwitzRiley](#linkwitzrileyorder-fc-fs) · [iirdesign](#iirdesignfpass-fstop-rp-rs-fs) · [buttord](#buttordfpass-fstop-rp-rs-fs) · [cheb1ord](#cheb1ordfpass-fstop-rp-rs-fs) · [ellipord](#ellipordfpass-fstop-rp-rs-fs)</sub>
+
+**[FIR](#fir)**<br>
+<sub>[firwin](#firwinnumtaps-cutoff-fs-opts) · [firls](#firlsnumtaps-bands-desired-weight) · [remez](#remeznumtaps-bands-desired-weight) · [firwin2](#firwin2numtaps-freq-gain-opts) · [hilbert](#hilbertn) · [differentiator](#differentiatorn-opts) · [raisedCosine](#raisedcosinen-beta-sps-opts) · [gaussianFir](#gaussianfirn-bt-sps) · [matchedFilter](#matchedfiltertemplate) · [minimumPhase](#minimumphaseh) · [yulewalk](#yulewalkorder-frequencies-magnitudes) · [kaiserord](#kaiserorddeltaf-attenuation) · [integrator](#integratorrule) · [lattice](#latticedata-params) · [warpedFir](#warpedfirdata-params)</sub>
+
+**[Smooth](#smooth)**<br>
+<sub>[onePole](#onepoledata-params) · [movingAverage](#movingaveragedata-params) · [leakyIntegrator](#leakyintegratordata-params) · [savitzkyGolay](#savitzkygolaydata-params) · [gaussianIir](#gaussianiirdata-params) · [dynamicSmoothing](#dynamicsmoothingdata-params) · [median](#mediandata-params) · [oneEuro](#oneeuropdata-params)</sub>
+
+</td><td valign="top">
+
+**[Adaptive](#adaptive)**<br>
+<sub>[lms](#lmsinput-desired-params) · [nlms](#nlmsinput-desired-params) · [rls](#rlsinput-desired-params) · [levinson](#levinsonr-order)</sub>
+
+**[Multirate](#multirate)**<br>
+<sub>[decimate](#decimatedata-factor-opts) · [interpolate](#interpolatedata-factor-opts) · [halfBand](#halfbandnumtaps) · [cic](#cicdata-r-n) · [polyphase](#polypaseh-m) · [farrow](#farrowdata-params) · [thiran](#thirandelay-order) · [oversample](#oversampledata-factor-opts)</sub>
+
+**[Core](#core)**<br>
+<sub>[filter](#filterdata-params) · [iir](#iirdata-params) · [filtfilt](#filtfiltdata-params) · [convolution](#convolutionsignal-ir) · [detrend](#detrenddata-type) · [freqz](#freqzcoefs-n-fs) · [mag2db](#mag2dbmag) · [groupDelay](#groupdelaycoefs-n-fs) · [phaseDelay](#phasedelaycoefs-n-fs) · [impulseResponse](#impulseresponsecoefs-n) · [stepResponse](#stepresponsecoefs-n) · [isStable](#isstablesos) · [isMinPhase](#isminphasesos) · [isFir](#isfirsos) · [isLinPhase](#islinphaseh) · [sos2zpk](#sos2zpksos) · [sos2tf](#sos2tfsos) · [tf2zpk](#tf2zpkb-a) · [tf2sos](#tf2sosb-a) · [zpk2sos](#zpk2soszpk) · [zpk2tf](#zpk2tfzpk) · [sosfilt_zi](#sosfilt_zisos) · [transform](#transform)</sub>
+
+</td></tr></table>
 
 ## Install
 
@@ -37,7 +54,17 @@ filter(block2, params)
 
 **Frequency response.** Every filter passes some frequencies and cuts others. The plots show how much each frequency is kept (magnitude, in dB) and how much it's delayed (phase). 0 dB = unchanged, –3 dB = half power.
 
-**IIR vs FIR.** IIR uses feedback – few multiplies, low latency, but can't do linear phase and can blow up. FIR has no feedback – always stable, linear phase possible, but needs 100–1000+ taps for a sharp cutoff.
+**IIR vs FIR.**
+
+| | IIR | FIR |
+|---|---|---|
+| **How** | Feedback (output depends on previous output) | No feedback |
+| **Efficiency** | 5–20 multiplies for sharp lowpass | 100–1000+ multiplies |
+| **Phase** | Nonlinear (always) | Linear (symmetric coefficients) |
+| **Stability** | Can blow up | Always stable |
+| **Latency** | Low (few samples) | High (N/2 samples) |
+| **Adaptive** | Hard to adapt | Easy (LMS, NLMS) |
+| **Use for** | Real-time, low latency | Offline, linear phase, adaptive |
 
 **SOS.** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions return SOS arrays to avoid float64 precision loss.
 
@@ -239,6 +266,18 @@ let { sos, order, type } = iirdesign(1000, 1500, 1, 40, 44100)
 **Use when**: you know specs (passband, stopband, ripple, attenuation) but not the family.<br>
 **Not for**: specific family needed (use butterworth/chebyshev/etc directly).<br>
 **scipy**: `scipy.signal.iirdesign`. **MATLAB**: `designfilt`.
+
+### `buttord(fpass, fstop, rp, rs, fs)` · `cheb1ord` · `cheb2ord` · `ellipord`
+
+Estimate minimum filter order needed to meet specs. Returns `{ order, Wn }`.
+
+```js
+let { order, Wn } = buttord(1000, 1500, 1, 40, 44100)   // → order ≈ 13
+let { order } = ellipord(1000, 1500, 1, 40, 44100)       // → order ≈ 5 (much lower)
+```
+
+**scipy**: `scipy.signal.buttord`, `cheb1ord`, `cheb2ord`, `ellipord`.<br>
+**MATLAB**: `buttord`, `cheb1ord`, `cheb2ord`, `ellipord`.
 
 ### IIR comparison
 
@@ -909,6 +948,16 @@ filter(block1, params)   // state preserved
 filter(block2, params)   // seamless
 ```
 
+### `iir(data, params)`
+
+Arbitrary-order IIR processing. Direct Form II Transposed with feedforward/feedback coefficient arrays (up to any order). Params: `b` (numerator), `a` (denominator), `state`.
+
+```js
+iir(data, { b: [0.1, 0.2, 0.1], a: [1, -0.8, 0.2] })
+```
+
+**Use when**: need direct transfer function form (b/a arrays), higher than 2nd order without SOS, Web Audio IIRFilterNode compatibility.
+
 ### `filtfilt(data, params)`
 
 Zero-phase forward-backward filtering. Doubles effective order, eliminates phase distortion. Offline only. Params: `coefs`.
@@ -916,6 +965,17 @@ Zero-phase forward-backward filtering. Doubles effective order, eliminates phase
 ```js
 filtfilt(data, { coefs: butterworth(4, 1000, 44100) })
 ```
+
+### `detrend(data, type?)`
+
+Remove DC offset or linear trend from data in-place. Types: `'linear'` (default), `'constant'`/`'dc'`.
+
+```js
+detrend(data)              // remove linear trend
+detrend(data, 'constant')  // remove DC offset only
+```
+
+**scipy**: `scipy.signal.detrend`. **MATLAB**: `detrend`.
 
 ### `convolution(signal, ir)`
 
@@ -929,11 +989,12 @@ let out = convolution(signal, firCoefs)
 
 ### `freqz(coefs, n?, fs?)` · `mag2db(mag)`
 
-Frequency response of SOS filter. Returns `{ frequencies, magnitude, phase }`.
+Frequency response of SOS filter. Returns `{ frequencies, magnitude, phase }`. Second argument can be a number (evenly spaced points) or an array of Hz values.
 
 ```js
-let { frequencies, magnitude, phase } = freqz(sos, 512, 44100)
-let dB = mag2db(magnitude)  // 20·log10(mag)
+let resp = freqz(sos, 512, 44100)             // 512 evenly spaced points
+let resp = freqz(sos, [100, 1000, 10000], 44100)  // at specific frequencies
+let dB = mag2db(resp.magnitude)                // 20·log10(mag)
 ```
 
 ### `groupDelay(coefs, n?, fs?)` · `phaseDelay(coefs, n?, fs?)`
@@ -964,15 +1025,27 @@ isFir(sos)        // a1=a2=0 (no feedback)?
 isLinPhase(h)     // symmetric/antisymmetric coefficients?
 ```
 
-### `sos2zpk(sos)` · `sos2tf(sos)` · `tf2zpk(b, a)` · `zpk2sos(zpk)`
+### `sos2zpk` · `sos2tf` · `tf2zpk` · `tf2sos` · `zpk2sos` · `zpk2tf`
 
-Format conversion between SOS, zeros/poles/gain, and transfer function polynomials.
+Format conversion between SOS, transfer function (b/a), and zeros/poles/gain.
 
 ```js
 let { zeros, poles, gain } = sos2zpk(sos)
 let { b, a } = sos2tf(sos)
 let zpk = tf2zpk(b, a)
 let sos2 = zpk2sos(zpk)
+let sos3 = tf2sos(b, a)       // shortcut: tf → zpk → sos
+let { b: b2, a: a2 } = zpk2tf(zpk)
+```
+
+### `sosfilt_zi(sos)`
+
+Compute initial conditions for SOS filter to start in steady state (no transient when input starts at a non-zero value).
+
+```js
+let sos = butterworth(4, 1000, 44100)
+let zi = sosfilt_zi(sos)
+filter(data, { coefs: sos, state: zi })  // no startup transient
 ```
 
 ### `transform`
@@ -1074,6 +1147,49 @@ let htx = raisedCosine(101, 0.35, 8, { root: true })
 let shaped = convolution(symbols, htx)
 ```
 
+### EEG band extraction
+
+```js
+let fs = 256
+let delta = butterworth(4, [0.5, 4], fs, 'bandpass')   // deep sleep
+let theta = butterworth(4, [4, 8], fs, 'bandpass')      // drowsiness
+let alpha = butterworth(4, [8, 13], fs, 'bandpass')     // relaxed, eyes closed
+let beta  = butterworth(4, [13, 30], fs, 'bandpass')    // active thinking
+
+let signal = Float64Array.from(data)
+filter(signal, { coefs: alpha })
+// Band power:
+let power = 0
+for (let i = 0; i < signal.length; i++) power += signal[i] ** 2
+power /= signal.length
+```
+
+### LPC analysis
+
+```js
+// Autocorrelation → LPC coefficients → lattice synthesis
+let order = 12, R = new Float64Array(order + 1)
+for (let k = 0; k <= order; k++)
+  for (let i = 0; i < frame.length - k; i++)
+    R[k] += frame[i] * frame[i + k]
+
+let { a, k } = levinson(R, order)
+// k = reflection coefficients, use with lattice() for synthesis
+// a = prediction coefficients, use with iir() for inverse filtering
+```
+
+### Karplus-Strong string
+
+```js
+import { comb, onePole } from 'audio-filter'
+
+let delay = Math.round(44100 / 440)  // A4
+let data = new Float64Array(44100)
+for (let i = 0; i < delay; i++) data[i] = Math.random() * 2 - 1
+comb(data, { delay, gain: 0.996, type: 'feedback' })
+onePole(data, { fc: 4000, fs: 44100 })
+// delay sets pitch, gain ≈ 1 = long sustain, lower fc = duller (nylon)
+```
 
 
 ## Pitfalls
@@ -1128,6 +1244,34 @@ theme.text = '#6b7280' // label color
 ```
 
 Regenerate all plots: `npm run plot`
+
+## References
+
+**Textbooks**
+- Oppenheim & Schafer, *Discrete-Time Signal Processing*, 3rd ed, 2009 – the canonical DSP textbook
+- J.O. Smith III, [*Introduction to Digital Filters*](https://ccrma.stanford.edu/~jos/filters/) – free, audio-focused
+- Zolzer, *DAFX: Digital Audio Effects*, 2nd ed, 2011 – audio effects
+- Haykin, *Adaptive Filter Theory*, 5th ed, 2014 – LMS, RLS, Kalman
+- Zavalishin, [*The Art of VA Filter Design*](https://www.native-instruments.com/fileadmin/ni_media/downloads/pdf/VAFilterDesign_2.1.2.pdf) – virtual analog, SVF, ZDF
+
+**Papers & standards**
+- [RBJ Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/) (W3C Note, 1998) – biquad coefficient formulas[^rbj]
+- Butterworth, "On the Theory of Filter Amplifiers," 1930[^bw]
+- Thomson, "Delay Networks Having Maximally Flat Frequency Characteristics," 1949[^thomson]
+- Papoulis, "Optimum Filters with Monotonic Response," 1958[^papoulis]
+- Cauer, *Synthesis of Linear Communication Networks*, 1958[^cauer]
+- Parks & McClellan, "Chebyshev Approximation for Nonrecursive Digital Filters," 1972[^pm]
+- Linkwitz, "Active Crossover Networks for Noncoincident Drivers," 1976[^lr]
+- Widrow & Hoff, "Adaptive Switching Circuits," 1960[^lms]
+- Savitzky & Golay, "Smoothing and Differentiation of Data," 1964[^sg]
+- Casiez et al., "1€ Filter," CHI, 2012[^euro]
+- Simper, "Linear Trapezoidal Integrated SVF," Cytomic, 2011
+
+**Online**
+- [ccrma.stanford.edu/~jos](https://ccrma.stanford.edu/~jos/) – J.O. Smith's 4 DSP books (free)
+- [earlevel.com](https://www.earlevel.com/main/) – biquad tutorials (Nigel Redmon)
+- [musicdsp.org](https://www.musicdsp.org/) – audio DSP snippet archive
+- [dsprelated.com](https://www.dsprelated.com/) – DSP community and free books
 
 ## See also
 

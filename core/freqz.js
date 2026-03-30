@@ -7,17 +7,25 @@
  * @returns {{frequencies: Float64Array, magnitude: Float64Array, phase: Float64Array}}
  */
 export default function freqz (coefs, n, fs) {
-	if (!n) n = 512
 	if (!fs) fs = 44100
 	if (!Array.isArray(coefs)) coefs = [coefs]
+
+	// n can be a number (evenly spaced) or an array of Hz values
+	let freqArr = null
+	if (Array.isArray(n) || (n && n.length !== undefined && typeof n !== 'number')) {
+		freqArr = n
+		n = freqArr.length
+	} else {
+		if (!n) n = 512
+	}
 
 	let frequencies = new Float64Array(n)
 	let magnitude = new Float64Array(n)
 	let phase = new Float64Array(n)
 
 	for (let i = 0; i < n; i++) {
-		let w = i * Math.PI / n
-		frequencies[i] = i * fs / (2 * n)
+		let w = freqArr ? (2 * Math.PI * freqArr[i] / fs) : (i * Math.PI / n)
+		frequencies[i] = freqArr ? freqArr[i] : (i * fs / (2 * n))
 
 		let cosw = Math.cos(w), sinw = Math.sin(w)
 		let cos2w = Math.cos(2 * w), sin2w = Math.sin(2 * w)

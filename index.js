@@ -1,6 +1,7 @@
 // Core
 export * as biquad from './iir/biquad.js'
 export { default as filter } from './core/filter.js'
+export { default as iir } from './core/iir.js'
 export { default as freqz, mag2db } from './core/freqz.js'
 export * as transform from './core/transform.js'
 export { default as matchedZ } from './core/matched-z.js'
@@ -15,6 +16,7 @@ export { default as bessel } from './iir/bessel.js'
 export { default as elliptic } from './iir/elliptic.js'
 export { default as legendre } from './iir/legendre.js'
 export { default as iirdesign } from './iir/iirdesign.js'
+export { buttord, cheb1ord, cheb2ord, ellipord } from './iir/ordest.js'
 export { default as svf } from './iir/svf.js'
 export { default as linkwitzRiley } from './iir/linkwitz-riley.js'
 
@@ -63,4 +65,6 @@ export { default as oversample } from './multirate/oversample.js'
 
 // Analysis & conversion
 export { groupDelay, phaseDelay, impulseResponse, stepResponse, isStable, isMinPhase, isFir, isLinPhase } from './core/analysis.js'
-export { sos2zpk, sos2tf, tf2zpk, zpk2sos } from './core/convert.js'
+export { sos2zpk, sos2tf, tf2zpk, tf2sos, zpk2sos, zpk2tf } from './core/convert.js'
+export { sosfilt_zi } from './core/filter.js'
+export { default as detrend } from './core/detrend.js'

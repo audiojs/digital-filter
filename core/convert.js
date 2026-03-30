@@ -141,6 +141,64 @@ export function zpk2sos (zpk) {
 	return sections
 }
 
+// ────── TF → SOS ──────
+
+/**
+ * Convert transfer function polynomials to second-order sections.
+ * Chains tf2zpk → zpk2sos internally.
+ *
+ * @param {Array<number>|Float64Array} b - Numerator polynomial coefficients
+ * @param {Array<number>|Float64Array} a - Denominator polynomial coefficients
+ * @returns {Array<{b0:number,b1:number,b2:number,a1:number,a2:number}>}
+ */
+export function tf2sos (b, a) {
+	return zpk2sos(tf2zpk(b, a))
+}
+
+// ────── ZPK → TF ──────
+
+/**
+ * Convert zeros/poles/gain to transfer function polynomial coefficients.
+ * Inverse of tf2zpk.
+ *
+ * @param {{zeros: Array<{re:number,im:number}>, poles: Array<{re:number,im:number}>, gain: number}} zpk
+ * @returns {{b: Float64Array, a: Float64Array}} numerator and denominator polynomials
+ */
+export function zpk2tf ({ zeros, poles, gain }) {
+	let b = polyFromRoots(zeros)
+	let a = polyFromRoots(poles)
+	for (let i = 0; i < b.length; i++) b[i] *= gain
+	return { b: new Float64Array(b), a: new Float64Array(a) }
+}
+
+// Expand polynomial from complex roots: product of (z - r_k)
+function polyFromRoots (roots) {
+	// Start with [1], multiply (z - r_k) for each root
+	// Coefficients are complex {re, im} during computation
+	let p = [{ re: 1, im: 0 }]
+	for (let r of roots) {
+		let rr = r.re ?? r, ri = r.im ?? 0
+		let np = new Array(p.length + 1)
+		np[0] = { re: p[0].re, im: p[0].im }
+		for (let i = 1; i < p.length; i++) {
+			// newp[i] = p[i] - r * p[i-1]
+			np[i] = {
+				re: p[i].re - (rr * p[i - 1].re - ri * p[i - 1].im),
+				im: p[i].im - (rr * p[i - 1].im + ri * p[i - 1].re)
+			}
+		}
+		// Last term: -r * p[last]
+		let last = p.length - 1
+		np[p.length] = {
+			re: -(rr * p[last].re - ri * p[last].im),
+			im: -(rr * p[last].im + ri * p[last].re)
+		}
+		p = np
+	}
+	// Imaginary parts cancel for conjugate pairs — return real parts
+	return p.map(v => v.re)
+}
+
 // ────── Private helpers ──────
 
 function quadRoots (a, b, c) {
