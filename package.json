@@ -63,9 +63,7 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "window-function": "^3.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "tst": "^9.4.0"
   }

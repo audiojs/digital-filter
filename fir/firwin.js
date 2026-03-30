@@ -1,4 +1,4 @@
-import * as windows from '../core/window.js'
+import { getWindow } from './util.js'
 
 /**
  * Design FIR filter using the window method.
@@ -80,9 +80,3 @@ export default function firwin (numtaps, cutoff, fs, opts) {
 	return h
 }
 
-function getWindow (win, N) {
-	if (win instanceof Float64Array || Array.isArray(win)) return win
-	if (typeof win === 'function') return win(N)
-	if (typeof win === 'string' && windows[win]) return windows[win](N)
-	return windows.hamming(N)
-}

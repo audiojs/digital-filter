@@ -576,3 +576,57 @@ prototype poles → analog transform (LP→HP/BP/BS) → bilinear → digital SO
 All three filter families (Butterworth, Chebyshev, Bessel) refactored to use this pipeline. Each module now only defines its prototype poles — the rest is shared.
 
 **Bug found and fixed**: Butterworth damping coefficient used `cos` instead of `sin` — gave wrong -3dB frequency for all odd orders (3,5,7,9). Order 3 was 597 Hz instead of 1000 Hz.
+
+
+
+## Questions
+
+What would qualify as an offering?
+A library that saves engineers from reimplementing known math. 53 filters, each correct, tested against scipy, documented with plot + formula + code + "use when." Someone designing a hearing aid, building a synth, or filtering ECG data can start in minutes instead of days. That's service.
+
+What secret analogy unites this with nature?
+A filter is a prism. White light in, spectrum separated. Every physical system is a filter — a room, an ear, a wire. This library is a box of prisms.
+
+What paradox lives here?
+The simplest filters (onePole, movingAverage) are the most used. The most mathematically elegant (elliptic, Legendre) are rarely needed. The library must honor both.
+
+What's the territory?
+Between scipy (Python, scientific) and Web Audio (browser, limited). For JavaScript engineers who need real DSP without switching languages.
+
+What are all the ways this could be useful?
+Audio plugins, hearing aids, ECG monitors, guitar pedals, noise cancellation, radar, speech recognition, sensor fusion, music production, broadcast loudness, scientific measurement, education.
+
+Who already solved for an adjacent pain?
+scipy.signal (Python), MATLAB DSP Toolbox, Julius Smith's online books, Web Audio API (browser-only, limited).
+
+What would be ideal result — the timeless form?
+npm install digital-filter and you have every classical filter, correctly implemented, with a readme that teaches you which one to pick. No configuration, no build step, no dependencies.
+
+What's the theoretically pure form?
+One function: filter(signal, spec) where spec is "I need X" and it returns the right answer. We're close — iirdesign does this for IIR.
+
+What's the theoretical minimum?
+biquad + filter + freqz. Everything else is convenience. But convenience is the product.
+
+What's the single-player value?
+An engineer alone at 2am debugging a feedback loop can npm install digital-filter, design a notch, apply it, plot the response, and verify it works — all in JavaScript, no Python, no MATLAB license.
+
+Is this so clear a stranger would grasp it?
+The readme now starts with onePole(data, { fc: 100, fs: 44100 }) — one line, immediately useful. The intro explains filters in 6 questions. The ToC shows everything at a glance. Yes.
+
+What's the boundary — where does this end?
+Design and apply filters. Not: FFT, spectral analysis, machine learning, audio I/O, real-time scheduling. Those are different packages. audio-filter handles the domain-specific stuff.
+
+What's the soul — the spark, the secret, moat, x-factor?
+The plots. Every filter has a 4-panel SVG showing exactly what it does. No other JS filter library has this. You see the filter before you use it.
+
+What's the spine everything hangs on?
+SOS format. Every IIR filter returns the same [{b0,b1,b2,a1,a2}, ...] array. filter() processes it. freqz() analyzes it. plotFilter() visualizes it. One format, entire ecosystem.
+
+What's the price — and am I willing to pay it?
+Maintaining correctness as the library grows. Every new filter needs tests, plots, docs. The scipy cross-validation tests are the insurance policy.
+
+What unlocks everything?
+The package split. digital-filter = pure DSP primitives (domain-agnostic). audio-filter = audio-specific (depends on digital-filter). Each is focused, testable, documentable. The plot library is reusable. The readme is one page.
+
+Current state assessment: Ready to ship. 53 filters, 160 tests, 1206 assertions, scipy-validated, 55+ plots, one-page readme with intro + reference + choosing + recipes + FAQ + pitfalls + bibliography. The good-to-have items are polish, not blockers.

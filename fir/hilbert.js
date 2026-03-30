@@ -1,4 +1,4 @@
-import { hamming } from '../core/window.js'
+import { getWindow } from './util.js'
 
 /**
  * Generate Hilbert transform FIR coefficients.
@@ -24,8 +24,7 @@ export default function hilbert (N, opts) {
 	}
 
 	// Apply window
-	let win = opts.window || hamming(N)
-	if (typeof win === 'function') win = win(N)
+	let win = getWindow(opts.window, N)
 	for (let i = 0; i < N; i++) h[i] *= win[i]
 
 	return h

@@ -5,7 +5,7 @@
  * @module  digital-filter/differentiator
  */
 
-import * as windows from '../core/window.js'
+import { getWindow } from './util.js'
 
 /**
  * @param {number} N - Filter length (must be odd)
@@ -23,7 +23,7 @@ export default function differentiator (N, opts) {
 		else h[i] = Math.cos(Math.PI * n) / n  // (-1)^n / n
 	}
 
-	let win = (opts.window ? windows[opts.window] : windows.hamming)(N)
+	let win = getWindow(opts.window, N)
 	for (let i = 0; i < N; i++) h[i] *= win[i]
 
 	if (opts.fs) for (let i = 0; i < N; i++) h[i] *= opts.fs

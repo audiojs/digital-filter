@@ -5,7 +5,7 @@
  * @module  digital-filter/firwin2
  */
 
-import * as windows from '../core/window.js'
+import { getWindow } from './util.js'
 
 let { cos, PI } = Math
 
@@ -58,8 +58,7 @@ export default function firwin2 (numtaps, freq, gain, opts) {
 	}
 
 	// Apply window
-	let winName = opts.window || 'hamming'
-	let win = typeof winName === 'string' ? (windows[winName] || windows.hamming)(numtaps) : winName
+	let win = getWindow(opts.window, numtaps)
 	for (let i = 0; i < numtaps; i++) out[i] *= win[i]
 
 	return out
