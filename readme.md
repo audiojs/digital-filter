@@ -63,8 +63,10 @@ filter(block2, params)
 | **Phase** | Nonlinear (always) | Linear (symmetric coefficients) |
 | **Stability** | Can blow up | Always stable |
 | **Latency** | Low (few samples) | High (N/2 samples) |
-| **Adaptive** | Hard to adapt | Easy (LMS, NLMS) |
+| **Adaptive** | Hard to adapt coefficients in real time | Easy – coefficients are the taps (LMS, NLMS) |
 | **Use for** | Real-time, low latency | Offline, linear phase, adaptive |
+
+**Adaptive**. Means the filter adjusts its own coefficients in real time to minimize error against a reference signal — used for echo cancellation, noise cancellation, system identification.
 
 **SOS.** Second-Order Sections – an IIR filter split into a chain of biquads (2nd-order, 5 coefficients each). A 4th-order Butterworth = 2 biquads. All design functions return SOS arrays to avoid float64 precision loss.
 
@@ -75,7 +77,7 @@ filter(block2, params)
 
 ## IIR
 
-IIR filters use feedback – efficient (5–20 multiplies for a sharp lowpass), low latency, nonlinear phase. Designed from analog prototypes via the bilinear transform, implemented as cascaded second-order sections (SOS).[^sos]
+IIR filters use feedback – efficient (5–20 multiplies for a sharp lowpass), low latency, nonlinear phase. Designed from analog prototypes via the [bilinear transform](#faq) (or matched-z transform), implemented as cascaded second-order sections (SOS).[^sos]
 
 [^sos]: Direct form above order ~6 loses precision with float64. Cascaded biquads don't.
 
@@ -1276,4 +1278,4 @@ Regenerate all plots: `npm run plot`
 ## See also
 
 - **[audio-filter](https://github.com/audiojs/audio-filter)** – weighting, EQ, synthesis, measurement, effects
-- **[window-function](https://github.com/scijs/window-function)** – 34 window functions
+- **[window-function](https://github.com/scijs/window-function)** – collection of window functions
