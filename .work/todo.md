@@ -114,10 +114,19 @@
 - [x] `warped-fir.js` — Frequency-warped FIR (allpass delay elements)
 - [x] `convolution.js` — Direct convolution O(N×M)
 
+## Remaining
+
+* [ ] upfirdn, resample — general resampling (niche)
+* [ ] residue — partial fraction expansion (textbook)
+* [ ] tf2ss/ss2tf — state-space (niche)
+* [ ] wiener, deconvolve — inverse filtering (niche)
+
+
 ---
 
 ## Integration targets
 
+* [ ] Interactive web demo (issue #1)
 ### [ ] loudness meter
 ### [ ] Crossover network
 
