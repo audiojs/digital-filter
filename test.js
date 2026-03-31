@@ -1512,9 +1512,25 @@ test('biquad.notch — fc=0 → passthrough', () => {
 	is(c.b0, 1)
 })
 
-test('biquad.peaking — Q=0 → passthrough', () => {
+test('biquad.peaking — Q=0 → flat gain A²', () => {
 	let c = dsp.biquad.peaking(1000, 0, 44100, 6)
+	let A2 = Math.pow(10, 6 / 20)
+	almost(c.b0, A2, 0.01)
+})
+
+test('biquad.bandpass2 — Q=0 → passthrough', () => {
+	let c = dsp.biquad.bandpass2(1000, 0, 44100)
 	is(c.b0, 1)
+})
+
+test('biquad.notch — Q=0 → silence', () => {
+	let c = dsp.biquad.notch(1000, 0, 44100)
+	is(c.b0, 0)
+})
+
+test('biquad.allpass — Q=0 → inversion', () => {
+	let c = dsp.biquad.allpass(1000, 0, 44100)
+	is(c.b0, -1)
 })
 
 test('biquad.lowshelf — fc=0 → passthrough', () => {
@@ -1588,4 +1604,212 @@ test('freqz — Float64Array frequency input', () => {
 	is(resp.frequencies.length, 3)
 	ok(dsp.mag2db(resp.magnitude[0]) > -1, '100 Hz in passband')
 	ok(dsp.mag2db(resp.magnitude[2]) < -20, '10 kHz in stopband')
+})
+
+// ═══════════════════════════════════════
+// Remaining filters
+// ═══════════════════════════════════════
+
+// --- upfirdn ---
+
+test('upfirdn — identity (up=1, down=1, h=[1])', () => {
+	let data = new Float64Array([1, 2, 3, 4, 5])
+	let out = dsp.upfirdn(data, [1], 1, 1)
+	is(out.length, 5)
+	for (let i = 0; i < 5; i++) almost(out[i], data[i], EPSILON)
+})
+
+test('upfirdn — upsample by 3', () => {
+	let data = new Float64Array([1, 0, 0])
+	let out = dsp.upfirdn(data, [1], 3, 1)
+	// Upsampled: [1,0,0, 0,0,0, 0,0,0], filtered by [1]
+	ok(out[0] === 1, 'first sample preserved')
+	// Other samples at input positions are zero (zero-stuffing)
+	ok(out[1] === 0, 'zero-stuffed')
+	ok(out[2] === 0, 'zero-stuffed')
+	ok(out[3] === 0, 'second input')
+})
+
+test('upfirdn — downsample by 2', () => {
+	let data = new Float64Array([1, 2, 3, 4, 5, 6])
+	let out = dsp.upfirdn(data, [1], 1, 2)
+	is(out.length, 3)
+	almost(out[0], 1, EPSILON)
+	almost(out[1], 3, EPSILON)
+	almost(out[2], 5, EPSILON)
+})
+
+test('upfirdn — with FIR filter', () => {
+	let data = new Float64Array([1, 0, 0, 0])
+	let h = [0.25, 0.5, 0.25]
+	let out = dsp.upfirdn(data, h, 1, 1)
+	// Convolution of [1,0,0,0] with [0.25,0.5,0.25]
+	almost(out[0], 0.25, EPSILON)
+	almost(out[1], 0.5, EPSILON)
+	almost(out[2], 0.25, EPSILON)
+})
+
+// --- resample ---
+
+test('resample — identity (p=1, q=1)', () => {
+	let data = new Float64Array(64).fill(1)
+	let out = dsp.resample(data, 1, 1)
+	is(out.length, 64)
+})
+
+test('resample — upsample 2x preserves DC', () => {
+	let data = new Float64Array(64).fill(1)
+	let out = dsp.resample(data, 2, 1)
+	is(out.length, 128)
+	// Middle samples should be ~1 (DC preserved)
+	almost(out[64], 1, 0.2)
+})
+
+test('resample — downsample 2x', () => {
+	let data = new Float64Array(128).fill(1)
+	let out = dsp.resample(data, 1, 2)
+	is(out.length, 64)
+	almost(out[32], 1, 0.2)
+})
+
+test('resample — rational 3/2', () => {
+	let data = new Float64Array(60).fill(1)
+	let out = dsp.resample(data, 3, 2)
+	is(out.length, 90)
+})
+
+// --- residue ---
+
+test('residue — simple first-order', () => {
+	// H(z) = 1 / (1 - 0.5*z^-1) → b=[1], a=[1, -0.5]
+	// One pole at 0.5, residue = 1 / A'(0.5) = 1
+	let {r, p, k} = dsp.residue([1], [1, -0.5])
+	is(p.length, 1, '1 pole')
+	is(r.length, 1, '1 residue')
+	almost(p[0].re, 0.5, LOOSE)
+	is(k.length, 0, 'no direct terms')
+})
+
+test('residue — second-order with direct term', () => {
+	// b = [1, 0, 0], a = [1, -0.5] → deg(b)=2 > deg(a)=1 → has direct terms
+	let {r, p, k} = dsp.residue([1, 0, 0], [1, -0.5])
+	ok(k.length > 0, 'has direct terms')
+	is(p.length, 1, '1 pole')
+})
+
+test('residue — two real poles', () => {
+	// a = [1, -1.5, 0.5] has poles at 1 and 0.5
+	let {r, p, k} = dsp.residue([1], [1, -1.5, 0.5])
+	is(p.length, 2, '2 poles')
+	is(r.length, 2, '2 residues')
+	// Verify reconstruction: B(z)/A(z) = sum(r_k / (z - p_k))
+	// At z = 2: H(2) = 1 / ((2-1)(2-0.5)) = 1/1.5
+	let Hz = 1 / ((2 - 1) * (2 - 0.5))
+	let Hrecon = 0
+	for (let i = 0; i < r.length; i++) {
+		Hrecon += r[i].re / (2 - p[i].re)
+	}
+	almost(Hrecon, Hz, 0.01)
+})
+
+// --- tf2ss / ss2tf ---
+
+test('tf2ss — first-order system', () => {
+	// H(z) = (1 + 0.5z^-1) / (1 - 0.8z^-1) → b=[1,0.5], a=[1,-0.8]
+	let {A, B, C, D} = dsp.tf2ss([1, 0.5], [1, -0.8])
+	is(A.length, 1, '1x1 state matrix')
+	is(B.length, 1)
+	is(C.length, 1)
+	is(D, 1, 'feedthrough = b[0]/a[0]')
+})
+
+test('tf2ss — second-order system dimensions', () => {
+	let {A, B, C, D} = dsp.tf2ss([1, 0, -1], [1, -1.5, 0.56])
+	is(A.length, 2, '2x2 state matrix')
+	is(A[0].length, 2)
+	is(B.length, 2)
+	is(C.length, 2)
+})
+
+test('ss2tf — round-trip with tf2ss', () => {
+	let b0 = [1, 0.5, -0.3]
+	let a0 = [1, -1.2, 0.5]
+	let ss = dsp.tf2ss(b0, a0)
+	let {b, a} = dsp.ss2tf(ss.A, ss.B, ss.C, ss.D)
+	is(b.length, 3, 'numerator length preserved')
+	is(a.length, 3, 'denominator length preserved')
+	// Coefficients should match (up to normalization)
+	for (let i = 0; i < 3; i++) {
+		almost(b[i], b0[i], 0.01)
+		almost(a[i], a0[i], 0.01)
+	}
+})
+
+test('ss2tf — first-order round-trip', () => {
+	let b0 = [2, -1]
+	let a0 = [1, -0.9]
+	let ss = dsp.tf2ss(b0, a0)
+	let {b, a} = dsp.ss2tf(ss.A, ss.B, ss.C, ss.D)
+	almost(b[0], b0[0], 0.01)
+	almost(b[1], b0[1], 0.01)
+	almost(a[0], 1, 0.01)
+	almost(a[1], a0[1], 0.01)
+})
+
+// --- wiener ---
+
+test('wiener — reduces noise on DC signal', () => {
+	let data = new Float64Array(256)
+	for (let i = 0; i < 256; i++) data[i] = 1 + (Math.random() - 0.5) * 0.2
+	dsp.wiener(data)
+	// After Wiener filtering, variance should decrease
+	let mean = 0
+	for (let i = 0; i < 256; i++) mean += data[i]
+	mean /= 256
+	let variance = 0
+	for (let i = 0; i < 256; i++) variance += (data[i] - mean) ** 2
+	variance /= 256
+	ok(variance < 0.01, 'variance reduced (got ' + variance.toFixed(6) + ')')
+})
+
+test('wiener — preserves strong signal', () => {
+	let data = new Float64Array(256)
+	for (let i = 0; i < 256; i++) data[i] = Math.sin(2 * Math.PI * 10 * i / 256)
+	let origEnergy = 0
+	for (let i = 0; i < 256; i++) origEnergy += data[i] * data[i]
+	dsp.wiener(data)
+	let filtEnergy = 0
+	for (let i = 0; i < 256; i++) filtEnergy += data[i] * data[i]
+	ok(filtEnergy > origEnergy * 0.5, 'signal energy preserved')
+})
+
+// --- deconvolve ---
+
+test('deconvolve — recovers quotient from convolution', () => {
+	// conv([1, 2, 3], [1, 1]) = [1, 3, 5, 3]
+	let {q, r} = dsp.deconvolve([1, 3, 5, 3], [1, 1])
+	is(q.length, 3)
+	almost(q[0], 1, EPSILON)
+	almost(q[1], 2, EPSILON)
+	almost(q[2], 3, EPSILON)
+	// Remainder should be ~0
+	for (let i = 0; i < r.length; i++) almost(r[i], 0, EPSILON)
+})
+
+test('deconvolve — handles remainder', () => {
+	// [1, 3, 5, 4] / [1, 1] = quotient [1, 2, 3] remainder [0, 0, 0, 1]
+	let {q, r} = dsp.deconvolve([1, 3, 5, 4], [1, 1])
+	is(q.length, 3)
+	almost(q[0], 1, EPSILON)
+	almost(q[1], 2, EPSILON)
+	almost(q[2], 3, EPSILON)
+	almost(r[3], 1, EPSILON)
+})
+
+test('deconvolve — inverse of convolution', () => {
+	let a = new Float64Array([1, 0.5, 0.25])
+	let b = new Float64Array([1, -0.3])
+	let conv = dsp.convolution(a, b)
+	let {q} = dsp.deconvolve(Array.from(conv), Array.from(b))
+	for (let i = 0; i < a.length; i++) almost(q[i], a[i], LOOSE)
 })

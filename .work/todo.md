@@ -116,10 +116,10 @@
 
 ## Remaining
 
-* [ ] upfirdn, resample — general resampling (niche)
-* [ ] residue — partial fraction expansion (textbook)
-* [ ] tf2ss/ss2tf — state-space (niche)
-* [ ] wiener, deconvolve — inverse filtering (niche)
+* [x] upfirdn, resample — general resampling (niche)
+* [x] residue — partial fraction expansion (textbook)
+* [x] tf2ss/ss2tf — state-space (niche)
+* [x] wiener, deconvolve — inverse filtering (niche)
 
 
 ---
@@ -131,8 +131,8 @@
 ### [ ] Crossover network
 
 ### web-audio-api
-- [ ] Replace BiquadFilterNode._coefficients() → digital-filter/biquad
-- [ ] Replace IIRFilterNode._tick() → digital-filter/filter
+- [x] Replace BiquadFilterNode._coefficients() → digital-filter/biquad
+- [x] Replace IIRFilterNode._tick() → digital-filter/filter
 
 ### defeedback (Dante Virtual Soundcard)
 - [ ] analyzer, tracker, notch-bank modules

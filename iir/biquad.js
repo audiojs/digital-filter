@@ -2,6 +2,7 @@ let {sin, cos, sqrt, pow, PI} = Math
 
 let SILENCE = { b0: 0, b1: 0, b2: 0, a1: 0, a2: 0 }
 let PASS = { b0: 1, b1: 0, b2: 0, a1: 0, a2: 0 }
+let INVERT = { b0: -1, b1: 0, b2: 0, a1: 0, a2: 0 }
 let gain = A2 => ({ b0: A2, b1: 0, b2: 0, a1: 0, a2: 0 })
 
 function norm (b0, b1, b2, a0, a1, a2) {
@@ -72,7 +73,7 @@ export function bandpass (fc, Q, fs) {
  */
 export function bandpass2 (fc, Q, fs) {
 	if (fc <= 0 || fc >= fs / 2) return SILENCE
-	if (Q <= 0) return SILENCE
+	if (Q <= 0) return PASS
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		alpha, 0, -alpha,
@@ -88,7 +89,7 @@ export function bandpass2 (fc, Q, fs) {
  */
 export function notch (fc, Q, fs) {
 	if (fc <= 0 || fc >= fs / 2) return PASS
-	if (Q <= 0) return PASS
+	if (Q <= 0) return SILENCE
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		1, -2 * cosw, 1,
@@ -104,7 +105,7 @@ export function notch (fc, Q, fs) {
  */
 export function allpass (fc, Q, fs) {
 	if (fc <= 0 || fc >= fs / 2) return PASS
-	if (Q <= 0) return PASS
+	if (Q <= 0) return INVERT
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	return norm(
 		1 - alpha, -2 * cosw, 1 + alpha,
@@ -121,7 +122,7 @@ export function allpass (fc, Q, fs) {
  */
 export function peaking (fc, Q, fs, dBgain) {
 	if (fc <= 0 || fc >= fs / 2) return PASS
-	if (Q <= 0) return PASS
+	if (Q <= 0) return gain(pow(10, dBgain / 20))
 	let { cosw, alpha } = intermediates(fc, Q, fs)
 	let A = pow(10, dBgain / 40)
 	return norm(
