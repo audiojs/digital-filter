@@ -27,7 +27,7 @@ export default function iir (data, params) {
 
 	for (let i = 0; i < data.length; i++) {
 		let x = data[i]
-		let y = b[0] * x + state[0]
+		let y = b[0] * x + (order > 0 ? state[0] : 0)
 		for (let j = 0; j < order - 1; j++) {
 			state[j] = (j + 1 < nb ? b[j + 1] : 0) * x - (j + 1 < na ? a[j + 1] : 0) * y + state[j + 1]
 		}
